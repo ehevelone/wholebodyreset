@@ -1,6 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
+// 🔍 Runtime verification (temporary but safe)
+console.log(
+  "RESEND_API_KEY present:",
+  !!process.env.RESEND_API_KEY
+);
+console.log(
+  "EMAIL_FROM value:",
+  process.env.EMAIL_FROM
+);
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function handler(event) {
@@ -25,29 +35,40 @@ export async function handler(event) {
     };
   }
 
-  // Placeholder email body (safe for now)
+  // Placeholder email body (safe + minimal)
   const html = `
-    <p>Whole Body Reset — Guided Foundations</p>
-    <p>Next step available.</p>
-    <p><strong>${email_file}</strong></p>
+    <p><strong>Whole Body Reset — Guided Foundations</strong></p>
+    <p>Your next step is available.</p>
+    <p>Reference file: <code>${email_file}</code></p>
   `;
 
-  const { error } = await resend.emails.send({
-    from: process.env.EMAIL_FROM,
-    to,
-    subject: "Whole Body Reset — Guided Foundations",
-    html
-  });
+  try {
+    const { error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM,
+      to,
+      subject: "Whole Body Reset — Guided Foundations",
+      html
+    });
 
-  if (error) {
+    if (error) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({
+          resend_error: error.message || error
+        })
+      };
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ ok: true })
+    };
+  } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ resend_error: error.message })
+      body: JSON.stringify({
+        exception: err.message
+      })
     };
   }
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ ok: true })
-  };
 }
