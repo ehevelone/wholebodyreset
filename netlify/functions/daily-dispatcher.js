@@ -1,54 +1,75 @@
 import { createClient } from "@supabase/supabase-js";
-import sequenceData from "../../emails/foundations_email_sequence.json" assert { type: "json" };
+import fs from "fs";
+import path from "path";
 
-// Netlify Scheduled Function (CRON)
+// ============================
+// NETLIFY CRON CONFIG
+// ============================
 export const config = {
-  schedule: "0 * * * *" // every hour (UTC)
+  schedule: "0 * * * *" // hourly
 };
 
 const PROGRAM = "guided_foundations";
 const MIN_NEXT_DELAY_MINUTES = 5;
 
-function nowIso() {
-  return new Date().toISOString();
-}
+// ============================
+// TIME HELPERS
+// ============================
+const nowIso = () => new Date().toISOString();
+const addDaysISO = d => new Date(Date.now() + d * 86400000).toISOString();
+const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
 
-function addDaysISO(days) {
-  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-}
-
-function addMinutesISO(minutes) {
-  return new Date(Date.now() + minutes * 60 * 1000).toISOString();
-}
-
-function moduleFromEmailFilename(email = "") {
-  const e = email.toLowerCase();
-
-  if (e.startsWith("hd-")) return "hydration";
-  if (e.startsWith("mr-")) return "minerals";
-  if (e.startsWith("tr-")) return "terrain";
-  if (e.startsWith("gt-")) return "gut";
-  if (e.startsWith("lv-")) return "liver";
-  if (e.startsWith("kd-")) return "kidneys";
-  if (e.startsWith("ad-")) return "adrenals";
-  if (e.startsWith("bd-")) return "binders";
-  if (e.startsWith("th-")) return "thyroid";
-  if (e.startsWith("pr-")) return "parasites";
-  if (e.startsWith("mt-")) return "metals";
-  if (e.startsWith("eb-")) return "ebv";
-  if (e.startsWith("ns-")) return "nervous-system";
-
+// ============================
+// MODULE DETECTION
+// ============================
+function moduleFromEmailFilename(name = "") {
+  const n = name.toLowerCase();
+  if (n.startsWith("hd-")) return "hydration";
+  if (n.startsWith("mr-")) return "minerals";
+  if (n.startsWith("tr-")) return "terrain";
+  if (n.startsWith("gt-")) return "gut";
+  if (n.startsWith("lv-")) return "liver";
+  if (n.startsWith("kd-")) return "kidneys";
+  if (n.startsWith("ad-")) return "adrenals";
+  if (n.startsWith("bd-")) return "binders";
+  if (n.startsWith("th-")) return "thyroid";
+  if (n.startsWith("pr-")) return "parasites";
+  if (n.startsWith("mt-")) return "metals";
+  if (n.startsWith("eb-")) return "ebv";
+  if (n.startsWith("ns-")) return "nervous-system";
   return "foundations";
 }
 
-function findNextEmail(sequence, currentEmail) {
-  if (!currentEmail) return sequence[0];
-  const idx = sequence.findIndex(e => e.email === currentEmail);
+// ============================
+// LOAD SEQUENCE (CORRECT)
+// ============================
+function loadSequence() {
+  const filePath = path.join(
+    __dirname,
+    "data",
+    "foundations_email_sequence.json"
+  );
+
+  const raw = fs.readFileSync(filePath, "utf8");
+  return JSON.parse(raw).sequence;
+}
+
+// ============================
+// FIND NEXT EMAIL
+// ============================
+function findNextEmail(sequence, current) {
+  if (!sequence.length) return null;
+  if (!current) return sequence[0];
+
+  const idx = sequence.findIndex(e => e.email === current);
   return idx === -1 || idx + 1 >= sequence.length
     ? null
     : sequence[idx + 1];
 }
 
+// ============================
+// SEND EMAIL
+// ============================
 async function sendEmail(siteUrl, payload) {
   const res = await fetch(`${siteUrl}/.netlify/functions/send_email`, {
     method: "POST",
@@ -59,13 +80,16 @@ async function sendEmail(siteUrl, payload) {
   return res.ok;
 }
 
+// ============================
+// HANDLER
+// ============================
 export async function handler() {
   const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  const sequence = sequenceData.sequence;
+  const sequence = loadSequence();
 
   const siteUrl =
     process.env.URL ||
@@ -84,20 +108,12 @@ export async function handler() {
   }
 
   const now = Date.now();
-  let processed = 0;
 
   for (const user of users) {
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
     const next = findNextEmail(sequence, user.current_email);
-
-    if (!next) {
-      await supabase
-        .from("guided_users")
-        .update({ status: "completed", next_email_at: null })
-        .eq("id", user.id);
-      continue;
-    }
+    if (!next) continue;
 
     const sent = await sendEmail(siteUrl, {
       to: user.email,
@@ -121,12 +137,10 @@ export async function handler() {
         next_email_at: nextAt
       })
       .eq("id", user.id);
-
-    processed++;
   }
 
   return {
     statusCode: 200,
-    body: JSON.stringify({ ok: true, processed })
+    body: JSON.stringify({ ok: true })
   };
 }
