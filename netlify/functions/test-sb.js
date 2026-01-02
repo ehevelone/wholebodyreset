@@ -6,18 +6,23 @@ export async function handler() {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
+  const email = `test-${Date.now()}@example.com`;
+
   const { data, error } = await supabase
     .from("guided_users")
-    .select("id")
-    .limit(1);
+    .insert([
+      {
+        email,
+        program: "guided_foundations",
+        status: "active"
+      }
+    ])
+    .select();
 
   if (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        ok: false,
-        error: error.message
-      })
+      body: JSON.stringify({ ok: false, error: error.message })
     };
   }
 
@@ -25,7 +30,7 @@ export async function handler() {
     statusCode: 200,
     body: JSON.stringify({
       ok: true,
-      rows_found: data.length
+      inserted: data[0]
     })
   };
 }
