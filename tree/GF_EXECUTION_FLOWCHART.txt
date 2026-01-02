@@ -1,0 +1,205 @@
+GUIDED FOUNDATIONS — EXECUTION FLOWCHART (NON-AI)
+INTERNAL USE ONLY — DO NOT UPLOAD / DO NOT DEPLOY
+
+Purpose:
+Defines the exact end-to-end execution order for
+Guided Foundations email delivery (non-AI).
+
+Authority:
+- GF_CANONICAL_FILE_TREE.txt
+- EMAIL_LINK_MATRIX.txt
+
+Notes:
+- nc = no change
+- This document defines order only.
+- No automation may violate this flow.
+
+
+GUIDED FOUNDATIONS — EXECUTION FLOWCHART (NON-AI)
+INTERNAL USE ONLY — DO NOT UPLOAD / DO NOT DEPLOY
+Last updated: 2025-12-28
+
+Authority:
+- GF_CANONICAL_FILE_TREE.txt
+- EMAIL_LINK_MATRIX.txt
+
+Terminology (LOCKED):
+bt = baseline
+nc = no change
+os = overstressed / sensitive
+
+Scope:
+Email-driven Guided Foundations delivery (non-AI only)
+AI-guided, intake, stabilization explicitly excluded
+
+====================================================
+PHASE 0 — USER SUBSCRIBES
+====================================================
+
+Trigger:
+User purchases Guided Foundations (non-AI)
+
+Initialize:
+status = active
+program = guided_foundations
+current_email = hd-01-welcome.html
+last_sent_at = null
+
+====================================================
+PHASE 1 — GLOBAL ORIENTATION (DAY 0)
+====================================================
+
+Email:
+hd-01-welcome.html
+
+Allowed links ONLY:
+→ /wholebodyreset/wholebodyreset.html
+→ /orientation/or-9a4e2.html
+
+Cadence:
+Immediate
+
+====================================================
+PHASE 2 — HYDRATION CORE (FOUNDATIONS)
+====================================================
+
+Cadence:
+Every 3 days (LOCKED)
+
+Emails:
+hd-9f3a2-e01-intro.html
+hd-9f3a2-e02-expectations.html
+hd-9f3a2-e03-observation.html
+
+Allowed link:
+→ /hydration/hd-9f3a2.html
+
+====================================================
+PHASE 3 — HYDRATION CAPACITY TIERS
+(still Foundations, still 3-day cadence)
+====================================================
+
+NOTE:
+No system branching.
+Users self-select by link following only.
+Links governed strictly by EMAIL_LINK_MATRIX.txt
+
+--------------------
+BASELINE (bt)
+--------------------
+
+Emails:
+hd-bt-4k2m-e01.html
+hd-bt-4k2m-e02.html
+hd-bt-5r7x-e01.html
+hd-bt-5r7x-e02.html
+hd-bt-6q8v-e01.html
+hd-bt-6q8v-e02.html
+
+Links:
+→ /hydration/bt/hd-bt-4k2m.html
+→ /hydration/bt/hd-bt-5r7x.html
+→ /hydration/bt/hd-bt-6q8v.html
+
+--------------------
+NO CHANGE (nc)
+--------------------
+
+Emails:
+hd-nc-1a7c-e01.html
+hd-nc-1a7c-e02.html
+hd-nc-2f8b-e01.html
+hd-nc-3d9e-e01.html
+hd-nc-p0z9-e01.html
+
+Links:
+→ /hydration/nc/hd-nc-1a7c.html
+→ /hydration/nc/hd-nc-2f8b.html
+→ /hydration/nc/hd-nc-3d9e.html
+→ /hydration/nc/hd-nc-p0z9.html
+
+--------------------
+OVERSTRESSED / SENSITIVE (os)
+--------------------
+
+Emails:
+hd-os-7m2p-e01.html
+hd-os-7m2p-e02.html
+hd-os-8t4c-e01.html
+hd-os-9y6a-e01.html
+hd-os-p0z9-e01.html
+
+Links:
+→ /hydration/os/hd-os-7m2p.html
+→ /hydration/os/hd-os-8t4c.html
+→ /hydration/os/hd-os-9y6a.html
+→ /hydration/os/hd-os-p0z9.html
+
+====================================================
+PHASE 4 — POST-HYDRATION FOUNDATIONS
+====================================================
+
+Cadence:
+Every 6 days (system value)
+
+Sequence:
+Minerals
+→ mr-main-q8f2.html
+→ mr-bt-*
+→ mr-nc-*
+→ mr-os-*
+
+Terrain
+→ tr-main-a37f.html
+
+Gut
+→ gt-06ea1.html
+→ gt-bt-*
+→ gt-nc-*
+→ gt-os-*
+
+Liver & Gallbladder
+→ lv-7c1e9.html
+→ lv-bt-*
+→ lv-nc-*
+→ lv-os-*
+
+Kidneys
+→ kd-4f2b8.html
+
+Adrenals
+→ ad-9c4b2.html
+
+Binders
+→ bd-4a8e2.html
+→ bd-bt-*
+→ bd-nc-*
+→ bd-os-*
+
+====================================================
+PHASE 5 — GATED CONTENT (REFERENCE ONLY)
+====================================================
+
+Examples:
+thyroid/th-8d3f1.html
+foundations-check/fc-main-r9a3.html
+parasites/pt/pr-pt-gate.html
+
+Rules:
+Emails do not link to gated files
+Email dispatcher ignores gate logic
+
+====================================================
+PHASE 6 — PAUSE / HOLD STATE
+====================================================
+
+status = paused
+
+Behavior:
+No emails sent
+current_email preserved
+Resume continues sequence
+
+====================================================
+END OF FILE
+====================================================

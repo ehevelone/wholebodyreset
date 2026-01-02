@@ -1,0 +1,5 @@
+[build]
+  base = "wholebodyreset"
+
+[functions]
+  directory = "netlify/functions"

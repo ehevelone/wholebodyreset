@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>Processing Intake | Whole Body Reset</title>
+
+  <meta name="robots" content="noindex, nofollow">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: #efe4c9;
+      color: #2f3b2f;
+      line-height: 1.7;
+    }
+
+    header {
+      background: #e2d6b8;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+    }
+
+    header img {
+      height: 48px;
+      width: auto;
+      display: block;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 60px auto;
+      padding: 0 20px;
+      text-align: center;
+    }
+
+    footer {
+      margin-top: 80px;
+      padding: 40px 20px;
+      background: #e2d6b8;
+      font-size: 0.9rem;
+      color: #4f5a45;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
+</header>
+
+<main>
+
+  <h1>Preparing Your Guided Path…</h1>
+
+  <p>
+    Please wait while we set up the safest place to begin.
+  </p>
+
+</main>
+
+<footer>
+  <p>© ET Naturals. All rights reserved.</p>
+  <p>Educational content only. No medical claims.</p>
+</footer>
+
+<script>
+  /* ----------------------------------------------------
+     Guardrails
+  ---------------------------------------------------- */
+  if (!sessionStorage.getItem('intake_started')) {
+    window.location.href = 'intake-start.html';
+  }
+
+  const raw = sessionStorage.getItem('intake_data');
+  if (!raw) {
+    window.location.href = 'intake-start.html';
+  }
+
+  /* ----------------------------------------------------
+     Parse intake
+  ---------------------------------------------------- */
+  const intake = JSON.parse(raw);
+  const s = intake.start || {};
+
+  /* ----------------------------------------------------
+     Routing Logic
+     Default = Foundations (standard pace)
+  ---------------------------------------------------- */
+  let route = 'foundations_standard';
+
+  /* Education-first foundations
+     (Never detoxed before)
+  */
+  if (s.detox_experience === 'never') {
+    route = 'foundations_education';
+  }
+
+  /* Stabilization-first conditions
+     (Any one of these overrides everything else)
+  */
+  if (
+    s.adaptation === 'overwhelmed' ||
+    s.stability === 'fragile' ||
+    s.push_history === 'often' ||
+    (s.sensitivity && s.sensitivity.length >= 2) ||
+    s.detox_experience === 'tried_bad'
+  ) {
+    route = 'stabilization';
+  }
+
+  /* ----------------------------------------------------
+     Store routing result
+  ---------------------------------------------------- */
+  intake.routing = route;
+  sessionStorage.setItem('intake_data', JSON.stringify(intake));
+
+  /* ----------------------------------------------------
+     Hand off to Guided
+  ---------------------------------------------------- */
+  window.location.href = '../guided/index.html';
+</script>
+
+</body>
+</html>

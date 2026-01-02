@@ -1,0 +1,42 @@
+/* === GLOBAL LEAFY BACKGROUNDS (FINAL) === */
+.leafy-left,
+.leafy-right {
+  position: fixed;
+  top: 0;
+  width: 240px;
+  height: 100vh;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.60;
+  pointer-events: none;
+  z-index: 0;              /* BEHIND CONTENT */
+}
+
+.leafy-left {
+  left: 0;
+  background-image: url("../images/leafy-left.png");
+  background-position: left top;
+}
+
+.leafy-right {
+  right: 0;
+  background-image: url("../images/leafy-right.png");
+  background-position: right top;
+}
+
+/* CONTENT ABOVE LEAVES */
+header,
+main,
+footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* Mobile safety */
+@media (max-width: 768px) {
+  .leafy-left,
+  .leafy-right {
+    width: 160px;
+    opacity: 0.25;
+  }
+}

@@ -1,0 +1,89 @@
+GUIDED FOUNDATIONS — EMAIL LINK MATRIX
+CANONICAL / INTERNAL USE ONLY
+DO NOT DEPLOY
+Last updated: 2025-12-21
+
+Purpose:
+Defines which canonical content pages each email is allowed to link to.
+Prevents incorrect routing, duplication, or premature escalation.
+
+====================================================
+GLOBAL / ENTRY EMAILS
+====================================================
+
+hd-01-welcome.html
+→ /wholebodyreset/wholebodyreset.html
+→ /orientation/or-9a4e2.html
+
+====================================================
+HYDRATION — FOUNDATIONS (CORE)
+====================================================
+
+hd-9f3a2-e01-intro.html
+hd-9f3a2-e02-expectations.html
+hd-9f3a2-e03-observation.html
+→ /hydration/hd-9f3a2.html
+
+====================================================
+HYDRATION — BASELINE (bt)
+====================================================
+
+hd-bt-4k2m-e01.html
+hd-bt-4k2m-e02.html
+→ /hydration/bt/hd-bt-4k2m.html
+
+hd-bt-5r7x-e01.html
+hd-bt-5r7x-e02.html
+→ /hydration/bt/hd-bt-5r7x.html
+
+hd-bt-6q8v-e01.html
+hd-bt-6q8v-e02.html
+→ /hydration/bt/hd-bt-6q8v.html
+
+====================================================
+HYDRATION — NEXT CAPACITY (nc)
+====================================================
+
+hd-nc-1a7c-e01.html
+hd-nc-1a7c-e02.html
+→ /hydration/nc/hd-nc-1a7c.html
+
+hd-nc-2f8b-e01.html
+→ /hydration/nc/hd-nc-2f8b.html
+
+hd-nc-3d9e-e01.html
+→ /hydration/nc/hd-nc-3d9e.html
+
+hd-nc-p0z9-e01.html
+→ /hydration/nc/hd-nc-p0z9.html
+
+====================================================
+HYDRATION — OVERSTRESSED / SENSITIVE (os)
+====================================================
+
+hd-os-7m2p-e01.html
+hd-os-7m2p-e02.html
+→ /hydration/os/hd-os-7m2p.html
+
+hd-os-8t4c-e01.html
+→ /hydration/os/hd-os-8t4c.html
+
+hd-os-9y6a-e01.html
+→ /hydration/os/hd-os-9y6a.html
+
+hd-os-p0z9-e01.html
+→ /hydration/os/hd-os-p0z9.html
+
+====================================================
+HYDRATION — GLOBAL / SYSTEM
+====================================================
+
+hd-02-os-7m2p.html
+→ /hydration/os/hd-os-7m2p.html
+
+hd-03-nc-1a7c.html
+→ /hydration/nc/hd-nc-1a7c.html
+
+====================================================
+END OF FILE
+====================================================

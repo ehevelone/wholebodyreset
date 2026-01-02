@@ -1,0 +1,103 @@
+WHOLE BODY RESET — EMAIL STRUCTURE (CANONICAL)
+SECTION: HYDRATION EMAILS
+SOURCE: hydration/ email filename structure
+NOTE: Filenames only. No content implied.
+
+============================================
+HYDRATION — INTRO / ORIENTATION
+============================================
+
+hydration/intro/
+- hd-intro-e01.html
+
+
+============================================
+HYDRATION — BASELINE / STABILIZATION (bt)
+============================================
+
+hydration/bt/hd-bt-4k2m/
+- hd-bt-4k2m-e01.html
+- hd-bt-4k2m-e02.html
+- hd-bt-4k2m-e03.html
+- hd-bt-4k2m-e04.html
+- hd-bt-4k2m-e05.html
+- hd-bt-4k2m-e06.html
+
+hydration/bt/hd-bt-5r7x/
+- hd-bt-5r7x-e01.html
+- hd-bt-5r7x-e02.html
+
+hydration/bt/hd-bt-6q8v/
+- hd-bt-6q8v-e01.html
+- hd-bt-6q8v-e02.html
+- hd-bt-6q8v-e03.html
+- hd-bt-6q8v-e04.html
+- hd-bt-6q8v-e05.html
+- hd-bt-6q8v-e06.html
+
+
+============================================
+HYDRATION — FOUNDATIONS (core)
+============================================
+
+hydration/hd-9f3a2/
+- hd-9f3a2-e01-intro.html
+- hd-9f3a2-e02-expectations.html
+- hd-9f3a2-e03-observation.html
+
+
+============================================
+HYDRATION — NEXT CAPACITY (nc)
+============================================
+
+hydration/nc/hd-nc-1a7c/
+- hd-nc-1a7c-e01.html
+- hd-nc-1a7c-e02.html
+
+hydration/nc/hd-nc-2f8b/
+- hd-nc-2f8b-e01.html
+
+hydration/nc/hd-nc-3d9e/
+- hd-nc-3d9e-e01.html
+
+hydration/nc/hd-nc-p0z9/
+- hd-nc-p0z9-e01.html
+
+hydration/nc/hd-nc-4f2a/
+- hd-nc-4f2a-e01.html
+- hd-nc-4f2a-e02.html
+- hd-nc-4f2a-e03.html
+- hd-nc-4f2a-e04.html
+
+
+============================================
+HYDRATION — OVERSTRESSED / SENSITIVE (os)
+============================================
+
+hydration/os/hd-os-7m2p/
+- hd-os-7m2p-e01.html
+- hd-os-7m2p-e02.html
+
+hydration/os/hd-os-8t4c/
+- hd-os-8t4c-e01.html
+
+hydration/os/hd-os-9y6a/
+- hd-os-9y6a-e01.html
+
+hydration/os/hd-os-p0z9/
+- hd-os-p0z9-e01.html
+
+
+============================================
+HYDRATION — GLOBAL / SYSTEM EMAILS
+============================================
+
+hydration/
+- hd-01-welcome.html
+- hd-02-os-7m2p.html
+- hd-03-nc-1a7c.html
+
+
+============================================
+END: HYDRATION EMAIL FILE MAP
+============================================
