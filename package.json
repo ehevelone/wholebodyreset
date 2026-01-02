@@ -1,11 +1,10 @@
 {
-  "name": "wholebodyreset-netlify-functions",
-  "private": true,
+  "name": "wholebodyreset",
   "version": "1.0.0",
-  "engines": {
-    "node": "18"
-  },
+  "private": true,
+  "type": "module",
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.7",
+    "resend": "^3.2.0"
   }
 }
