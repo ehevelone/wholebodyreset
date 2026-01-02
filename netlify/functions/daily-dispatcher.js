@@ -6,7 +6,7 @@ import path from "path";
 // NETLIFY CRON CONFIG
 // ============================
 export const config = {
-  schedule: "0 * * * *" // hourly
+  schedule: "0 * * * *" // runs hourly (UTC)
 };
 
 const PROGRAM = "guided_foundations";
@@ -41,12 +41,11 @@ function moduleFromEmailFilename(name = "") {
 }
 
 // ============================
-// LOAD SEQUENCE (CORRECT)
+// LOAD SEQUENCE (FINAL PATH)
 // ============================
 function loadSequence() {
   const filePath = path.join(
     __dirname,
-    "data",
     "foundations_email_sequence.json"
   );
 
@@ -68,7 +67,7 @@ function findNextEmail(sequence, current) {
 }
 
 // ============================
-// SEND EMAIL
+// SEND EMAIL (CALLS send_email)
 // ============================
 async function sendEmail(siteUrl, payload) {
   const res = await fetch(`${siteUrl}/.netlify/functions/send_email`, {
@@ -104,7 +103,10 @@ export async function handler() {
     .eq("is_paused", false);
 
   if (error) {
-    return { statusCode: 500, body: error.message };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message })
+    };
   }
 
   const now = Date.now();
