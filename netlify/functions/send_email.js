@@ -5,7 +5,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "POST only" };
+    return {
+      statusCode: 405,
+      body: "POST only"
+    };
   }
 
   const supabase = createClient(
@@ -13,45 +16,33 @@ export async function handler(event) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  const { email } = JSON.parse(event.body || "{}");
+  const { to, email_file, program } = JSON.parse(event.body || "{}");
 
-  if (!email) {
+  if (!to || !email_file) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: "Email required" })
+      body: JSON.stringify({ error: "Missing to or email_file" })
     };
   }
 
-  // Insert or update user
-  const { error } = await supabase
-    .from("guided_users")
-    .upsert({
-      email,
-      program: "guided_foundations",
-      status: "active",
-      current_email: "hd-01-welcome.html",
-      last_sent_at: null
-    }, { onConflict: "email" });
+  // Placeholder email body (safe for now)
+  const html = `
+    <p>Whole Body Reset — Guided Foundations</p>
+    <p>Next step available.</p>
+    <p><strong>${email_file}</strong></p>
+  `;
+
+  const { error } = await resend.emails.send({
+    from: process.env.EMAIL_FROM,
+    to,
+    subject: "Whole Body Reset — Guided Foundations",
+    html
+  });
 
   if (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ supabase_error: error.message })
-    };
-  }
-
-  // Send welcome email
-  const { error: emailError } = await resend.emails.send({
-    from: process.env.EMAIL_FROM,
-    to: email,
-    subject: "Welcome to Guided Foundations",
-    html: "<p>Your Guided Foundations journey has begun.</p>"
-  });
-
-  if (emailError) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ resend_error: emailError })
+      body: JSON.stringify({ resend_error: error.message })
     };
   }
 
