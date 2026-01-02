@@ -1,5 +1,5 @@
 [build]
-  base = "wholebodyreset"
+  publish = "."
 
 [functions]
   directory = "netlify/functions"
