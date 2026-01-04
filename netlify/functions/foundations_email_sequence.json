@@ -1,123 +1,113 @@
 {
   "program": "guided_foundations",
-  "version": "1.0",
-  "rules": {
-    "hydration_cadence_days": 3,
-    "default_cadence_days": 6
-  },
-  "sequence": [
-    {
-      "email": "hd-01-welcome.html",
-      "cadence_days": 0
+  "version": "2.0",
+  "note": "REFERENCE ONLY. send-email.js is the authoritative controller.",
+  "phases": {
+    "hydration": {
+      "intro": [
+        "hd-01-welcome.html",
+        "hd-9f3a2-e02-expectations.html",
+        "hd-9f3a2-e03-observation.html"
+      ],
+      "bt": [
+        "hd-bt-4k2m-e01.html",
+        "hd-bt-4k2m-e02.html",
+        "hd-bt-4k2m-e03.html",
+        "hd-bt-4k2m-e04.html",
+        "hd-bt-4k2m-e05.html",
+        "hd-bt-4k2m-e06.html",
+        "hd-bt-5r7x-e01.html",
+        "hd-bt-5r7x-e02.html",
+        "hd-bt-6q8v-e01.html",
+        "hd-bt-6q8v-e02.html",
+        "hd-bt-6q8v-e03.html",
+        "hd-bt-6q8v-e04.html",
+        "hd-bt-6q8v-e05.html",
+        "hd-bt-6q8v-e06.html"
+      ],
+      "nc": [
+        "hd-nc-1a7c-e01.html",
+        "hd-nc-1a7c-e02.html",
+        "hd-nc-2f8b-e01.html",
+        "hd-nc-3d9e-e01.html",
+        "hd-nc-4f2a-e01.html",
+        "hd-nc-4f2a-e02.html",
+        "hd-nc-4f2a-e03.html",
+        "hd-nc-4f2a-e04.html",
+        "hd-nc-p0z9-e01.html"
+      ],
+      "os": [
+        "hd-os-7m2p-e01.html",
+        "hd-os-7m2p-e02.html",
+        "hd-os-8t4c-e01.html",
+        "hd-os-9y6a-e01.html",
+        "hd-os-p0z9-e01.html"
+      ]
     },
 
-    {
-      "email": "hd-9f3a2-e01-intro.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-9f3a2-e02-expectations.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-9f3a2-e03-observation.html",
-      "cadence_days": 3
-    },
-
-    {
-      "email": "hd-bt-4k2m-e01.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-bt-4k2m-e02.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-bt-5r7x-e01.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-bt-5r7x-e02.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-bt-6q8v-e01.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-bt-6q8v-e02.html",
-      "cadence_days": 3
+    "minerals": {
+      "intro": [
+        "mn-intro-e01.html"
+      ],
+      "bt": [
+        "mn-bt-e01.html",
+        "mn-bt-e02.html"
+      ],
+      "nc": [
+        "mn-nc-e01.html",
+        "mn-nc-e02.html"
+      ],
+      "os": [
+        "mn-os-e01.html",
+        "mn-os-e02.html"
+      ]
     },
 
-    {
-      "email": "hd-nc-1a7c-e01.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-nc-1a7c-e02.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-nc-2f8b-e01.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-nc-3d9e-e01.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-nc-p0z9-e01.html",
-      "cadence_days": 3
+    "parasites": {
+      "intro": [
+        "pr-intro-e01.html"
+      ],
+      "bt": [
+        "pr-bt-e01.html",
+        "pr-bt-e02.html"
+      ],
+      "nc": [
+        "pr-nc-e01.html",
+        "pr-nc-e02.html"
+      ],
+      "os": [
+        "pr-os-e01.html",
+        "pr-os-e02.html"
+      ]
     },
 
-    {
-      "email": "hd-os-7m2p-e01.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-os-7m2p-e02.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-os-8t4c-e01.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-os-9y6a-e01.html",
-      "cadence_days": 3
-    },
-    {
-      "email": "hd-os-p0z9-e01.html",
-      "cadence_days": 3
+    "metals": {
+      "intro": [
+        "mt-intro-e01.html"
+      ],
+      "bt": [
+        "mt-bt-e01.html",
+        "mt-bt-e02.html"
+      ],
+      "nc": [
+        "mt-nc-e01.html",
+        "mt-nc-e02.html"
+      ],
+      "os": [
+        "mt-os-e01.html",
+        "mt-os-e02.html"
+      ]
     },
 
-    {
-      "email": "mr-main-q8f2.html",
-      "cadence_days": 6
-    },
-    {
-      "email": "tr-main-a37f.html",
-      "cadence_days": 6
-    },
-    {
-      "email": "gt-06ea1.html",
-      "cadence_days": 6
-    },
-    {
-      "email": "lv-7c1e9.html",
-      "cadence_days": 6
-    },
-    {
-      "email": "kd-4f2b8.html",
-      "cadence_days": 6
-    },
-    {
-      "email": "ad-9c4b2.html",
-      "cadence_days": 6
-    },
-    {
-      "email": "bd-4a8e2.html",
-      "cadence_days": 6
+    "maintenance": {
+      "bt": [
+        "mtc-bt-e01.html",
+        "mtc-bt-e02.html",
+        "mtc-bt-e03.html",
+        "mtc-bt-e04.html",
+        "mtc-bt-e05.html",
+        "mtc-bt-e06.html"
+      ]
     }
-  ]
+  }
 }

@@ -14,7 +14,9 @@ export async function handler() {
       {
         email,
         program: "guided_foundations",
-        status: "active"
+        status: "active",
+        current_email: "hd-01-welcome.html",   // REQUIRED
+        current_module: "hydration"
       }
     ])
     .select();
@@ -22,7 +24,10 @@ export async function handler() {
   if (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ ok: false, error: error.message })
+      body: JSON.stringify({
+        ok: false,
+        error: error.message
+      })
     };
   }
 
