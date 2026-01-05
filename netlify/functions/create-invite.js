@@ -8,47 +8,43 @@ const supabase = createClient(
 
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return { statusCode: 405, body: "POST only" };
   }
 
-  try {
-    const { email } = JSON.parse(event.body || "{}");
-    if (!email) {
-      return { statusCode: 400, body: JSON.stringify({ ok:false }) };
-    }
-
-    const token = crypto.randomBytes(32).toString("hex");
-    const tokenHash = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
-
-    const expires = new Date();
-    expires.setDate(expires.getDate() + 30);
-
-    const { error } = await supabase.from("invites").insert({
-      email,
-      token_hash: tokenHash,
-      expires_at: expires.toISOString(),
-      max_uses: 1,
-      uses: 0
-    });
-
-    if (error) {
-      console.error(error);
-      return { statusCode: 500, body: JSON.stringify({ ok:false }) };
-    }
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        ok: true,
-        link: `${process.env.SITE_URL}/wholebodyreset/gift/?k=${token}`
-      })
-    };
-
-  } catch (e) {
-    console.error(e);
-    return { statusCode: 500, body: JSON.stringify({ ok:false }) };
+  const { email } = JSON.parse(event.body || "{}");
+  if (!email) {
+    return { statusCode: 400, body: JSON.stringify({ ok: false }) };
   }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 1); // 24h window
+
+  const { error } = await supabase
+    .from("guided_users")
+    .upsert(
+      {
+        email,
+        program: "guided_foundations",
+        status: "pending",
+        invite_token_hash: tokenHash,
+        invite_expires_at: expires.toISOString()
+      },
+      { onConflict: "email" }
+    );
+
+  if (error) {
+    console.error(error);
+    return { statusCode: 500, body: JSON.stringify({ ok: false }) };
+  }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      ok: true,
+      link: `${process.env.SITE_URL}/gift/?k=${token}`
+    })
+  };
 }
