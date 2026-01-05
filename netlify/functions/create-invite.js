@@ -28,7 +28,7 @@ export async function handler(event) {
       {
         email,
         program: "guided_foundations",
-        status: "pending",
+        status: "active",
         invite_token_hash: tokenHash,
         invite_expires_at: expires.toISOString()
       },
