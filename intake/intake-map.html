@@ -8,6 +8,10 @@
 
   <meta name="robots" content="noindex, nofollow">
 
+  <!-- GLOBAL SITE STYLES (REQUIRED) -->
+  <link rel="stylesheet" href="/css/site.css">
+
+  <!-- PAGE-SPECIFIC STYLES -->
   <style>
     body {
       margin: 0;
@@ -50,81 +54,85 @@
 
 <body>
 
-<header>
-  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
-</header>
+  <!-- LEAFY BACKGROUND PLACEHOLDERS (DO NOT REMOVE) -->
+  <div class="leafy-left"></div>
+  <div class="leafy-right"></div>
 
-<main>
+  <header>
+    <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
+  </header>
 
-  <h1>Preparing Your Guided Path…</h1>
+  <main>
 
-  <p>
-    Please wait while we set up the safest place to begin.
-  </p>
+    <h1>Preparing Your Guided Path…</h1>
 
-</main>
+    <p>
+      Please wait while we set up the safest place to begin.
+    </p>
 
-<footer>
-  <p>© ET Naturals. All rights reserved.</p>
-  <p>Educational content only. No medical claims.</p>
-</footer>
+  </main>
 
-<script>
-  /* ----------------------------------------------------
-     Guardrails
-  ---------------------------------------------------- */
-  if (!sessionStorage.getItem('intake_started')) {
-    window.location.href = 'intake-start.html';
-  }
+  <footer>
+    <p>© ET Naturals. All rights reserved.</p>
+    <p>Educational content only. No medical claims.</p>
+  </footer>
 
-  const raw = sessionStorage.getItem('intake_data');
-  if (!raw) {
-    window.location.href = 'intake-start.html';
-  }
+  <script>
+    /* ----------------------------------------------------
+       Guardrails
+    ---------------------------------------------------- */
+    if (!sessionStorage.getItem('intake_started')) {
+      window.location.href = 'intake-start.html';
+    }
 
-  /* ----------------------------------------------------
-     Parse intake
-  ---------------------------------------------------- */
-  const intake = JSON.parse(raw);
-  const s = intake.start || {};
+    const raw = sessionStorage.getItem('intake_data');
+    if (!raw) {
+      window.location.href = 'intake-start.html';
+    }
 
-  /* ----------------------------------------------------
-     Routing Logic
-     Default = Foundations (standard pace)
-  ---------------------------------------------------- */
-  let route = 'foundations_standard';
+    /* ----------------------------------------------------
+       Parse intake
+    ---------------------------------------------------- */
+    const intake = JSON.parse(raw);
+    const s = intake.start || {};
 
-  /* Education-first foundations
-     (Never detoxed before)
-  */
-  if (s.detox_experience === 'never') {
-    route = 'foundations_education';
-  }
+    /* ----------------------------------------------------
+       Routing Logic
+       Default = Foundations (standard pace)
+    ---------------------------------------------------- */
+    let route = 'foundations_standard';
 
-  /* Stabilization-first conditions
-     (Any one of these overrides everything else)
-  */
-  if (
-    s.adaptation === 'overwhelmed' ||
-    s.stability === 'fragile' ||
-    s.push_history === 'often' ||
-    (s.sensitivity && s.sensitivity.length >= 2) ||
-    s.detox_experience === 'tried_bad'
-  ) {
-    route = 'stabilization';
-  }
+    /* Education-first foundations
+       (Never detoxed before)
+    */
+    if (s.detox_experience === 'never') {
+      route = 'foundations_education';
+    }
 
-  /* ----------------------------------------------------
-     Store routing result
-  ---------------------------------------------------- */
-  intake.routing = route;
-  sessionStorage.setItem('intake_data', JSON.stringify(intake));
+    /* Stabilization-first conditions
+       (Any one of these overrides everything else)
+    */
+    if (
+      s.adaptation === 'overwhelmed' ||
+      s.stability === 'fragile' ||
+      s.push_history === 'often' ||
+      (s.sensitivity && s.sensitivity.length >= 2) ||
+      s.detox_experience === 'tried_bad'
+    ) {
+      route = 'stabilization';
+    }
 
-  /* ----------------------------------------------------
-     Hand off to Guided
-  ---------------------------------------------------- */
-  window.location.href = '../guided/index.html';
-</script>
+    /* ----------------------------------------------------
+       Store routing result
+    ---------------------------------------------------- */
+    intake.routing = route;
+    sessionStorage.setItem('intake_data', JSON.stringify(intake));
+
+    /* ----------------------------------------------------
+       Hand off to Guided
+    ---------------------------------------------------- */
+    window.location.href = '../guided/index.html';
+  </script>
 
 </body>
 </html>

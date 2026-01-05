@@ -8,6 +8,10 @@
 
   <meta name="robots" content="noindex, nofollow">
 
+  <!-- GLOBAL SITE STYLES (REQUIRED) -->
+  <link rel="stylesheet" href="/css/site.css">
+
+  <!-- PAGE-SPECIFIC STYLES -->
   <style>
     body {
       margin: 0;
@@ -16,40 +20,62 @@
       color: #2f3b2f;
       line-height: 1.7;
     }
+
     header {
       background: #e2d6b8;
       padding: 20px 40px;
       display: flex;
       align-items: center;
     }
+
     header img {
       height: 48px;
       width: auto;
       display: block;
     }
+
     main {
       max-width: 760px;
       margin: 60px auto;
       padding: 0 20px;
     }
-    h1 { font-size: 2.4rem; margin-bottom: 10px; }
-    h2 { font-size: 1.6rem; margin-top: 45px; }
-    p { margin-bottom: 18px; }
-    label { display:block; margin:10px 0; cursor:pointer; }
+
+    h1 {
+      font-size: 2.4rem;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      margin-top: 45px;
+    }
+
+    p {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0;
+      cursor: pointer;
+    }
+
     button {
-      background:#2f5d3b;
-      color:#fff;
-      padding:14px 28px;
-      border:none;
-      border-radius:30px;
-      font-weight:bold;
-      cursor:pointer;
+      background: #2f5d3b;
+      color: #fff;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 30px;
+      font-weight: bold;
+      cursor: pointer;
     }
+
     .submit-block {
-      margin-top:50px;
-      padding-top:22px;
-      border-top:1px solid #b9b29a;
+      margin-top: 50px;
+      padding-top: 22px;
+      border-top: 1px solid #b9b29a;
     }
+
     footer {
       margin-top: 80px;
       padding: 40px 20px;
@@ -58,6 +84,7 @@
       color: #4f5a45;
       text-align: center;
     }
+
     .disclaimer {
       font-size: 0.9rem;
       color: #4f5a45;
@@ -70,187 +97,191 @@
 
 <body>
 
-<header>
-  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
-</header>
+  <!-- LEAFY BACKGROUND PLACEHOLDERS (DO NOT REMOVE) -->
+  <div class="leafy-left"></div>
+  <div class="leafy-right"></div>
 
-<main>
+  <header>
+    <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
+  </header>
 
-  <h1>Guided Foundations Intake</h1>
+  <main>
 
-  <p class="orientation">
-    This intake is not about motivation, discipline, or willpower.
-    It helps us understand how your body responds to change
-    so the program can start at a pace your system can actually handle.
-  </p>
+    <h1>Guided Foundations Intake</h1>
 
-  <p class="orientation">
-    Answer based on your <strong>worst 30–60 days</strong>, not your best days.
-  </p>
-
-  <div class="content-block">
-
-    <form id="intakeForm">
-
-      <!-- SECTION 1 -->
-      <h2>How Your Body Handles Change</h2>
-
-      <p>
-        This looks at how your body responds when you introduce something new
-        (diet changes, supplements, lifestyle shifts, routines).
-      </p>
-
-      <label>
-        <input type="radio" name="adaptation" value="easy" required>
-        My body usually adjusts without much trouble
-      </label>
-
-      <label>
-        <input type="radio" name="adaptation" value="slow">
-        My body adjusts, but it takes time and caution
-      </label>
-
-      <label>
-        <input type="radio" name="adaptation" value="overwhelmed">
-        New changes often make me feel worse or reactive
-      </label>
-
-      <!-- SECTION 2 -->
-      <h2>Overall Stability Right Now</h2>
-
-      <p>
-        This is about your baseline — not flare days, not rare good days —
-        but how steady your system feels most of the time.
-      </p>
-
-      <label>
-        <input type="radio" name="stability" value="stable" required>
-        Mostly steady, even if symptoms exist
-      </label>
-
-      <label>
-        <input type="radio" name="stability" value="inconsistent">
-        Up and down, unpredictable
-      </label>
-
-      <label>
-        <input type="radio" name="stability" value="fragile">
-        Easily tipped by stress, food, supplements, or exertion
-      </label>
-
-      <!-- SECTION 3 -->
-      <h2>Past Reactions & Sensitivity</h2>
-
-      <p>
-        Check anything that has been true for you in the past.
-      </p>
-
-      <label>
-        <input type="checkbox" name="sensitivity[]" value="reactive">
-        I’ve reacted badly to supplements or protocols
-      </label>
-
-      <label>
-        <input type="checkbox" name="sensitivity[]" value="detox">
-        Detoxes or cleanses have made me feel worse
-      </label>
-
-      <label>
-        <input type="checkbox" name="sensitivity[]" value="crash">
-        I tend to crash after “pushing through”
-      </label>
-
-      <!-- SECTION 4 -->
-      <h2>Experience With Detox or Cleansing</h2>
-
-      <p>
-        This helps determine whether your body needs preparation,
-        pacing, or basic education before moving forward.
-      </p>
-
-      <label>
-        <input type="radio" name="detox_experience" value="never" required>
-        I’ve never tried detoxing or cleansing
-      </label>
-
-      <label>
-        <input type="radio" name="detox_experience" value="tried_ok">
-        I’ve tried it and generally tolerated it
-      </label>
-
-      <label>
-        <input type="radio" name="detox_experience" value="tried_bad">
-        I’ve tried it and it went poorly
-      </label>
-
-      <!-- SECTION 5 -->
-      <h2>History With Pushing</h2>
-
-      <p>
-        This is about what usually happens when you try to “push through”
-        fatigue, symptoms, or resistance.
-      </p>
-
-      <label>
-        <input type="radio" name="push_history" value="rare" required>
-        I can usually push without major setbacks
-      </label>
-
-      <label>
-        <input type="radio" name="push_history" value="sometimes">
-        Sometimes pushing works, sometimes it backfires
-      </label>
-
-      <label>
-        <input type="radio" name="push_history" value="often">
-        Pushing almost always leads to a crash or flare
-      </label>
-
-      <div class="submit-block">
-        <button type="submit">Submit Intake</button>
-      </div>
-
-    </form>
-
-  </div>
-
-  <div class="disclaimer">
-    <p>
-      This intake is used only to determine safe starting context.
-      It does not diagnose, treat, or replace medical care.
+    <p class="orientation">
+      This intake is not about motivation, discipline, or willpower.
+      It helps us understand how your body responds to change
+      so the program can start at a pace your system can actually handle.
     </p>
-  </div>
 
-</main>
+    <p class="orientation">
+      Answer based on your <strong>worst 30–60 days</strong>, not your best days.
+    </p>
 
-<footer>
-  <p>© ET Naturals. All rights reserved.</p>
-  <p>Educational content only. No medical claims.</p>
-</footer>
+    <div class="content-block">
 
-<script>
-  sessionStorage.setItem('intake_started','true');
+      <form id="intakeForm">
 
-  document.getElementById('intakeForm').addEventListener('submit',function(e){
-    e.preventDefault();
-    const fd = new FormData(this);
-    const data = {};
-    for (const [k,v] of fd.entries()) {
-      if (k.endsWith('[]')) {
-        const kk = k.replace('[]','');
-        data[kk] = data[kk] || [];
-        data[kk].push(v);
-      } else {
-        data[k] = v;
+        <!-- SECTION 1 -->
+        <h2>How Your Body Handles Change</h2>
+
+        <p>
+          This looks at how your body responds when you introduce something new
+          (diet changes, supplements, lifestyle shifts, routines).
+        </p>
+
+        <label>
+          <input type="radio" name="adaptation" value="easy" required>
+          My body usually adjusts without much trouble
+        </label>
+
+        <label>
+          <input type="radio" name="adaptation" value="slow">
+          My body adjusts, but it takes time and caution
+        </label>
+
+        <label>
+          <input type="radio" name="adaptation" value="overwhelmed">
+          New changes often make me feel worse or reactive
+        </label>
+
+        <!-- SECTION 2 -->
+        <h2>Overall Stability Right Now</h2>
+
+        <p>
+          This is about your baseline — not flare days, not rare good days —
+          but how steady your system feels most of the time.
+        </p>
+
+        <label>
+          <input type="radio" name="stability" value="stable" required>
+          Mostly steady, even if symptoms exist
+        </label>
+
+        <label>
+          <input type="radio" name="stability" value="inconsistent">
+          Up and down, unpredictable
+        </label>
+
+        <label>
+          <input type="radio" name="stability" value="fragile">
+          Easily tipped by stress, food, supplements, or exertion
+        </label>
+
+        <!-- SECTION 3 -->
+        <h2>Past Reactions & Sensitivity</h2>
+
+        <p>
+          Check anything that has been true for you in the past.
+        </p>
+
+        <label>
+          <input type="checkbox" name="sensitivity[]" value="reactive">
+          I’ve reacted badly to supplements or protocols
+        </label>
+
+        <label>
+          <input type="checkbox" name="sensitivity[]" value="detox">
+          Detoxes or cleanses have made me feel worse
+        </label>
+
+        <label>
+          <input type="checkbox" name="sensitivity[]" value="crash">
+          I tend to crash after “pushing through”
+        </label>
+
+        <!-- SECTION 4 -->
+        <h2>Experience With Detox or Cleansing</h2>
+
+        <p>
+          This helps determine whether your body needs preparation,
+          pacing, or basic education before moving forward.
+        </p>
+
+        <label>
+          <input type="radio" name="detox_experience" value="never" required>
+          I’ve never tried detoxing or cleansing
+        </label>
+
+        <label>
+          <input type="radio" name="detox_experience" value="tried_ok">
+          I’ve tried it and generally tolerated it
+        </label>
+
+        <label>
+          <input type="radio" name="detox_experience" value="tried_bad">
+          I’ve tried it and it went poorly
+        </label>
+
+        <!-- SECTION 5 -->
+        <h2>History With Pushing</h2>
+
+        <p>
+          This is about what usually happens when you try to “push through”
+          fatigue, symptoms, or resistance.
+        </p>
+
+        <label>
+          <input type="radio" name="push_history" value="rare" required>
+          I can usually push without major setbacks
+        </label>
+
+        <label>
+          <input type="radio" name="push_history" value="sometimes">
+          Sometimes pushing works, sometimes it backfires
+        </label>
+
+        <label>
+          <input type="radio" name="push_history" value="often">
+          Pushing almost always leads to a crash or flare
+        </label>
+
+        <div class="submit-block">
+          <button type="submit">Submit Intake</button>
+        </div>
+
+      </form>
+
+    </div>
+
+    <div class="disclaimer">
+      <p>
+        This intake is used only to determine safe starting context.
+        It does not diagnose, treat, or replace medical care.
+      </p>
+    </div>
+
+  </main>
+
+  <footer>
+    <p>© ET Naturals. All rights reserved.</p>
+    <p>Educational content only. No medical claims.</p>
+  </footer>
+
+  <script>
+    sessionStorage.setItem('intake_started','true');
+
+    document.getElementById('intakeForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const fd = new FormData(this);
+      const data = {};
+      for (const [k, v] of fd.entries()) {
+        if (k.endsWith('[]')) {
+          const kk = k.replace('[]','');
+          data[kk] = data[kk] || [];
+          data[kk].push(v);
+        } else {
+          data[k] = v;
+        }
       }
-    }
-    sessionStorage.setItem(
-      'intake_data',
-      JSON.stringify({ start: data, routing: null })
-    );
-    window.location.href = 'intake-map.html';
-  });
-</script>
+      sessionStorage.setItem(
+        'intake_data',
+        JSON.stringify({ start: data, routing: null })
+      );
+      window.location.href = 'intake-map.html';
+    });
+  </script>
 
 </body>
 </html>

@@ -6,8 +6,13 @@
 
   <title>Guided Foundations | Whole Body Reset</title>
 
+  <!-- Prevent indexing -->
   <meta name="robots" content="noindex, nofollow">
 
+  <!-- GLOBAL SITE STYLES (REQUIRED) -->
+  <link rel="stylesheet" href="/css/site.css">
+
+  <!-- PAGE-SPECIFIC STYLES -->
   <style>
     body {
       margin: 0;
@@ -16,23 +21,27 @@
       color: #2f3b2f;
       line-height: 1.7;
     }
+
     header {
       background: #e2d6b8;
       padding: 20px 40px;
       display: flex;
       align-items: center;
     }
+
     header img {
       height: 48px;
       width: auto;
       display: block;
     }
+
     main {
       max-width: 760px;
       margin: 60px auto;
       padding: 0 20px;
       text-align: center;
     }
+
     footer {
       margin-top: 80px;
       padding: 40px 20px;
@@ -46,38 +55,42 @@
 
 <body>
 
-<header>
-  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
-</header>
+  <!-- LEAFY BACKGROUND PLACEHOLDERS (DO NOT REMOVE) -->
+  <div class="leafy-left"></div>
+  <div class="leafy-right"></div>
 
-<main>
+  <header>
+    <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
+  </header>
 
-  <h1>Preparing Your Guided Path…</h1>
-  <p>Please wait.</p>
+  <main>
 
-</main>
+    <h1>Preparing Your Guided Path…</h1>
+    <p>Please wait.</p>
 
-<footer>
-  <p>© ET Naturals. All rights reserved.</p>
-  <p>Educational content only. No medical claims.</p>
-</footer>
+  </main>
 
-<script>
-  const raw = sessionStorage.getItem('intake_data');
+  <footer>
+    <p>© ET Naturals. All rights reserved.</p>
+    <p>Educational content only. No medical claims.</p>
+  </footer>
 
-  if (!raw) {
-    window.location.href = '/intake/intake-start.html';
-  }
+  <script>
+    const raw = sessionStorage.getItem('intake_data');
 
-  const intake = JSON.parse(raw);
-  const route = intake.routing;
+    if (!raw) {
+      window.location.href = '/intake/intake-start.html';
+    }
 
-  if (route === 'stabilization') {
-    window.location.href = './stabilization/start.html';
-  } else {
-    window.location.href = './foundations/start.html';
-  }
-</script>
+    const intake = JSON.parse(raw);
+    const route = intake.routing;
+
+    if (route === 'stabilization') {
+      window.location.href = './stabilization/start.html';
+    } else {
+      window.location.href = './foundations/start.html';
+    }
+  </script>
 
 </body>
 </html>
