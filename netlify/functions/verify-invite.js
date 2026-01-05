@@ -8,68 +8,79 @@ const supabase = createClient(
 
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return { statusCode: 405, body: "POST only" };
   }
 
   try {
-    const { email, notes = "" } = JSON.parse(event.body || "{}");
-
-    if (!email) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Email is required" })
-      };
+    const { token } = JSON.parse(event.body || "{}");
+    if (!token) {
+      return { statusCode: 400, body: JSON.stringify({ ok: false }) };
     }
 
-    // Generate secure token
-    const token = crypto.randomBytes(32).toString("hex");
-
-    // Hash token (never store raw)
+    // hash incoming token
     const tokenHash = crypto
       .createHash("sha256")
       .update(token)
       .digest("hex");
 
-    // Expiration: 30 days
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
-
-    const { error } = await supabase
+    // lookup invite
+    const { data: invite, error } = await supabase
       .from("invites")
-      .insert([
-        {
-          email,
-          token_hash: tokenHash,
-          expires_at: expiresAt.toISOString(),
-          max_uses: 1,
-          uses: 0,
-          notes
-        }
-      ]);
+      .select("*")
+      .eq("token_hash", tokenHash)
+      .single();
 
-    if (error) {
-      console.error(error);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Database insert failed" })
-      };
+    if (
+      error ||
+      !invite ||
+      invite.uses >= invite.max_uses ||
+      new Date(invite.expires_at) < new Date()
+    ) {
+      return { statusCode: 200, body: JSON.stringify({ ok: false }) };
     }
 
-    const inviteLink = `${process.env.SITE_URL}/wholebodyreset/gift/?k=${token}`;
+    const email = invite.email;
+
+    // STRIPE-EQUIVALENT STEP:
+    // create or reuse canonical guided user
+    const { data: userRows, error: userErr } = await supabase
+      .from("guided_users")
+      .upsert(
+        {
+          email,
+          program: "guided_foundations",
+          status: "active",
+          current_email: "hd-01-welcome.html",
+          current_module: "hydration"
+        },
+        { onConflict: "email" }
+      )
+      .select();
+
+    if (userErr || !userRows || !userRows[0]) {
+      console.error(userErr);
+      return { statusCode: 500, body: JSON.stringify({ ok: false }) };
+    }
+
+    const user = userRows[0];
+
+    // mark invite as used
+    await supabase
+      .from("invites")
+      .update({ uses: invite.uses + 1 })
+      .eq("id", invite.id);
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         ok: true,
-        inviteLink
+        user_id: user.id,
+        email: user.email
       })
     };
 
-  } catch (err) {
-    console.error(err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Server error" })
-    };
+  } catch (e) {
+    console.error(e);
+    return { statusCode: 500, body: JSON.stringify({ ok: false }) };
   }
 }
