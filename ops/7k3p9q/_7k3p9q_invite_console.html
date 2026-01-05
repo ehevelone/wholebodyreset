@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Console</title>
+<meta name="robots" content="noindex, nofollow">
+
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  background:#f1f1ed;
+  color:#333;
+}
+main {
+  max-width:520px;
+  margin:120px auto;
+}
+input, button {
+  width:100%;
+  padding:12px;
+  margin-top:12px;
+}
+button {
+  background:#444;
+  color:#fff;
+  border:none;
+  cursor:pointer;
+}
+pre {
+  margin-top:20px;
+  padding:14px;
+  background:#e6e6df;
+  word-break:break-all;
+}
+</style>
+</head>
+
+<body>
+<main>
+  <h3>Invite</h3>
+  <input id="email" type="email" placeholder="email address"/>
+  <button onclick="create()">Generate</button>
+  <pre id="out" style="display:none"></pre>
+</main>
+
+<script>
+async function create() {
+  const email = document.getElementById('email').value;
+  const out = document.getElementById('out');
+  out.style.display = "none";
+
+  const r = await fetch('/.netlify/functions/create-invite', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ email })
+  });
+
+  const d = await r.json();
+  if (!d.ok) return alert('error');
+
+  out.style.display = "block";
+  out.textContent = d.link;
+}
+</script>
+</body>
+</html>

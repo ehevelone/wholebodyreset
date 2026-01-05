@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>Loading…</title>
+
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #f2f2ef;
+      color: #777;
+    }
+
+    main {
+      max-width: 520px;
+      margin: 140px auto;
+      padding: 0 20px;
+      text-align: center;
+    }
+
+    .panel {
+      border: 1px solid #ddd;
+      background: #fafafa;
+      padding: 28px;
+      border-radius: 6px;
+    }
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      margin: 20px auto;
+      border: 3px solid #e0e0e0;
+      border-top: 3px solid #999;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .muted {
+      font-size: 0.9rem;
+      color: #999;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<main>
+  <div class="panel">
+    <div class="spinner"></div>
+    <div class="muted">Verifying access…</div>
+  </div>
+</main>
+
+<script>
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('k');
+
+  // No token = dead end
+  if (!token) {
+    setTimeout(() => { document.body.innerHTML = ''; }, 800);
+    return;
+  }
+
+  fetch('/.netlify/functions/verify-invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.ok) {
+      setTimeout(() => { document.body.innerHTML = ''; }, 800);
+      return;
+    }
+
+    // Mark invite context for intake
+    sessionStorage.setItem('invite_verified', 'true');
+    sessionStorage.setItem('invite_comped', 'true');
+
+    if (data.email) {
+      sessionStorage.setItem('invite_email', data.email);
+    }
+
+    // Hand off to normal intake
+    window.location.href = '/intake/intake-start.html';
+  })
+  .catch(() => {
+    setTimeout(() => { document.body.innerHTML = ''; }, 800);
+  });
+})();
+</script>
+
+</body>
+</html>
