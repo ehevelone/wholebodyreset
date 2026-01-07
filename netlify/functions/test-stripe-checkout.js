@@ -1,7 +1,11 @@
-const Stripe = require("stripe");
+import Stripe from "stripe";
 
-exports.handler = async () => {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function handler() {
+  const baseUrl =
+    process.env.SITE_URL ||
+    "https://wholebodyreset.life"; // fallback HARD FIX
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
@@ -10,18 +14,17 @@ exports.handler = async () => {
         price_data: {
           currency: "usd",
           product_data: { name: "Sandbox Webhook Test" },
-          unit_amount: 100
+          unit_amount: 100,
         },
         quantity: 1
       }
     ],
-    success_url: `${process.env.SITE_URL}/?stripe_test=success`,
-    cancel_url: `${process.env.SITE_URL}/?stripe_test=cancel`,
-    customer_email: "ehevelone+stripe_test@gmail.com"
+    success_url: `${baseUrl}/?stripe_test=success`,
+    cancel_url: `${baseUrl}/?stripe_test=cancel`,
   });
 
   return {
     statusCode: 200,
     body: JSON.stringify({ url: session.url })
   };
-};
+}
