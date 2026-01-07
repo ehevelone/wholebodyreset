@@ -3,10 +3,6 @@ import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function handler() {
-  const baseUrl =
-    process.env.SITE_URL ||
-    "https://wholebodyreset.life"; // fallback HARD FIX
-
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: [
@@ -19,8 +15,8 @@ export async function handler() {
         quantity: 1
       }
     ],
-    success_url: `${baseUrl}/?stripe_test=success`,
-    cancel_url: `${baseUrl}/?stripe_test=cancel`,
+    success_url: "https://wholebodyreset.life/?stripe_test=success",
+    cancel_url: "https://wholebodyreset.life/?stripe_test=cancel"
   });
 
   return {
