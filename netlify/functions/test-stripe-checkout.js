@@ -1,8 +1,8 @@
-import Stripe from "stripe";
+const Stripe = require("stripe");
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+exports.handler = async () => {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export async function handler() {
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: [
@@ -10,7 +10,7 @@ export async function handler() {
         price_data: {
           currency: "usd",
           product_data: { name: "Sandbox Webhook Test" },
-          unit_amount: 100,
+          unit_amount: 100
         },
         quantity: 1
       }
@@ -24,4 +24,4 @@ export async function handler() {
     statusCode: 200,
     body: JSON.stringify({ url: session.url })
   };
-}
+};
