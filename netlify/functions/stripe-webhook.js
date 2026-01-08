@@ -50,7 +50,7 @@ export async function handler(event) {
       throw new Error("Missing email or Stripe customer ID");
     }
 
-    // Upsert enrollment and fetch row
+    // 🔑 Upsert AND fetch the row so we get user_id
     const { data, error } = await supabase
       .from("guided_users")
       .upsert(
@@ -65,17 +65,18 @@ export async function handler(event) {
         },
         { onConflict: "stripe_customer_id" }
       )
-      .select()
+      .select("id, welcome_sent")
       .single();
 
     if (error) throw error;
 
-    // Send welcome email ONCE
+    // 🚀 Send welcome email ONCE
     if (!data.welcome_sent) {
       await fetch(`${process.env.SITE_URL}/.netlify/functions/send_email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          user_id: data.id,               // ✅ REQUIRED
           email,
           template: "hd-01-welcome.html"
         })
@@ -84,7 +85,7 @@ export async function handler(event) {
       await supabase
         .from("guided_users")
         .update({ welcome_sent: true })
-        .eq("stripe_customer_id", stripeCustomerId);
+        .eq("id", data.id);
     }
 
     return { statusCode: 200, body: "ok" };
