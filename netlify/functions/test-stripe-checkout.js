@@ -2,26 +2,48 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export async function handler() {
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
+export async function handler(event) {
+  const product = event.queryStringParameters?.product;
 
-    // IMPORTANT: attach a Stripe customer
-    customer_creation: "always",
+  let line_items;
+  let mode = "payment";
 
-    line_items: [
+  if (product === "book") {
+    line_items = [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: { name: "Foundations Book" },
+          unit_amount: 999
+        },
+        quantity: 1
+      }
+    ];
+  } else if (product === "guided") {
+    line_items = [
       {
         price_data: {
           currency: "usd",
           product_data: { name: "Guided Foundations" },
-          unit_amount: 100,
+          unit_amount: 2999
         },
         quantity: 1
       }
-    ],
+    ];
+  } else {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Invalid product" })
+    };
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    mode,
+    customer_creation: "always",
+    line_items,
 
     metadata: {
-      program: "guided_foundations"
+      product
     },
 
     success_url: "https://wholebodyreset.life/?stripe=success",
