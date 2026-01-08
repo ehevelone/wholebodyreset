@@ -1,6 +1,6 @@
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
 import fetch from "node-fetch";
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -14,18 +14,13 @@ export async function handler(event) {
 
   try {
     const { token } = JSON.parse(event.body || "{}");
-    if (!token) {
-      return { statusCode: 400, body: JSON.stringify({ ok: false }) };
-    }
+    if (!token) return { statusCode: 400, body: "Missing token" };
 
-    const tokenHash = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
     const { data: user, error } = await supabase
       .from("guided_users")
-      .select("*")
+      .select("email, id")
       .eq("invite_token_hash", tokenHash)
       .gt("invite_expires_at", new Date().toISOString())
       .single();
@@ -34,7 +29,7 @@ export async function handler(event) {
       return { statusCode: 200, body: JSON.stringify({ ok: false }) };
     }
 
-    // clear invite token so it cannot be reused
+    // clear token
     await supabase
       .from("guided_users")
       .update({
@@ -43,12 +38,13 @@ export async function handler(event) {
       })
       .eq("id", user.id);
 
-    // 🔔 TRIGGER EMAIL ENGINE (CORRECT WAY)
-    await fetch(`${process.env.SITE_URL}/.netlify/functions/send_email`, {
+    // 🔔 REGISTER USER (fires email)
+    await fetch(`${process.env.SITE_URL}/.netlify/functions/create-guided-user`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        user_id: user.id
+        email: user.email,
+        source: "invite"
       })
     });
 
@@ -60,8 +56,8 @@ export async function handler(event) {
       })
     };
 
-  } catch (e) {
-    console.error("verify-invite error:", e);
+  } catch (err) {
+    console.error(err);
     return { statusCode: 500, body: JSON.stringify({ ok: false }) };
   }
 }
