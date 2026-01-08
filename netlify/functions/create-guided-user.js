@@ -12,9 +12,11 @@ export async function handler(event) {
 
   try {
     const { email, source = "unknown" } = JSON.parse(event.body || "{}");
-    if (!email) return { statusCode: 400, body: "Missing email" };
+    if (!email) {
+      return { statusCode: 400, body: "Missing email" };
+    }
 
-    // 1️⃣ Create / upsert SB row WITH QUEUE
+    // 1️⃣ Create / upsert user WITH initialized queue
     const { data, error } = await supabase
       .from("guided_users")
       .upsert(
@@ -23,7 +25,7 @@ export async function handler(event) {
           program: "guided_foundations",
           status: "active",
 
-          // 🔑 REQUIRED FOR EMAIL ENGINE
+          // REQUIRED for email engine
           bt_queue: ["hd-01-welcome.html"],
           current_email: "hd-01-welcome.html",
           current_module: "hydration"
@@ -33,10 +35,12 @@ export async function handler(event) {
       .select("id")
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
-    // 2️⃣ FIRE WELCOME EMAIL IMMEDIATELY
-    await fetch(`${process.env.SITE_URL}/.netlify/functions/send_email`, {
+    // 2️⃣ Fire welcome email immediately (Netlify internal call)
+    await fetch("https://wholebodyreset.life/.netlify/functions/send_email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: data.id })
@@ -49,6 +53,9 @@ export async function handler(event) {
 
   } catch (err) {
     console.error("create-guided-user failed:", err);
-    return { statusCode: 500, body: JSON.stringify({ ok: false }) };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ ok: false })
+    };
   }
 }
