@@ -10,13 +10,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 🔑 Stripe requires the RAW body exactly as received
+// Stripe requires the raw body EXACTLY as received
 function getRawBody(event) {
   return event.body;
 }
 
 export async function handler(event) {
-  // Netlify normalizes headers inconsistently — handle both
   const sig =
     event.headers["stripe-signature"] ||
     event.headers["Stripe-Signature"];
@@ -37,7 +36,6 @@ export async function handler(event) {
     return { statusCode: 400, body: "Invalid signature" };
   }
 
-  // Only process completed checkouts
   if (stripeEvent.type !== "checkout.session.completed") {
     return { statusCode: 200, body: "Ignored" };
   }
@@ -53,7 +51,7 @@ export async function handler(event) {
       throw new Error("Missing email or Stripe customer ID");
     }
 
-    // ✅ Supabase-safe upsert (NO chaining methods)
+    // ✅ ONLY use columns that ACTUALLY exist in Supabase
     const { data, error } = await supabase
       .from("guided_users")
       .upsert(
@@ -63,11 +61,9 @@ export async function handler(event) {
           status: "active",
           stripe_customer_id: stripeCustomerId,
 
-          // email engine requirements
           user_state: "bt",
           bt_queue: ["hd-01-welcome.html"],
 
-          phase: "hydration",
           current_module: "hydration",
           last_sent_at: null
         },
