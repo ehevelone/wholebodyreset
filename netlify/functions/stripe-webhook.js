@@ -10,15 +10,17 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// 🔑 Stripe requires the RAW body exactly as received
 function getRawBody(event) {
-  if (event.isBase64Encoded) {
-    return Buffer.from(event.body, "base64").toString("utf8");
-  }
   return event.body;
 }
 
 export async function handler(event) {
-  const sig = event.headers["stripe-signature"];
+  // Netlify normalizes headers inconsistently — handle both
+  const sig =
+    event.headers["stripe-signature"] ||
+    event.headers["Stripe-Signature"];
+
   if (!sig) {
     return { statusCode: 400, body: "Missing signature" };
   }
@@ -35,6 +37,7 @@ export async function handler(event) {
     return { statusCode: 400, body: "Invalid signature" };
   }
 
+  // Only process completed checkouts
   if (stripeEvent.type !== "checkout.session.completed") {
     return { statusCode: 200, body: "Ignored" };
   }
@@ -50,7 +53,7 @@ export async function handler(event) {
       throw new Error("Missing email or Stripe customer ID");
     }
 
-    // ✅ Use upsert the SUPABASE way (no .onConflict chaining)
+    // ✅ Supabase-safe upsert (NO chaining methods)
     const { data, error } = await supabase
       .from("guided_users")
       .upsert(
@@ -60,6 +63,7 @@ export async function handler(event) {
           status: "active",
           stripe_customer_id: stripeCustomerId,
 
+          // email engine requirements
           user_state: "bt",
           bt_queue: ["hd-01-welcome.html"],
 
@@ -69,7 +73,7 @@ export async function handler(event) {
         },
         { onConflict: "stripe_customer_id" }
       )
-      .select("id, bt_queue")
+      .select("id")
       .single();
 
     if (error) throw error;
