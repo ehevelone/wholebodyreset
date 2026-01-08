@@ -50,7 +50,7 @@ export async function handler(event) {
       throw new Error("Missing email or Stripe customer ID");
     }
 
-    // ✅ Initialize user + queue
+    // ✅ FULL day-0 initialization for email engine
     const { data, error } = await supabase
       .from("guided_users")
       .upsert(
@@ -60,12 +60,14 @@ export async function handler(event) {
           status: "active",
           stripe_customer_id: stripeCustomerId,
 
-          // email system expects this
+          // email system requirements
           user_state: "bt",
           bt_queue: ["hd-01-welcome.html"],
 
-          current_module: "hydration",
-          welcome_sent: false
+          phase: "hydration",
+          last_sent_at: null,
+
+          current_module: "hydration"
         },
         { onConflict: "stripe_customer_id" }
       )
@@ -74,7 +76,7 @@ export async function handler(event) {
 
     if (error) throw error;
 
-    // 🔔 Trigger email sender (queue-based)
+    // 🔔 trigger email engine (queue-based)
     await fetch(`${process.env.SITE_URL}/.netlify/functions/send_email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
