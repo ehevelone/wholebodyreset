@@ -50,38 +50,64 @@ export async function handler(event) {
       throw new Error("Missing email or Stripe customer ID");
     }
 
-    // ✅ FULL day-0 initialization for email engine
-    const { data, error } = await supabase
+    /* -------------------------------------------------
+       1️⃣ INSERT USER IF NOT EXISTS (NO OVERWRITES)
+    -------------------------------------------------- */
+
+    await supabase
       .from("guided_users")
-      .upsert(
-        {
-          email,
-          program: "guided_foundations",
-          status: "active",
-          stripe_customer_id: stripeCustomerId,
+      .insert({
+        email,
+        program: "guided_foundations",
+        status: "active",
+        stripe_customer_id: stripeCustomerId,
 
-          // email system requirements
-          user_state: "bt",
-          bt_queue: ["hd-01-welcome.html"],
+        user_state: "bt",
+        bt_queue: ["hd-01-welcome.html"],
 
-          phase: "hydration",
-          last_sent_at: null,
+        phase: "hydration",
+        current_module: "hydration",
+        last_sent_at: null
+      })
+      .onConflict("stripe_customer_id")
+      .ignore();
 
-          current_module: "hydration"
-        },
-        { onConflict: "stripe_customer_id" }
-      )
-      .select("id")
+    /* -------------------------------------------------
+       2️⃣ LOAD USER
+    -------------------------------------------------- */
+
+    const { data: user, error } = await supabase
+      .from("guided_users")
+      .select("id, bt_queue")
+      .eq("stripe_customer_id", stripeCustomerId)
       .single();
 
-    if (error) throw error;
+    if (error || !user) {
+      throw new Error("User lookup failed");
+    }
 
-    // 🔔 trigger email engine (queue-based)
+    /* -------------------------------------------------
+       3️⃣ INITIALIZE QUEUE ONLY IF EMPTY
+    -------------------------------------------------- */
+
+    if (!user.bt_queue || user.bt_queue.length === 0) {
+      await supabase
+        .from("guided_users")
+        .update({
+          bt_queue: ["hd-01-welcome.html"]
+        })
+        .eq("id", user.id);
+    }
+
+    /* -------------------------------------------------
+       4️⃣ TRIGGER EMAIL ENGINE
+    -------------------------------------------------- */
+
     await fetch(`${process.env.SITE_URL}/.netlify/functions/send_email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        user_id: data.id
+        user_id: user.id
       })
     });
 
