@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 export const config = { api: { bodyParser: false } };
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -49,7 +50,8 @@ export async function handler(event) {
       throw new Error("Missing email or Stripe customer ID");
     }
 
-    await supabase
+    // Upsert enrollment and fetch row
+    const { data, error } = await supabase
       .from("guided_users")
       .upsert(
         {
@@ -58,10 +60,32 @@ export async function handler(event) {
           status: "active",
           stripe_customer_id: stripeCustomerId,
           current_email: "hd-01-welcome.html",
-          current_module: "hydration"
+          current_module: "hydration",
+          welcome_sent: false
         },
         { onConflict: "stripe_customer_id" }
-      );
+      )
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Send welcome email ONCE
+    if (!data.welcome_sent) {
+      await fetch(`${process.env.SITE_URL}/.netlify/functions/send_email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          template: "hd-01-welcome.html"
+        })
+      });
+
+      await supabase
+        .from("guided_users")
+        .update({ welcome_sent: true })
+        .eq("stripe_customer_id", stripeCustomerId);
+    }
 
     return { statusCode: 200, body: "ok" };
 
