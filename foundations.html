@@ -54,10 +54,6 @@
       margin-top: 50px;
     }
 
-    h3 {
-      margin-top: 30px;
-    }
-
     .subtitle {
       font-size: 1.2rem;
       color: #4a5a4a;
@@ -96,9 +92,10 @@
       color: #fff;
       padding: 14px 28px;
       border-radius: 30px;
-      text-decoration: none;
+      border: none;
       font-weight: bold;
       margin-top: 20px;
+      cursor: pointer;
     }
 
     .button.secondary {
@@ -121,10 +118,6 @@
       margin: 40px 0;
     }
 
-    ul {
-      padding-left: 20px;
-    }
-
     footer {
       margin-top: 80px;
       padding: 40px 20px;
@@ -138,10 +131,9 @@
 
 <body>
 
-    <!-- LEAFY BACKGROUND PLACEHOLDERS (DO NOT REMOVE) -->
+<!-- LEAFY BACKGROUND PLACEHOLDERS -->
 <div class="leafy-left"></div>
 <div class="leafy-right"></div>
-
 
 <header>
   <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
@@ -159,21 +151,10 @@
     not to do more, but to understand why less often works better.
   </p>
 
-  <p>
-    Foundations exists to prevent a common mistake:
-    pushing the body before it has the capacity to respond safely.
-  </p>
-
   <blockquote>
     Foundations is about stabilization, sequencing,
     and learning when <em>not</em> to move forward.
   </blockquote>
-
-  <h2>Three Ways to Begin</h2>
-  <p>
-    Choose the level of support that fits where you are right now.
-    All paths respect pacing. None require progression.
-  </p>
 
   <!-- BOOK OPTION -->
   <div class="option-box">
@@ -185,29 +166,11 @@
       style="max-width:180px; margin:20px 0; display:block;"
     />
 
-    <p>
-      Learn the Whole Body Reset framework and understand
-      why detoxes and aggressive strategies often backfire
-      when the basics are missing.
-    </p>
-
-    <ul>
-      <li>Why “detox first” often fails</li>
-      <li>Capacity vs intensity explained</li>
-      <li>How to recognize overload early</li>
-      <li>How to think in sequences, not fixes</li>
-    </ul>
-
     <p class="price">$9.99 one-time</p>
 
-    <a
-      class="button"
-      href="https://buy.stripe.com/14A6oA6sB4TG4NP28laVa00"
-      target="_blank"
-      rel="noopener"
-    >
+    <button class="button" id="buy-book">
       Get the Book
-    </a>
+    </button>
 
     <p class="note">
       Educational framework only. No protocols. No medical advice.
@@ -218,92 +181,25 @@
   <div class="option-box highlight">
     <h2>🌿 Guided Foundations</h2>
 
-    <p>
-      Guided Foundations provides gentle, structured guidance
-      to help you apply the Foundations concepts
-      without rushing or guessing.
-    </p>
-
-    <ul>
-      <li>Immediate access to the Foundations book</li>
-      <li>Weekly focus suggestions (optional)</li>
-      <li>Weekly pacing check-ins</li>
-      <li>Emphasis on stabilization over progression</li>
-    </ul>
-
     <p class="price">$29.99/month</p>
 
-    <a
-      class="button"
-      href="https://buy.stripe.com/aFa6oA3gp0Dq1BDdR3aVa01"
-      target="_blank"
-      rel="noopener"
-    >
+    <button class="button" id="buy-guided">
       Start Guided Foundations
-    </a>
+    </button>
 
     <p class="note">
       Cancel anytime. No obligation to advance.
     </p>
   </div>
 
-  <!-- AI OPTION (PHASE 2) -->
+  <!-- AI OPTION -->
   <div class="ai-box">
     <h2>🤖 AI-Guided Foundations (Phase 2)</h2>
-
-    <p>
-      AI-Guided Foundations adds a symptom-aware layer
-      that helps you pace decisions based on your responses over time.
-    </p>
-
-    <p>
-      This is not a protocol generator.
-      It exists to slow you down when needed
-      and help you recognize when the body is asking for stabilization.
-    </p>
-
-    <ul>
-      <li>Structured symptom intake & pattern recognition</li>
-      <li>Adaptive pacing suggestions (not instructions)</li>
-      <li>Automatic stop-gates when capacity is exceeded</li>
-      <li>Guidance framed as drafts, not directives</li>
-    </ul>
-
-    <p class="price">$49.99/month</p>
 
     <span class="button secondary">
       AI-Guided Support (Coming Later)
     </span>
-
-    <p class="note">
-      AI guidance is educational and non-medical.
-      Users remain in full control at all times.
-    </p>
   </div>
-
-  <h2>Which Should You Choose?</h2>
-  <ul>
-    <li>
-      <strong>Book only</strong> — if you want education with zero guidance.
-    </li>
-    <li>
-      <strong>Guided Foundations</strong> — if you want reassurance and structure.
-    </li>
-    <li>
-      <strong>AI-Guided Foundations</strong> — if you want adaptive pacing based on symptoms.
-    </li>
-  </ul>
-
-  <blockquote>
-    Pausing is not failure.
-    Staying where you are is always allowed.
-  </blockquote>
-
-  <p class="note">
-    Whole Body Reset is educational only.
-    It does not diagnose, treat, or replace medical care.
-    Always work alongside qualified healthcare professionals.
-  </p>
 
 </main>
 
@@ -311,6 +207,23 @@
   <p>© ET Naturals. All rights reserved.</p>
   <p>Educational content only. No medical claims.</p>
 </footer>
+
+<!-- STRIPE CHECKOUT HANDLER -->
+<script>
+async function startCheckout(endpoint) {
+  const res = await fetch(endpoint);
+  const data = await res.json();
+  window.location.href = data.url;
+}
+
+document.getElementById("buy-book")?.addEventListener("click", () => {
+  startCheckout("/.netlify/functions/test-stripe-checkout?product=book");
+});
+
+document.getElementById("buy-guided")?.addEventListener("click", () => {
+  startCheckout("/.netlify/functions/test-stripe-checkout?product=guided");
+});
+</script>
 
 </body>
 </html>
