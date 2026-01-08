@@ -1,53 +1,52 @@
 import { createClient } from "@supabase/supabase-js";
 
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 export async function handler(event) {
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: "POST only" };
+  }
 
-  try {
-    const body = JSON.parse(event.body || "{}");
-    const { email, stripe_customer_id } = body;
+  const { email, source = "unknown" } = JSON.parse(event.body || "{}");
 
-    if (!email || !stripe_customer_id) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing email or stripe_customer_id" })
-      };
-    }
+  if (!email) {
+    return { statusCode: 400, body: "Missing email" };
+  }
 
-    const { data, error } = await supabase
-      .from("guided_users")
-      .insert({
+  const { data, error } = await supabase
+    .from("guided_users")
+    .upsert(
+      {
         email,
-        stripe_customer_id,
         program: "guided_foundations",
         status: "active",
 
-        current_email: "hd-01-welcome.html",
-        current_module: "hydration",
+        // 🔑 EMAIL ENGINE INITIALIZATION
         bt_queue: ["hd-01-welcome.html"],
-        welcome_sent: false
-      })
-      .select("id")
-      .single();
+        current_email: "hd-01-welcome.html",
 
-    if (error) {
-      console.error("Supabase insert error:", error);
-      throw error;
-    }
+        current_module: "hydration",
+        welcome_sent: false,
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ ok: true, id: data.id })
-    };
+        source
+      },
+      { onConflict: "email" }
+    )
+    .select("id")
+    .single();
 
-  } catch (err) {
-    console.error("create-guided-user failure:", err);
+  if (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ ok: false, error: err.message })
+      body: JSON.stringify({ ok: false, error: error.message })
     };
   }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ ok: true, user_id: data.id })
+  };
 }
