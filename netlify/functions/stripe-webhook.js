@@ -50,7 +50,7 @@ export async function handler(event) {
       throw new Error("Missing email or Stripe customer ID");
     }
 
-    // 🔑 Upsert AND fetch the row so we get user_id
+    // ✅ Initialize user + queue
     const { data, error } = await supabase
       .from("guided_users")
       .upsert(
@@ -59,34 +59,29 @@ export async function handler(event) {
           program: "guided_foundations",
           status: "active",
           stripe_customer_id: stripeCustomerId,
-          current_email: "hd-01-welcome.html",
+
+          // email system expects this
+          user_state: "bt",
+          bt_queue: ["hd-01-welcome.html"],
+
           current_module: "hydration",
           welcome_sent: false
         },
         { onConflict: "stripe_customer_id" }
       )
-      .select("id, welcome_sent")
+      .select("id")
       .single();
 
     if (error) throw error;
 
-    // 🚀 Send welcome email ONCE
-    if (!data.welcome_sent) {
-      await fetch(`${process.env.SITE_URL}/.netlify/functions/send_email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: data.id,               // ✅ REQUIRED
-          email,
-          template: "hd-01-welcome.html"
-        })
-      });
-
-      await supabase
-        .from("guided_users")
-        .update({ welcome_sent: true })
-        .eq("id", data.id);
-    }
+    // 🔔 Trigger email sender (queue-based)
+    await fetch(`${process.env.SITE_URL}/.netlify/functions/send_email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: data.id
+      })
+    });
 
     return { statusCode: 200, body: "ok" };
 
