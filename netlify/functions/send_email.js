@@ -10,8 +10,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 🔑 RESTORED — ORIGINAL WORKING PATH
+// 🔑 ORIGINAL WORKING PATH
 const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
+
+// 🔍 DEBUG — WHAT FILES DOES NETLIFY SEE?
+try {
+  console.log(
+    "send_email DEBUG files in EMAIL_ROOT:",
+    fs.readdirSync(EMAIL_ROOT)
+  );
+} catch (e) {
+  console.log("send_email DEBUG cannot read EMAIL_ROOT:", e.message);
+}
 
 function loadFile(filePath) {
   return fs.readFileSync(filePath, "utf8");
