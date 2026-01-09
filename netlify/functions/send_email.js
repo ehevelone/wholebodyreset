@@ -3,9 +3,6 @@ const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 const { Resend } = require("resend");
 
-// 🔍 Debug (safe)
-console.log("send_email SUPABASE_URL =", process.env.SUPABASE_URL);
-
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const supabase = createClient(
@@ -13,8 +10,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Resolve templates RELATIVE TO THIS FILE (Netlify-safe)
-const EMAIL_ROOT = path.join(__dirname, "..", "emails", "templates");
+// 🔑 RESTORED — ORIGINAL WORKING PATH
+const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
 
 function loadFile(filePath) {
   return fs.readFileSync(filePath, "utf8");
@@ -25,12 +22,12 @@ function loadEmailAssets(relativeEmailPath) {
   const subjectPath = htmlPath.replace(".html", ".subject.txt");
 
   if (!fs.existsSync(htmlPath)) {
-    console.error("Missing HTML template:", htmlPath);
+    console.log("send_email: missing HTML", htmlPath);
     return null;
   }
 
   if (!fs.existsSync(subjectPath)) {
-    console.error("Missing subject template:", subjectPath);
+    console.log("send_email: missing subject", subjectPath);
     return null;
   }
 
@@ -58,17 +55,19 @@ exports.handler = async function (event) {
       .single();
 
     if (error || !user) {
-      console.error("User not found:", user_id);
+      console.log("send_email: user not found", user_id);
       return { statusCode: 200, body: "User not found" };
     }
 
     const emailPath = user.bt_queue?.[0];
     if (!emailPath) {
+      console.log("send_email: no email queued");
       return { statusCode: 200, body: "No email queued" };
     }
 
     const assets = loadEmailAssets(emailPath);
     if (!assets) {
+      console.log("send_email: assets missing for", emailPath);
       return { statusCode: 200, body: "Email assets missing" };
     }
 
@@ -89,11 +88,11 @@ exports.handler = async function (event) {
       })
       .eq("id", user_id);
 
+    console.log("send_email: sent to", user.email);
     return { statusCode: 200, body: "Email sent" };
 
   } catch (err) {
-    console.error("send_email error:", err);
-    // NEVER propagate failure upstream
-    return { statusCode: 200, body: "Email send failed (logged)" };
+    console.error("send_email fatal", err);
+    return { statusCode: 200, body: "Email failed (logged)" };
   }
 };
