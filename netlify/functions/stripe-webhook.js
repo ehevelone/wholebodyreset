@@ -1,16 +1,14 @@
-import Stripe from "stripe";
-import { registerUser } from "./_lib/registerUser.js";
+const Stripe = require("stripe");
+const { registerUser } = require("./registerUser.js");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export async function handler(event) {
+exports.handler = async function (event) {
   const sig =
     event.headers["stripe-signature"] ||
     event.headers["Stripe-Signature"];
 
-  if (!sig) {
-    return { statusCode: 400, body: "Missing signature" };
-  }
+  if (!sig) return { statusCode: 400, body: "Missing signature" };
 
   let stripeEvent;
   try {
@@ -32,18 +30,12 @@ export async function handler(event) {
   const email =
     session.customer_details?.email || session.customer_email;
 
-  if (!email) {
-    console.error("Stripe event missing email");
-    return { statusCode: 400, body: "Missing email" };
-  }
+  if (!email) return { statusCode: 400, body: "Missing email" };
 
   await registerUser({
     email,
     source: "stripe"
   });
 
-  return {
-    statusCode: 200,
-    body: "ok"
-  };
-}
+  return { statusCode: 200, body: "ok" };
+};

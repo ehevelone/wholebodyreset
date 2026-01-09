@@ -10,11 +10,8 @@ async function registerUser({
   source = "unknown",
   forceWelcome = false
 }) {
-  if (!email) {
-    throw new Error("registerUser: missing email");
-  }
+  if (!email) throw new Error("Missing email");
 
-  // Check if user already exists
   const { data: existingUser } = await supabase
     .from("guided_users")
     .select("id")
@@ -23,7 +20,6 @@ async function registerUser({
 
   const isNewUser = !existingUser;
 
-  // Upsert user
   const { data: user, error } = await supabase
     .from("guided_users")
     .upsert(
@@ -31,7 +27,6 @@ async function registerUser({
         email,
         program: "guided_foundations",
         status: "active",
-
         ...(isNewUser || forceWelcome
           ? {
               bt_queue: ["hd-01-welcome.html"],
@@ -47,7 +42,6 @@ async function registerUser({
 
   if (error) throw error;
 
-  // Send welcome email (SAFE, uses Netlify global fetch)
   if (isNewUser || forceWelcome) {
     try {
       await fetch(
@@ -58,8 +52,8 @@ async function registerUser({
           body: JSON.stringify({ user_id: user.id })
         }
       );
-    } catch (err) {
-      console.error("send_email failed (non-fatal):", err);
+    } catch (e) {
+      console.error("send_email failed (non-fatal)", e);
     }
   }
 

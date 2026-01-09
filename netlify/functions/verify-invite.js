@@ -1,22 +1,20 @@
-import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
-import { registerUser } from "./_lib/registerUser.js";
+const crypto = require("crypto");
+const { createClient } = require("@supabase/supabase-js");
+const { registerUser } = require("./registerUser.js");
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-export async function handler(event) {
+exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "POST only" };
   }
 
   try {
     const { token } = JSON.parse(event.body || "{}");
-    if (!token) {
-      return { statusCode: 400, body: "Missing token" };
-    }
+    if (!token) return { statusCode: 400, body: "Missing token" };
 
     const tokenHash = crypto
       .createHash("sha256")
@@ -31,10 +29,7 @@ export async function handler(event) {
       .single();
 
     if (error || !user) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ ok: false })
-      };
+      return { statusCode: 200, body: JSON.stringify({ ok: false }) };
     }
 
     await supabase
@@ -60,10 +55,10 @@ export async function handler(event) {
     };
 
   } catch (err) {
-    console.error("verify-invite failed:", err);
+    console.error("verify-invite error:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ ok: false })
     };
   }
-}
+};

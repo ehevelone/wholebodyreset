@@ -1,6 +1,6 @@
-import { registerUser } from "./_lib/registerUser.js";
+const { registerUser } = require("./registerUser.js");
 
-export async function handler(event) {
+exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "POST only" };
   }
@@ -24,17 +24,14 @@ export async function handler(event) {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        ok: true,
-        ...result
-      })
+      body: JSON.stringify({ ok: true, ...result })
     };
 
   } catch (err) {
-    console.error("create-guided-user failed:", err);
+    console.error("create-guided-user error:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ ok: false })
     };
   }
-}
+};
