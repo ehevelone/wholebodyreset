@@ -1,15 +1,11 @@
 import crypto from "crypto";
-import fetch from "node-fetch";
 import { createClient } from "@supabase/supabase-js";
+import { registerUser } from "./_lib/registerUser.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
-// HARD-CODED = SAME AS POWERSHELL
-const REGISTER_URL =
-  "https://wholebodyreset.life/.netlify/functions/create-guided-user";
 
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
@@ -22,11 +18,13 @@ export async function handler(event) {
       return { statusCode: 400, body: "Missing token" };
     }
 
+    // 🔐 hash token
     const tokenHash = crypto
       .createHash("sha256")
       .update(token)
       .digest("hex");
 
+    // 🔎 find invited user
     const { data: user, error } = await supabase
       .from("guided_users")
       .select("id,email")
@@ -35,10 +33,13 @@ export async function handler(event) {
       .single();
 
     if (error || !user) {
-      return { statusCode: 200, body: JSON.stringify({ ok: false }) };
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ ok: false })
+      };
     }
 
-    // Clear token so it cannot be reused
+    // 🔓 clear invite token
     await supabase
       .from("guided_users")
       .update({
@@ -47,14 +48,11 @@ export async function handler(event) {
       })
       .eq("id", user.id);
 
-    // 🔑 EXACT SAME POST AS BACKDOOR
-    await fetch(REGISTER_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: user.email,
-        source: "invite"
-      })
+    // ✅ REGISTER + FORCE WELCOME EMAIL
+    await registerUser({
+      email: user.email,
+      source: "invite",
+      forceWelcome: true
     });
 
     return {
@@ -66,7 +64,7 @@ export async function handler(event) {
     };
 
   } catch (err) {
-    console.error("verify-invite failed:", err);
+    console.error("verify-user failed:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ ok: false })
