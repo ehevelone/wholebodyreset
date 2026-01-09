@@ -1,4 +1,3 @@
-const fetch = require("node-fetch");
 const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
