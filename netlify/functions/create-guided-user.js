@@ -12,41 +12,33 @@ export async function handler(event) {
 
   try {
     const { email } = JSON.parse(event.body || "{}");
-    if (!email) return { statusCode: 400, body: "Missing email" };
-
-    // 1️⃣ Check if user already exists
-    const { data: existing } = await supabase
-      .from("guided_users")
-      .select("id")
-      .eq("email", email)
-      .single();
-
-    // 2️⃣ Build payload
-    const payload = {
-      email,
-      program: "guided_foundations",
-      status: "active",
-      current_email: "hd-01-welcome.html",
-      current_module: "hydration"
-    };
-
-    // 🔑 ONLY initialize queue for NEW users
-    if (!existing) {
-      payload.bt_queue = ["hd-01-welcome.html"];
-      payload.last_sent_at = null;
+    if (!email) {
+      return { statusCode: 400, body: "Missing email" };
     }
 
-    // 3️⃣ Upsert safely
+    // 1️⃣ Create / upsert user AND initialize BT queue
     const { data, error } = await supabase
       .from("guided_users")
-      .upsert(payload, { onConflict: "email" })
+      .upsert(
+        {
+          email,
+          program: "guided_foundations",
+          status: "active",
+
+          // REQUIRED by email engine
+          bt_queue: ["hd-01-welcome.html"],
+          current_email: "hd-01-welcome.html",
+          current_module: "hydration"
+        },
+        { onConflict: "email" }
+      )
       .select("id")
       .single();
 
     if (error) throw error;
 
-    // 4️⃣ Fire email immediately
-    await fetch(`${process.env.SITE_URL}/.netlify/functions/send_email`, {
+    // 2️⃣ FIRE welcome email immediately
+    await fetch("https://wholebodyreset.life/.netlify/functions/send_email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: data.id })
@@ -54,11 +46,20 @@ export async function handler(event) {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ ok: true, user_id: data.id })
+      body: JSON.stringify({
+        ok: true,
+        user_id: data.id
+      })
     };
 
   } catch (err) {
     console.error("create-guided-user failed:", err);
-    return { statusCode: 500, body: err.message };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        ok: false,
+        error: err.message
+      })
+    };
   }
 }

@@ -33,11 +33,11 @@ export async function handler(event) {
 
   try {
     const { user_id } = JSON.parse(event.body || "{}");
-
     if (!user_id) {
       return { statusCode: 400, body: "Missing user_id" };
     }
 
+    // Load user
     const { data: user, error } = await supabase
       .from("guided_users")
       .select("*")
@@ -48,6 +48,7 @@ export async function handler(event) {
       throw new Error("User not found");
     }
 
+    // Pull next queued email
     const emailFile = user.bt_queue?.[0];
     if (!emailFile) {
       return { statusCode: 200, body: "No email queued" };
@@ -55,6 +56,7 @@ export async function handler(event) {
 
     const { html, subject } = loadEmailAssets(emailFile);
 
+    // SEND EMAIL
     await resend.emails.send({
       from: process.env.EMAIL_FROM,
       to: user.email,
@@ -62,6 +64,7 @@ export async function handler(event) {
       html
     });
 
+    // Advance queue
     await supabase
       .from("guided_users")
       .update({
@@ -70,10 +73,16 @@ export async function handler(event) {
       })
       .eq("id", user_id);
 
-    return { statusCode: 200, body: "Email sent" };
+    return {
+      statusCode: 200,
+      body: "Email sent"
+    };
 
   } catch (err) {
     console.error("send_email error:", err);
-    return { statusCode: 500, body: err.message };
+    return {
+      statusCode: 500,
+      body: err.message
+    };
   }
 }
