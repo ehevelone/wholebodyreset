@@ -18,13 +18,11 @@ export async function handler(event) {
       return { statusCode: 400, body: "Missing token" };
     }
 
-    // 🔐 hash token
     const tokenHash = crypto
       .createHash("sha256")
       .update(token)
       .digest("hex");
 
-    // 🔎 find invited user
     const { data: user, error } = await supabase
       .from("guided_users")
       .select("id,email")
@@ -39,7 +37,6 @@ export async function handler(event) {
       };
     }
 
-    // 🔓 clear invite token
     await supabase
       .from("guided_users")
       .update({
@@ -48,7 +45,6 @@ export async function handler(event) {
       })
       .eq("id", user.id);
 
-    // ✅ REGISTER + FORCE WELCOME EMAIL
     await registerUser({
       email: user.email,
       source: "invite",
@@ -64,7 +60,7 @@ export async function handler(event) {
     };
 
   } catch (err) {
-    console.error("verify-user failed:", err);
+    console.error("verify-invite failed:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ ok: false })

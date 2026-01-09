@@ -6,15 +6,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-/**
- * Canonical user registration logic.
- * Called by:
- * - create-guided-user (HTTP / PowerShell)
- * - verify-invite
- * - Stripe webhook
- *
- * NEVER exposed directly to HTTP.
- */
 export async function registerUser({
   email,
   source = "unknown",
@@ -42,7 +33,6 @@ export async function registerUser({
         program: "guided_foundations",
         status: "active",
 
-        // initialize queue ONLY when appropriate
         ...(isNewUser || forceWelcome
           ? {
               bt_queue: ["hd-01-welcome.html"],
@@ -56,21 +46,23 @@ export async function registerUser({
     .select("id")
     .single();
 
-  if (error) {
-    console.error("registerUser upsert failed:", error);
-    throw error;
-  }
+  if (error) throw error;
 
-  // 3️⃣ Fire welcome email ONLY once (or when explicitly forced)
+  // 3️⃣ Fire welcome email (SAFE)
   if (isNewUser || forceWelcome) {
-    await fetch(
-      "https://wholebodyreset.life/.netlify/functions/send_email",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id })
-      }
-    );
+    try {
+      await fetch(
+        "https://wholebodyreset.life/.netlify/functions/send_email",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: user.id })
+        }
+      );
+    } catch (emailErr) {
+      console.error("send_email failed (non-fatal):", emailErr);
+      // DO NOT throw
+    }
   }
 
   return {

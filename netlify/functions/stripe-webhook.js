@@ -24,7 +24,6 @@ export async function handler(event) {
     return { statusCode: 400, body: "Invalid signature" };
   }
 
-  // Only handle successful checkouts
   if (stripeEvent.type !== "checkout.session.completed") {
     return { statusCode: 200, body: "Ignored" };
   }
@@ -38,7 +37,6 @@ export async function handler(event) {
     return { statusCode: 400, body: "Missing email" };
   }
 
-  // ✅ REGISTER USER (shared logic)
   await registerUser({
     email,
     source: "stripe"
