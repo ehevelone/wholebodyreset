@@ -7,6 +7,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// HARD-CODED = SAME AS POWERSHELL
+const REGISTER_URL =
+  "https://wholebodyreset.life/.netlify/functions/create-guided-user";
+
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "POST only" };
@@ -14,13 +18,18 @@ export async function handler(event) {
 
   try {
     const { token } = JSON.parse(event.body || "{}");
-    if (!token) return { statusCode: 400, body: "Missing token" };
+    if (!token) {
+      return { statusCode: 400, body: "Missing token" };
+    }
 
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
 
     const { data: user, error } = await supabase
       .from("guided_users")
-      .select("email, id")
+      .select("id,email")
       .eq("invite_token_hash", tokenHash)
       .gt("invite_expires_at", new Date().toISOString())
       .single();
@@ -29,7 +38,7 @@ export async function handler(event) {
       return { statusCode: 200, body: JSON.stringify({ ok: false }) };
     }
 
-    // clear token
+    // Clear token so it cannot be reused
     await supabase
       .from("guided_users")
       .update({
@@ -38,8 +47,8 @@ export async function handler(event) {
       })
       .eq("id", user.id);
 
-    // 🔔 REGISTER USER (fires email)
-    await fetch(`${process.env.SITE_URL}/.netlify/functions/create-guided-user`, {
+    // 🔑 EXACT SAME POST AS BACKDOOR
+    await fetch(REGISTER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -57,7 +66,10 @@ export async function handler(event) {
     };
 
   } catch (err) {
-    console.error(err);
-    return { statusCode: 500, body: JSON.stringify({ ok: false }) };
+    console.error("verify-invite failed:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ ok: false })
+    };
   }
 }

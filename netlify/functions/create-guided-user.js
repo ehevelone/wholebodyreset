@@ -1,3 +1,4 @@
+import fetch from "node-fetch";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -16,7 +17,16 @@ export async function handler(event) {
       return { statusCode: 400, body: "Missing email" };
     }
 
-    // 1️⃣ Upsert user AND FORCE queue initialization
+    // 1️⃣ Check if user already exists
+    const { data: existingUser } = await supabase
+      .from("guided_users")
+      .select("id")
+      .eq("email", email)
+      .single();
+
+    const isNewUser = !existingUser;
+
+    // 2️⃣ Upsert (safe for Stripe retries, backdoor, etc.)
     const { data: user, error } = await supabase
       .from("guided_users")
       .upsert(
@@ -25,10 +35,12 @@ export async function handler(event) {
           program: "guided_foundations",
           status: "active",
 
-          // 🔑 CRITICAL: always initialize queue on registration
-          bt_queue: ["hd-01-welcome.html"],
-          current_email: "hd-01-welcome.html",
-          current_module: "hydration"
+          // initialize ONLY on first creation
+          ...(isNewUser && {
+            bt_queue: ["hd-01-welcome.html"],
+            current_email: "hd-01-welcome.html",
+            current_module: "hydration"
+          })
         },
         { onConflict: "email" }
       )
@@ -37,19 +49,26 @@ export async function handler(event) {
 
     if (error) throw error;
 
-    // 2️⃣ Fire first email immediately
-    await fetch(
-      "https://wholebodyreset.life/.netlify/functions/send_email",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id })
-      }
-    );
+    // 3️⃣ Fire first email ONLY once
+    if (isNewUser) {
+      await fetch(
+        "https://wholebodyreset.life/.netlify/functions/send_email",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: user.id })
+        }
+      );
+    }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ ok: true, user_id: user.id })
+      body: JSON.stringify({
+        ok: true,
+        user_id: user.id,
+        created: isNewUser,
+        source
+      })
     };
 
   } catch (err) {
