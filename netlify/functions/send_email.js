@@ -3,6 +3,9 @@ import path from "path";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
+// 🔍 DEBUG — confirm Supabase project
+console.log("S-E SUPABASE_URL =", process.env.SUPABASE_URL);
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const supabase = createClient(
@@ -64,7 +67,7 @@ export async function handler(event) {
     const { html, subject } = loadEmailAssets(emailPath);
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM, // support@wholebodyreset.life
+      from: process.env.EMAIL_FROM,
       to: user.email,
       subject,
       html
