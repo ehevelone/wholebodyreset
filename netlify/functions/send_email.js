@@ -10,15 +10,24 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Root of templates
 const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
 
 function loadFile(filePath) {
   return fs.readFileSync(filePath, "utf8");
 }
 
-function loadEmailAssets(emailFile) {
-  const htmlPath = path.join(EMAIL_ROOT, emailFile);
+function loadEmailAssets(relativeEmailPath) {
+  const htmlPath = path.join(EMAIL_ROOT, relativeEmailPath);
   const subjectPath = htmlPath.replace(".html", ".subject.txt");
+
+  if (!fs.existsSync(htmlPath)) {
+    throw new Error(`Missing HTML file: ${relativeEmailPath}`);
+  }
+
+  if (!fs.existsSync(subjectPath)) {
+    throw new Error(`Missing subject file: ${relativeEmailPath}`);
+  }
 
   return {
     html: loadFile(htmlPath),
@@ -37,7 +46,6 @@ export async function handler(event) {
       return { statusCode: 400, body: "Missing user_id" };
     }
 
-    // Load user
     const { data: user, error } = await supabase
       .from("guided_users")
       .select("*")
@@ -48,23 +56,20 @@ export async function handler(event) {
       throw new Error("User not found");
     }
 
-    // Pull next queued email
-    const emailFile = user.bt_queue?.[0];
-    if (!emailFile) {
+    const emailPath = user.bt_queue?.[0];
+    if (!emailPath) {
       return { statusCode: 200, body: "No email queued" };
     }
 
-    const { html, subject } = loadEmailAssets(emailFile);
+    const { html, subject } = loadEmailAssets(emailPath);
 
-    // SEND EMAIL
     await resend.emails.send({
-      from: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_FROM, // support@wholebodyreset.life
       to: user.email,
       subject,
       html
     });
 
-    // Advance queue
     await supabase
       .from("guided_users")
       .update({
@@ -73,16 +78,10 @@ export async function handler(event) {
       })
       .eq("id", user_id);
 
-    return {
-      statusCode: 200,
-      body: "Email sent"
-    };
+    return { statusCode: 200, body: "Email sent" };
 
   } catch (err) {
     console.error("send_email error:", err);
-    return {
-      statusCode: 500,
-      body: err.message
-    };
+    return { statusCode: 500, body: err.message };
   }
 }
