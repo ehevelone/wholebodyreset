@@ -11,23 +11,13 @@ export async function handler(event) {
   }
 
   try {
-    // 🔑 SAFELY parse body
-    const body =
-      typeof event.body === "string"
-        ? JSON.parse(event.body)
-        : event.body || {};
-
-    const email = body.email;
-
+    const { email, source = "unknown" } = JSON.parse(event.body || "{}");
     if (!email) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing email" })
-      };
+      return { statusCode: 400, body: "Missing email" };
     }
 
-    // 1️⃣ Create user + initialize queue
-    const { data, error } = await supabase
+    // 1️⃣ Upsert user AND FORCE queue initialization
+    const { data: user, error } = await supabase
       .from("guided_users")
       .upsert(
         {
@@ -35,6 +25,7 @@ export async function handler(event) {
           program: "guided_foundations",
           status: "active",
 
+          // 🔑 CRITICAL: always initialize queue on registration
           bt_queue: ["hd-01-welcome.html"],
           current_email: "hd-01-welcome.html",
           current_module: "hydration"
@@ -46,23 +37,26 @@ export async function handler(event) {
 
     if (error) throw error;
 
-    // 2️⃣ Trigger welcome email
-    await fetch("https://wholebodyreset.life/.netlify/functions/send_email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: data.id })
-    });
+    // 2️⃣ Fire first email immediately
+    await fetch(
+      "https://wholebodyreset.life/.netlify/functions/send_email",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.id })
+      }
+    );
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ ok: true, user_id: data.id })
+      body: JSON.stringify({ ok: true, user_id: user.id })
     };
 
   } catch (err) {
     console.error("create-guided-user failed:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message })
+      body: JSON.stringify({ ok: false, error: err.message })
     };
   }
 }
