@@ -1,12 +1,11 @@
-import fetch from "node-fetch";
-import { createClient } from "@supabase/supabase-js";
+const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-export async function registerUser({
+async function registerUser({
   email,
   source = "unknown",
   forceWelcome = false
@@ -15,7 +14,7 @@ export async function registerUser({
     throw new Error("registerUser: missing email");
   }
 
-  // 1️⃣ Check if user already exists
+  // Check if user already exists
   const { data: existingUser } = await supabase
     .from("guided_users")
     .select("id")
@@ -24,7 +23,7 @@ export async function registerUser({
 
   const isNewUser = !existingUser;
 
-  // 2️⃣ Upsert user
+  // Upsert user
   const { data: user, error } = await supabase
     .from("guided_users")
     .upsert(
@@ -48,7 +47,7 @@ export async function registerUser({
 
   if (error) throw error;
 
-  // 3️⃣ Fire welcome email (SAFE)
+  // Send welcome email (SAFE, uses Netlify global fetch)
   if (isNewUser || forceWelcome) {
     try {
       await fetch(
@@ -59,9 +58,8 @@ export async function registerUser({
           body: JSON.stringify({ user_id: user.id })
         }
       );
-    } catch (emailErr) {
-      console.error("send_email failed (non-fatal):", emailErr);
-      // DO NOT throw
+    } catch (err) {
+      console.error("send_email failed (non-fatal):", err);
     }
   }
 
@@ -71,3 +69,5 @@ export async function registerUser({
     source
   };
 }
+
+module.exports = { registerUser };
