@@ -1,28 +1,92 @@
-const { registerUser } = require("./registerUser.js");
+const fs = require("fs");
+const path = require("path");
+const { Resend } = require("resend");
+const { createClient } = require("@supabase/supabase-js");
 
-exports.handler = async function (event) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "POST only" };
+// 🔐 Services
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// 📂 EMAIL TEMPLATE ROOT (this is the path that WORKED)
+const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
+
+// 🔑 SINGLE SOURCE OF TRUTH
+exports.registerUser = async function ({ email }) {
+  if (!email) {
+    throw new Error("registerUser: missing email");
   }
 
-  try {
-    const { email } = JSON.parse(event.body || "{}");
-    if (!email) {
-      return { statusCode: 400, body: "Missing email" };
-    }
+  /* -------------------------------------------------
+     1️⃣ UPSERT USER ROW (ALWAYS)
+  ------------------------------------------------- */
+  const { data: user, error } = await supabase
+    .from("guided_users")
+    .upsert(
+      {
+        email,
+        program: "guided_foundations",
+        status: "active",
+        current_email: "hd-01-welcome.html",
+        current_module: "hydration"
+      },
+      { onConflict: "email" }
+    )
+    .select("*")
+    .single();
 
-    await registerUser({ email });
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ ok: true })
-    };
-
-  } catch (err) {
-    console.error("create-guided-user error:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ ok: false })
-    };
+  if (error) {
+    console.error("registerUser: supabase error", error);
+    throw error;
   }
+
+  /* -------------------------------------------------
+     2️⃣ LOAD EMAIL FILES (DIRECT)
+  ------------------------------------------------- */
+  const htmlPath = path.join(EMAIL_ROOT, "hd-01-welcome.html");
+  const subjectPath = path.join(
+    EMAIL_ROOT,
+    "hd-01-welcome.subject.txt"
+  );
+
+  if (!fs.existsSync(htmlPath)) {
+    throw new Error(`Missing email HTML: ${htmlPath}`);
+  }
+
+  if (!fs.existsSync(subjectPath)) {
+    throw new Error(`Missing email subject: ${subjectPath}`);
+  }
+
+  const html = fs.readFileSync(htmlPath, "utf8");
+  const subject = fs.readFileSync(subjectPath, "utf8").trim();
+
+  /* -------------------------------------------------
+     3️⃣ SEND EMAIL — ALWAYS
+  ------------------------------------------------- */
+  await resend.emails.send({
+    from:
+      process.env.EMAIL_FROM ||
+      "Whole Body Reset <support@wholelifereset.life>",
+    to: email,
+    subject,
+    html
+  });
+
+  /* -------------------------------------------------
+     4️⃣ RECORD SEND
+  ------------------------------------------------- */
+  await supabase
+    .from("guided_users")
+    .update({
+      last_sent_at: new Date().toISOString()
+    })
+    .eq("id", user.id);
+
+  return {
+    ok: true,
+    user_id: user.id
+  };
 };

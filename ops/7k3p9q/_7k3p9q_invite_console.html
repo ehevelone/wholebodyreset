@@ -48,20 +48,31 @@ pre {
 async function create() {
   const email = document.getElementById('email').value;
   const out = document.getElementById('out');
-  out.style.display = "none";
-
-  const r = await fetch('/.netlify/functions/create-invite', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ email })
-  });
-
-  const d = await r.json();
-  if (!d.ok) return alert('error');
-
   out.style.display = "block";
-  out.textContent = d.link;
+  out.textContent = "Working...";
+
+  try {
+    const r = await fetch('/.netlify/functions/create-invite', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ email })
+    });
+
+    const text = await r.text();
+    let d;
+    try { d = JSON.parse(text); } catch { d = { ok:false, error:text }; }
+
+    if (!d.ok) {
+      out.textContent = "ERROR: " + (d.error || "unknown");
+      return;
+    }
+
+    out.textContent = d.message || "OK";
+  } catch (e) {
+    out.textContent = "ERROR: " + e.message;
+  }
 }
 </script>
+
 </body>
 </html>
