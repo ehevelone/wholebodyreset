@@ -13,18 +13,18 @@ const supabase = createClient(
 const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
 
 exports.registerUser = async function ({ email }) {
-  if (!email) throw new Error("missing email");
+  if (!email) throw new Error("registerUser: missing email");
 
-  const html = fs.readFileSync(
-    path.join(EMAIL_ROOT, "hd-01-welcome.html"),
-    "utf8"
-  );
+  console.log("registerUser START:", email);
 
-  const subject = fs.readFileSync(
-    path.join(EMAIL_ROOT, "hd-01-welcome.subject.txt"),
-    "utf8"
-  ).trim();
+  // Load templates (fail loudly if missing)
+  const htmlPath = path.join(EMAIL_ROOT, "hd-01-welcome.html");
+  const subjectPath = path.join(EMAIL_ROOT, "hd-01-welcome.subject.txt");
 
+  const html = fs.readFileSync(htmlPath, "utf8");
+  const subject = fs.readFileSync(subjectPath, "utf8").trim();
+
+  // Upsert user + initialize program state
   const { data: user, error } = await supabase
     .from("guided_users")
     .upsert(
@@ -33,15 +33,17 @@ exports.registerUser = async function ({ email }) {
         program: "guided_foundations",
         status: "active",
         current_email: "hd-01-welcome.html",
-        current_module: "hydration",
-        last_sent_at: new Date().toISOString()
+        current_module: "hydration"
       },
       { onConflict: "email" }
     )
-    .select("id")
+    .select("id,email")
     .single();
 
   if (error) throw error;
+
+  console.log("registerUser UPSERT OK user_id:", user.id);
+  console.log("registerUser SENDING EMAIL...");
 
   await resend.emails.send({
     from: process.env.EMAIL_FROM || "Whole Body Reset <support@wholelifereset.life>",
@@ -49,6 +51,15 @@ exports.registerUser = async function ({ email }) {
     subject,
     html
   });
+
+  console.log("registerUser EMAIL SENT");
+
+  await supabase
+    .from("guided_users")
+    .update({ last_sent_at: new Date().toISOString() })
+    .eq("id", user.id);
+
+  console.log("registerUser last_sent_at updated");
 
   return { user_id: user.id };
 };
