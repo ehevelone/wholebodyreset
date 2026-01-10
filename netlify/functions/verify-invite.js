@@ -8,12 +8,16 @@ const supabase = createClient(
 );
 
 exports.handler = async function (event) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "POST only" };
+  if (!["GET", "POST"].includes(event.httpMethod)) {
+    return { statusCode: 405, body: "Method not allowed" };
   }
 
   try {
-    const { token } = JSON.parse(event.body || "{}");
+    const token =
+      event.httpMethod === "GET"
+        ? event.queryStringParameters?.token
+        : JSON.parse(event.body || "{}").token;
+
     if (!token) {
       return { statusCode: 400, body: "Missing token" };
     }
@@ -23,7 +27,6 @@ exports.handler = async function (event) {
       .update(token)
       .digest("hex");
 
-    // 🔍 Find invited user
     const { data: user, error } = await supabase
       .from("guided_users")
       .select("id,email")
@@ -35,7 +38,6 @@ exports.handler = async function (event) {
       return { statusCode: 200, body: JSON.stringify({ ok: false }) };
     }
 
-    // 🔓 Clear invite token
     await supabase
       .from("guided_users")
       .update({
@@ -44,7 +46,6 @@ exports.handler = async function (event) {
       })
       .eq("id", user.id);
 
-    // 🚀 START PROGRAM (THIS INSERTS ROW + SENDS EMAIL)
     await registerUser({ email: user.email });
 
     return {
