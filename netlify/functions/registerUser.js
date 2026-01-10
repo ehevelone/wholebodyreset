@@ -5,15 +5,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-exports.registerUser = async function ({
-  email,
-  source = "unknown"
-}) {
+exports.registerUser = async function ({ email }) {
   if (!email) {
     throw new Error("registerUser: missing email");
   }
 
-  // 1️⃣ Upsert user (idempotent)
+  // 1️⃣ UPSERT USER (ALWAYS)
   const { data: user, error } = await supabase
     .from("guided_users")
     .upsert(
@@ -21,8 +18,6 @@ exports.registerUser = async function ({
         email,
         program: "guided_foundations",
         status: "active",
-
-        // ALWAYS set welcome email
         bt_queue: ["hd-01-welcome.html"],
         current_email: "hd-01-welcome.html",
         current_module: "hydration"
@@ -34,7 +29,7 @@ exports.registerUser = async function ({
 
   if (error) throw error;
 
-  // 2️⃣ ALWAYS fire welcome email
+  // 2️⃣ FORCE EMAIL — ALWAYS
   await fetch(
     `${process.env.SITE_URL}/.netlify/functions/send_email`,
     {
@@ -44,8 +39,5 @@ exports.registerUser = async function ({
     }
   );
 
-  return {
-    user_id: user.id,
-    source
-  };
+  return { user_id: user.id };
 };
