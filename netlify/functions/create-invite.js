@@ -1,5 +1,5 @@
-import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
+import { registerUser } from "./registerUser.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -16,36 +16,14 @@ export async function handler(event) {
     return { statusCode: 400, body: JSON.stringify({ ok: false }) };
   }
 
-  const token = crypto.randomBytes(32).toString("hex");
-  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  // 🚀 IMMEDIATE ENROLLMENT + EMAIL
+  await registerUser({ email });
 
-  const expires = new Date();
-  expires.setDate(expires.getDate() + 1); // 24h window
-
-  const { error } = await supabase
-    .from("guided_users")
-    .upsert(
-      {
-        email,
-        program: "guided_foundations",
-        status: "active",
-        invite_token_hash: tokenHash,
-        invite_expires_at: expires.toISOString()
-      },
-      { onConflict: "email" }
-    );
-
-  if (error) {
-    console.error(error);
-    return { statusCode: 500, body: JSON.stringify({ ok: false }) };
-  }
-
-  // 🔑 THIS IS THE CRITICAL FIX
   return {
     statusCode: 200,
     body: JSON.stringify({
       ok: true,
-      link: `${process.env.SITE_URL}/.netlify/functions/verify-invite?token=${token}`
+      message: "User enrolled and email sent"
     })
   };
 }
