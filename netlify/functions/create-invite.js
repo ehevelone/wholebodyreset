@@ -40,11 +40,12 @@ export async function handler(event) {
     return { statusCode: 500, body: JSON.stringify({ ok: false }) };
   }
 
+  // 🔑 THIS IS THE CRITICAL FIX
   return {
     statusCode: 200,
     body: JSON.stringify({
       ok: true,
-      link: `${process.env.SITE_URL}/gift/?k=${token}`
+      link: `${process.env.SITE_URL}/.netlify/functions/verify-invite?token=${token}`
     })
   };
 }
