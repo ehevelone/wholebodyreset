@@ -14,13 +14,16 @@ exports.handler = async function (event) {
 
   try {
     const { token } = JSON.parse(event.body || "{}");
-    if (!token) return { statusCode: 400, body: "Missing token" };
+    if (!token) {
+      return { statusCode: 400, body: "Missing token" };
+    }
 
     const tokenHash = crypto
       .createHash("sha256")
       .update(token)
       .digest("hex");
 
+    // 🔍 Find invited user
     const { data: user, error } = await supabase
       .from("guided_users")
       .select("id,email")
@@ -32,6 +35,7 @@ exports.handler = async function (event) {
       return { statusCode: 200, body: JSON.stringify({ ok: false }) };
     }
 
+    // 🔓 Clear invite token
     await supabase
       .from("guided_users")
       .update({
@@ -40,11 +44,8 @@ exports.handler = async function (event) {
       })
       .eq("id", user.id);
 
-    await registerUser({
-      email: user.email,
-      source: "invite",
-      forceWelcome: true
-    });
+    // 🚀 START PROGRAM (THIS INSERTS ROW + SENDS EMAIL)
+    await registerUser({ email: user.email });
 
     return {
       statusCode: 200,

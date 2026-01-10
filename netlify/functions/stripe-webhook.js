@@ -8,7 +8,9 @@ exports.handler = async function (event) {
     event.headers["stripe-signature"] ||
     event.headers["Stripe-Signature"];
 
-  if (!sig) return { statusCode: 400, body: "Missing signature" };
+  if (!sig) {
+    return { statusCode: 400, body: "Missing signature" };
+  }
 
   let stripeEvent;
   try {
@@ -22,6 +24,7 @@ exports.handler = async function (event) {
     return { statusCode: 400, body: "Invalid signature" };
   }
 
+  // Only act on successful checkout
   if (stripeEvent.type !== "checkout.session.completed") {
     return { statusCode: 200, body: "Ignored" };
   }
@@ -30,12 +33,15 @@ exports.handler = async function (event) {
   const email =
     session.customer_details?.email || session.customer_email;
 
-  if (!email) return { statusCode: 400, body: "Missing email" };
+  if (!email) {
+    return { statusCode: 400, body: "Missing email" };
+  }
 
-  await registerUser({
-    email,
-    source: "stripe"
-  });
+  // 🚀 START PROGRAM (SAME AS INVITE / BACKDOOR)
+  await registerUser({ email });
 
-  return { statusCode: 200, body: "ok" };
+  return {
+    statusCode: 200,
+    body: "ok"
+  };
 };
