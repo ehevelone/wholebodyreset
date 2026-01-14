@@ -6,9 +6,6 @@
 
   <title>Noticing Improvement | Guided Foundations</title>
 
-  <!-- Prevent indexing -->
-  <meta name="robots" content="noindex, nofollow">
-
   <style>
     body {
       margin: 0;
@@ -18,11 +15,40 @@
       line-height: 1.7;
     }
 
+    /* LEAFY SIDE BACKGROUNDS */
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      width: 240px;
+      height: 100vh;
+      background-repeat: no-repeat;
+      background-size: contain;
+      opacity: 0.6;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::before {
+      left: 0;
+      background-image: url("/images/leafy-left.png");
+      background-position: left top;
+    }
+
+    body::after {
+      right: 0;
+      background-image: url("/images/leafy-right.png");
+      background-position: right top;
+    }
+
     header {
       background: #e2d6b8;
       padding: 20px 40px;
       display: flex;
       align-items: center;
+      position: relative;
+      z-index: 2;
     }
 
     header img {
@@ -35,6 +61,8 @@
       max-width: 760px;
       margin: 60px auto;
       padding: 0 20px;
+      position: relative;
+      z-index: 2;
     }
 
     h1 {
@@ -88,18 +116,27 @@
       font-size: 0.9rem;
       color: #4f5a45;
       text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (max-width: 768px) {
+      body::before,
+      body::after {
+        width: 140px;
+        opacity: 0.25;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <!-- LEAFY SIDE OVERLAYS -->
 <div class="leafy-left"></div>
 <div class="leafy-right"></div>
 
 <header>
-  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
+  <img src="images/et-naturals-logo.png" alt="ET Naturals Logo">
 </header>
 
 <main>
@@ -108,26 +145,28 @@
 
   <p class="orientation">
     This page is part of the
-    <em>Whole Body Reset â€“ Guided Foundations</em> program.
+    <em>Whole Body Reset – Guided Foundations</em> program.
     There is no requirement to change anything here.
     Observation alone is enough.
   </p>
 
   <p class="gentle">
-    If hydration has started to feel helpful, even subtly,
-    thatâ€™s an important signal worth respecting.
+    If hydration has started to feel supportive —
+    even subtly —
+    that is an important signal worth respecting.
   </p>
 
   <p>
     Early improvements often come from reduced strain on the nervous system
-    and improved cellular hydration â€” not from forcing change.
+    and improved cellular hydration,
+    not from forcing detox or accelerating protocols.
   </p>
 
   <div class="callout">
-    <p><strong>When something feels supportive, the best move is often to stay with it.</strong></p>
+    <p><strong>When something feels supportive, the most effective response is often consistency.</strong></p>
     <p>
-      Many people make the mistake of escalating too quickly once they feel better.
-      Foundations works best when progress is allowed to settle.
+      Many people instinctively escalate as soon as they feel better.
+      In Foundations, that instinct is usually what slows progress later.
     </p>
   </div>
 
@@ -135,20 +174,34 @@
 
   <ul>
     <li>Fewer headaches or pressure sensations</li>
-    <li>Slightly steadier energy</li>
+    <li>Slightly steadier or more predictable energy</li>
     <li>Improved digestion or bowel regularity</li>
     <li>Clearer thinking or calmer mood</li>
   </ul>
 
+  <p>
+    These changes may feel understated.
+    That does not make them insignificant.
+  </p>
+
   <p class="gentle">
-    You donâ€™t need to chase bigger changes.
-    Letting these improvements stabilize is often the most supportive step.
+    Stability is the signal the body gives
+    when it feels safe enough to continue.
+  </p>
+
+  <p>
+    If hydration feels supportive right now,
+    staying exactly where you are
+    is not a pause —
+    it is reinforcement.
   </p>
 
   <div class="disclaimer">
     <p>
-      Educational content only. This material does not diagnose,
-      treat, or replace medical care.
+      Educational content only.
+      This material does not diagnose,
+      treat,
+      or replace medical care.
     </p>
     <p>
       Intended for active Guided Foundations participants.
@@ -158,10 +211,9 @@
 </main>
 
 <footer>
-  <p>Â© ET Naturals. All rights reserved.</p>
+  <p>© ET Naturals. All rights reserved.</p>
   <p>Educational content only. No medical claims.</p>
 </footer>
 
 </body>
 </html>
-

@@ -6,8 +6,6 @@
 
   <title>When Improvement Feels Steady | Guided Foundations</title>
 
-  <!-- Prevent indexing -->
-  <meta name="robots" content="noindex, nofollow">
 
   <style>
     body {
@@ -18,11 +16,40 @@
       line-height: 1.7;
     }
 
+    /* LEAFY SIDE BACKGROUNDS */
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      width: 240px;
+      height: 100vh;
+      background-repeat: no-repeat;
+      background-size: contain;
+      opacity: 0.6;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::before {
+      left: 0;
+      background-image: url("/images/leafy-left.png");
+      background-position: left top;
+    }
+
+    body::after {
+      right: 0;
+      background-image: url("/images/leafy-right.png");
+      background-position: right top;
+    }
+
     header {
       background: #e2d6b8;
       padding: 20px 40px;
       display: flex;
       align-items: center;
+      position: relative;
+      z-index: 2;
     }
 
     header img {
@@ -35,6 +62,8 @@
       max-width: 760px;
       margin: 60px auto;
       padding: 0 20px;
+      position: relative;
+      z-index: 2;
     }
 
     h1 {
@@ -84,18 +113,27 @@
       font-size: 0.9rem;
       color: #4f5a45;
       text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (max-width: 768px) {
+      body::before,
+      body::after {
+        width: 140px;
+        opacity: 0.25;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <!-- LEAFY SIDE OVERLAYS -->
 <div class="leafy-left"></div>
 <div class="leafy-right"></div>
 
 <header>
-  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
+  <img src="images/et-naturals-logo.png" alt="ET Naturals Logo">
 </header>
 
 <main>
@@ -104,47 +142,69 @@
 
   <p class="orientation">
     This page is part of the
-    <em>Whole Body Reset â€“ Guided Foundations</em> program.
+    <em>Whole Body Reset – Guided Foundations</em> program.
     There is no requirement to change or add anything.
     Observation is sufficient.
   </p>
 
   <p class="gentle">
-    Sustained improvement suggests the body is responding well
+    Steady improvement suggests the body is responding well
     to foundational support.
   </p>
 
   <p>
-    Hydration often reduces strain,
-    but minerals are what allow those improvements
-    to be maintained and built upon.
+    Hydration often reduces strain quickly,
+    but minerals are what allow those gains
+    to hold and stabilize over time.
   </p>
 
   <div class="callout">
-    <p><strong>Feeling better does not mean you need to rush.</strong></p>
+    <p><strong>Feeling better does not require acceleration.</strong></p>
     <p>
-      It simply means the foundation is becoming stable enough
-      to support the next layer when youâ€™re ready.
+      It simply means the system is becoming stable enough
+      to tolerate more when the timing is right.
     </p>
   </div>
+
+  <h2>What Steady Improvement Often Looks Like</h2>
+
+  <p>
+    Progress at this stage is usually quiet:
+    fewer fluctuations,
+    less reactivity,
+    and a more predictable baseline.
+  </p>
+
+  <p class="gentle">
+    These are signs of capacity building —
+    not signals to push forward.
+  </p>
 
   <h2>Looking Ahead (No Action Required)</h2>
 
   <p>
-    The next phase of Foundations focuses on mineral restoration â€”
+    The next layer of Foundations focuses on mineral restoration —
     not to intensify detox,
     but to help hydration continue working effectively.
   </p>
 
+  <p>
+    This transition is not automatic
+    and does not follow a schedule.
+  </p>
+
   <p class="gentle">
-    There is no timeline to follow here.
     Readiness matters more than momentum.
+    Staying where improvement feels stable
+    is always a valid choice.
   </p>
 
   <div class="disclaimer">
     <p>
-      Educational content only. This material does not diagnose,
-      treat, or replace medical care.
+      Educational content only.
+      This material does not diagnose,
+      treat,
+      or replace medical care.
     </p>
     <p>
       Intended for active Guided Foundations participants.
@@ -154,10 +214,9 @@
 </main>
 
 <footer>
-  <p>Â© ET Naturals. All rights reserved.</p>
+  <p>© ET Naturals. All rights reserved.</p>
   <p>Educational content only. No medical claims.</p>
 </footer>
 
 </body>
 </html>
-

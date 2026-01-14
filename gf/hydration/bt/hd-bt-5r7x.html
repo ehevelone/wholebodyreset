@@ -6,8 +6,6 @@
 
   <title>Letting Improvement Settle | Guided Foundations</title>
 
-  <!-- Prevent indexing -->
-  <meta name="robots" content="noindex, nofollow">
 
   <style>
     body {
@@ -18,11 +16,40 @@
       line-height: 1.7;
     }
 
+    /* LEAFY SIDE BACKGROUNDS */
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      width: 240px;
+      height: 100vh;
+      background-repeat: no-repeat;
+      background-size: contain;
+      opacity: 0.6;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::before {
+      left: 0;
+      background-image: url("/images/leafy-left.png");
+      background-position: left top;
+    }
+
+    body::after {
+      right: 0;
+      background-image: url("/images/leafy-right.png");
+      background-position: right top;
+    }
+
     header {
       background: #e2d6b8;
       padding: 20px 40px;
       display: flex;
       align-items: center;
+      position: relative;
+      z-index: 2;
     }
 
     header img {
@@ -35,6 +62,8 @@
       max-width: 760px;
       margin: 60px auto;
       padding: 0 20px;
+      position: relative;
+      z-index: 2;
     }
 
     h1 {
@@ -88,18 +117,27 @@
       font-size: 0.9rem;
       color: #4f5a45;
       text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (max-width: 768px) {
+      body::before,
+      body::after {
+        width: 140px;
+        opacity: 0.25;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <!-- LEAFY SIDE OVERLAYS -->
 <div class="leafy-left"></div>
 <div class="leafy-right"></div>
 
 <header>
-  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
+  <img src="images/et-naturals-logo.png" alt="ET Naturals Logo">
 </header>
 
 <main>
@@ -108,47 +146,62 @@
 
   <p class="orientation">
     This page is part of the
-    <em>Whole Body Reset â€“ Guided Foundations</em> program.
+    <em>Whole Body Reset – Guided Foundations</em> program.
     There is no requirement to adjust anything here.
     Observation and consistency are enough.
   </p>
 
   <p class="gentle">
-    Continued improvement doesnâ€™t require constant adjustment.
-    In fact, stability often comes from consistency.
+    Continued improvement does not require constant adjustment.
+    In many cases, stability comes from repetition rather than refinement.
   </p>
 
   <p>
-    Hydration improvements may plateau for a period.
-    This does not mean progress has stopped â€”
-    it often means the body is integrating change.
+    Hydration improvements often level out for a period of time.
+    This does not mean progress has stopped —
+    it usually means the body is integrating change.
   </p>
 
   <div class="callout">
     <p><strong>Plateaus are not setbacks.</strong></p>
     <p>
-      They are often a sign the body is consolidating gains
-      rather than pushing for new output.
+      They are often the phase where gains become durable
+      instead of temporary.
     </p>
   </div>
 
-  <h2>Questions to Reflect On</h2>
+  <h2>Signs Integration Is Happening</h2>
 
   <ul>
-    <li>Do improvements feel more reliable day to day?</li>
-    <li>Is recovery from stress slightly easier?</li>
-    <li>Are symptoms less reactive overall?</li>
+    <li>Improvements feel more reliable day to day</li>
+    <li>Recovery from stress feels slightly easier</li>
+    <li>Symptoms fluctuate less dramatically</li>
+    <li>Hydration feels neutral instead of stimulating</li>
   </ul>
 
+  <p>
+    These signals are easy to dismiss,
+    but they reflect regulation rather than stagnation.
+  </p>
+
   <p class="gentle">
-    If the answer is â€œyes,â€ staying right where you are
-    remains a valid and often wise choice.
+    When progress feels quieter,
+    the most supportive response is often to keep going
+    exactly as you are.
+  </p>
+
+  <p>
+    Letting improvement settle
+    allows the body to build capacity
+    without creating new strain.
   </p>
 
   <div class="disclaimer">
     <p>
-      Educational content only. This material does not diagnose,
-      treat, or replace medical care.
+      Educational content only.
+      This material does not diagnose,
+      treat,
+      or replace medical care.
     </p>
     <p>
       Intended for active Guided Foundations participants.
@@ -158,10 +211,9 @@
 </main>
 
 <footer>
-  <p>Â© ET Naturals. All rights reserved.</p>
+  <p>© ET Naturals. All rights reserved.</p>
   <p>Educational content only. No medical claims.</p>
 </footer>
 
 </body>
 </html>
-
