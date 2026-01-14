@@ -1,0 +1,40 @@
+﻿=== AUDIT RESULTS ===
+Missing CSS: 30
+gf\hydration\bt\hd-bt-4k2m.html
+gf\hydration\bt\hd-bt-5r7x.html
+gf\hydration\bt\hd-bt-6q8v.html
+gf\hydration\nc\hd-nc-1a7c.html
+gf\hydration\nc\hd-nc-2f8b.html
+gf\hydration\nc\hd-nc-3d9e.html
+gf\hydration\nc\hd-nc-p0z9.html
+gf\hydration\os\hd-os-7m2p.html
+gf\hydration\os\hd-os-8t4c.html
+gf\hydration\os\hd-os-9y6a.html
+gf\hydration\os\hd-os-p0z9.html
+gf\liver\bt\lv-bt-4k2m.html
+gf\liver\bt\lv-bt-5r7x.html
+gf\liver\bt\lv-bt-6q8v.html
+gf\liver\nc\lv-nc-1a7c.html
+gf\liver\nc\lv-nc-2f8b.html
+gf\liver\nc\lv-nc-3d9e.html
+gf\liver\nc\lv-nc-p0z9.html
+gf\liver\os\lv-os-7m2p.html
+gf\liver\os\lv-os-8t4c.html
+gf\liver\os\lv-os-9y6a.html
+gf\liver\os\lv-os-p0z9.html
+gf\nervous-system\bt\ns-bt-6q8v.html
+gf\nervous-system\nc\ns-nc-1a7c.html
+gf\nervous-system\nc\ns-nc-2f8b.html
+gf\nervous-system\nc\ns-nc-3d9e.html
+gf\nervous-system\os\ns-os-7m2p.html
+gf\nervous-system\os\ns-os-8t4c.html
+gf\nervous-system\os\ns-os-9y6a.html
+gf\nervous-system\os\ns-os-p0z9.html
+
+
+Missing Leafy Divs: 1
+gf\foundations-check\fc-main-r9a3.html
+
+
+Encoding Artifacts: 0
+
