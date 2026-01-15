@@ -4,12 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <!-- PAGE TITLE -->
   <title>Your Guided Reflection | Whole Body Reset</title>
 
-  <!-- GLOBAL SITE STYLES -->
   <link rel="stylesheet" href="/css/site.css">
   <meta name="robots" content="noindex, nofollow">
+
+  <!-- ACCESS GATE -->
+  <script>
+    (async function () {
+      try {
+        const res = await fetch("/.netlify/functions/check-access", {
+          credentials: "include"
+        });
+        if (!res.ok) window.location.href = "/access-required.html";
+      } catch {
+        window.location.href = "/access-required.html";
+      }
+    })();
+  </script>
 
   <style>
     body {
@@ -19,120 +31,54 @@
       color: #2f3b2f;
       line-height: 1.6;
     }
-
     header {
       background: #e2d6b8;
       padding: 20px 40px;
       display: flex;
       align-items: center;
     }
-
-    header img {
-      height: 48px;
-      width: auto;
-    }
-
+    header img { height: 48px; }
     main {
       max-width: 900px;
       margin: 60px auto;
       padding: 0 20px;
     }
-
-    h1 {
-      font-size: 2.4rem;
-      margin-bottom: 10px;
-    }
-
-    h2 {
-      font-size: 1.6rem;
-      margin-top: 40px;
-    }
-
-    p {
-      margin-bottom: 18px;
-    }
-
-    .gentle {
-      font-style: italic;
-      color: #4a5a4a;
-    }
-
+    h1 { font-size: 2.4rem; }
+    .gentle { font-style: italic; color: #4a5a4a; }
     .callout {
       background: #d6cfb2;
       border-radius: 12px;
       padding: 24px;
       margin: 35px 0;
     }
-
-    .print-actions {
-      margin-top: 40px;
-      display: flex;
-      gap: 15px;
-    }
-
+    .print-actions { margin-top: 40px; }
     .print-btn {
       background: #2f3b2f;
       color: #fff;
       border: none;
       padding: 10px 18px;
       border-radius: 6px;
-      font-size: 0.95rem;
       cursor: pointer;
     }
-
     footer {
       margin-top: 80px;
       padding: 40px 20px;
       background: #e2d6b8;
       font-size: 0.9rem;
-      color: #4f5a45;
       text-align: center;
     }
 
-    /* ======================
-       PRINT MODE
-       ====================== */
     @media print {
-      body {
-        background: #fff;
-        color: #000;
-        font-size: 12pt;
-      }
-
-      header,
-      footer,
-      .leafy-left,
-      .leafy-right,
-      .print-actions {
+      header, footer, .leafy-left, .leafy-right, .print-actions {
         display: none !important;
       }
-
-      main {
-        margin: 0;
-        padding: 0;
-        max-width: 100%;
-      }
-
-      h1, h2 {
-        color: #000;
-      }
-
-      .callout {
-        background: #f2f2f2;
-        border: 1px solid #ccc;
-      }
-
-      .print-section {
-        page-break-inside: avoid;
-        margin-bottom: 30px;
-      }
+      body { background: #fff; color: #000; }
     }
   </style>
 </head>
 
 <body>
 
-<!-- LEAFY BACKGROUND PLACEHOLDERS -->
 <div class="leafy-left"></div>
 <div class="leafy-right"></div>
 
@@ -142,59 +88,33 @@
 
 <main>
 
-  <!-- ======================
-       RESULTS CONTENT
-       ====================== -->
-
   <h1>Your Guided Reflection</h1>
 
   <p class="gentle">
     This reflection is based on what you shared.
     Nothing here requires action.
-    Understanding and pacing are the priority.
   </p>
 
-  <div class="print-section">
-    <h2>What Your Body May Be Communicating</h2>
+  <h2>What Your Body May Be Communicating</h2>
+  <p>
+    What you’re describing is something many people notice
+    when their system has been under sustained load.
+  </p>
 
-    <p>
-      What you’re describing is something many people notice
-      when their system has been under sustained load.
-      This does not suggest failure or missed steps.
-    </p>
-
-    <p>
-      Your body appears to be asking for regulation
-      rather than escalation.
-    </p>
-  </div>
-
-  <div class="print-section callout">
+  <div class="callout">
     <h2>Current State: Holding Steady</h2>
-
     <p>
       Stability itself is meaningful progress.
-      There is no advantage to moving forward quickly here.
-    </p>
-
-    <p class="gentle">
-      Holding steady allows systems to settle and integrate.
+      There is no advantage to moving forward quickly.
     </p>
   </div>
 
-  <div class="print-section">
-    <h2>What This Means Right Now</h2>
-
-    <p>
-      Nothing needs to change.
-      Nothing needs to be added.
-      The most supportive choice may be consistency.
-    </p>
-  </div>
-
-  <!-- ======================
-       ACTIONS
-       ====================== -->
+  <h2>What This Means Right Now</h2>
+  <p>
+    Nothing needs to change.
+    Nothing needs to be added.
+    Consistency is enough.
+  </p>
 
   <div class="print-actions">
     <button class="print-btn" onclick="window.print()">

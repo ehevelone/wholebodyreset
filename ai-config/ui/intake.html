@@ -10,6 +10,20 @@
   <link rel="stylesheet" href="/css/site.css">
   <meta name="robots" content="noindex, nofollow">
 
+  <!-- ACCESS GATE -->
+  <script>
+    (async function () {
+      try {
+        const res = await fetch("/.netlify/functions/check-access", {
+          credentials: "include"
+        });
+        if (!res.ok) window.location.href = "/access-required.html";
+      } catch {
+        window.location.href = "/access-required.html";
+      }
+    })();
+  </script>
+
   <style>
     body {
       margin: 0;
@@ -18,84 +32,48 @@
       color: #2f3b2f;
       line-height: 1.6;
     }
-
     header {
       background: #e2d6b8;
       padding: 20px 40px;
       display: flex;
       align-items: center;
     }
-
-    header img {
-      height: 48px;
-    }
-
+    header img { height: 48px; }
     main {
       max-width: 900px;
       margin: 60px auto;
       padding: 0 20px;
     }
-
-    h1 {
-      font-size: 2.4rem;
-      margin-bottom: 10px;
-    }
-
-    h2 {
-      font-size: 1.6rem;
-      margin-top: 40px;
-    }
-
-    p {
-      margin-bottom: 18px;
-    }
-
+    h1 { font-size: 2.4rem; }
     label {
       display: block;
       margin-top: 25px;
       font-weight: 600;
     }
-
     input, textarea, select {
       width: 100%;
       margin-top: 8px;
       padding: 10px;
-      font-family: inherit;
-      font-size: 1rem;
       border-radius: 6px;
       border: 1px solid #b9b29a;
-      background: #fff;
+      font-family: inherit;
     }
-
-    textarea {
-      min-height: 90px;
-    }
-
-    .gentle {
-      font-style: italic;
-      color: #4a5a4a;
-    }
-
-    .submit-wrap {
-      margin-top: 50px;
-    }
-
+    textarea { min-height: 90px; }
+    .gentle { font-style: italic; color: #4a5a4a; }
     button {
+      margin-top: 40px;
       background: #2f3b2f;
       color: #fff;
       border: none;
       padding: 12px 22px;
-      font-size: 1rem;
       border-radius: 6px;
       cursor: pointer;
     }
-
     footer {
       margin-top: 80px;
       padding: 40px 20px;
       background: #e2d6b8;
       font-size: 0.9rem;
-      color: #4f5a45;
       text-align: center;
     }
   </style>
@@ -103,7 +81,6 @@
 
 <body>
 
-<!-- LEAFY BACKGROUND PLACEHOLDERS -->
 <div class="leafy-left"></div>
 <div class="leafy-right"></div>
 
@@ -118,7 +95,6 @@
   <p class="gentle">
     This intake helps the system understand your current state.
     There are no right answers.
-    Please respond as clearly and honestly as you can.
   </p>
 
   <form action="/intake/results.html" method="POST">
@@ -148,13 +124,13 @@
     <label>4. Have you noticed any patterns?</label>
     <textarea name="pattern_observations"></textarea>
 
-    <label>5. Are you currently using any supports? (hydration, minerals, binders, herbs, diet changes)</label>
+    <label>5. Are you currently using any supports?</label>
     <textarea name="current_supports"></textarea>
 
-    <label>6. Are you taking any medications or under care for a diagnosed condition?</label>
+    <label>6. Are you taking any medications or under care?</label>
     <textarea name="medications_and_conditions"></textarea>
 
-    <label>7. How does your body usually respond to changes?</label>
+    <label>7. How does your body respond to changes?</label>
     <select name="tolerance_and_capacity" required>
       <option value="">Select one</option>
       <option>Easily overwhelmed</option>
@@ -166,10 +142,7 @@
     <label>8. What are you hoping to understand right now?</label>
     <textarea name="goals_and_intent" required></textarea>
 
-    <div class="submit-wrap">
-      <button type="submit">Continue to Reflection</button>
-    </div>
-
+    <button type="submit">Continue to Reflection</button>
   </form>
 
 </main>
