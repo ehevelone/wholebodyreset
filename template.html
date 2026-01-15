@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
   <!-- PAGE TITLE -->
-  <title>PAGE TITLE HERE | Whole Body Reset</title>
+  <title>Guided Foundations Intake | Whole Body Reset</title>
 
-   <!-- GLOBAL SITE STYLES -->
+  <!-- GLOBAL SITE STYLES -->
   <link rel="stylesheet" href="/css/site.css">
   
   <meta name="robots" content="noindex, nofollow">
 
-  <!-- PAGE-SPECIFIC STYLES (OPTIONAL) -->
   <style>
     body {
       margin: 0;
@@ -26,7 +25,6 @@
       background: #e2d6b8;
       padding: 20px 40px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
     }
 
@@ -36,17 +34,54 @@
       display: block;
     }
 
-    nav a {
-      margin-left: 20px;
-      text-decoration: none;
-      color: #2f3b2f;
-      font-weight: 500;
-    }
-
     main {
       max-width: 900px;
       margin: 60px auto;
       padding: 0 20px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      margin-top: 45px;
+    }
+
+    p {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    textarea,
+    select,
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #b9b29a;
+      background: #fff;
+    }
+
+    .gentle {
+      font-style: italic;
+      color: #4a5a4a;
+    }
+
+    .section-note {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: #4f5a45;
     }
 
     footer {
@@ -68,7 +103,6 @@
 
 <header>
   <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
-
 </header>
 
 <main>
@@ -77,9 +111,107 @@
        PAGE CONTENT START
        ====================== -->
 
-  <h1>Page Heading</h1>
-  <p>
-    Page content goes here.
+  <h1>Guided Foundations Intake</h1>
+
+  <p class="gentle">
+    This intake helps the system understand your body’s current state.
+    There are no right or wrong answers.
+    Nothing here commits you to action.
+  </p>
+
+  <p class="gentle">
+    The more complete your responses, the more accurately the system
+    can support pacing, safety, and stability.
+  </p>
+
+  <!-- SECTION 1 -->
+  <h2>1. What are you currently experiencing?</h2>
+
+  <label for="current_symptoms">
+    Describe any physical, emotional, or cognitive experiences you’re noticing.
+  </label>
+  <textarea id="current_symptoms" rows="4"
+    placeholder="Examples: fatigue, digestive discomfort, anxiety, brain fog, pressure, pain..."></textarea>
+
+  <!-- SECTION 2 -->
+  <h2>2. How long have these experiences been present?</h2>
+
+  <label for="symptom_duration">Duration</label>
+  <select id="symptom_duration">
+    <option value="">Select one</option>
+    <option>Days</option>
+    <option>Weeks</option>
+    <option>Months</option>
+    <option>Years</option>
+    <option>On and off</option>
+  </select>
+
+  <!-- SECTION 3 -->
+  <h2>3. How intense do these experiences feel?</h2>
+
+  <label for="symptom_intensity">Intensity</label>
+  <select id="symptom_intensity">
+    <option value="">Select one</option>
+    <option>Mild</option>
+    <option>Moderate</option>
+    <option>Intense</option>
+    <option>Fluctuating</option>
+    <option>Comes in waves</option>
+  </select>
+
+  <!-- SECTION 4 -->
+  <h2>4. Have you noticed any patterns?</h2>
+
+  <label for="pattern_observations">
+    When do symptoms improve, worsen, or change?
+  </label>
+  <textarea id="pattern_observations" rows="3"
+    placeholder="Examples: worse after meals, better with rest, worse during stress..."></textarea>
+
+  <!-- SECTION 5 -->
+  <h2>5. What supports are you currently using?</h2>
+
+  <label for="current_supports">
+    Include hydration, supplements, herbs, diet patterns, or rest practices.
+  </label>
+  <textarea id="current_supports" rows="3"
+    placeholder="List anything you’re currently using, even if it feels minor."></textarea>
+
+  <p class="section-note">
+    The system does not evaluate correctness or dosage.
+  </p>
+
+  <!-- SECTION 6 -->
+  <h2>6. Medications or ongoing conditions</h2>
+
+  <label for="medications_and_conditions">
+    List any medications or diagnosed conditions relevant to safety.
+  </label>
+  <textarea id="medications_and_conditions" rows="3"
+    placeholder="Examples: thyroid medication, blood pressure medication, autoimmune condition..."></textarea>
+
+  <!-- SECTION 7 -->
+  <h2>7. How would you describe your tolerance right now?</h2>
+
+  <label for="tolerance_and_capacity">Tolerance & Capacity</label>
+  <select id="tolerance_and_capacity">
+    <option value="">Select one</option>
+    <option>Easily overwhelmed</option>
+    <option>Sensitive to changes</option>
+    <option>Generally stable</option>
+    <option>Able to tolerate slow additions</option>
+  </select>
+
+  <!-- SECTION 8 -->
+  <h2>8. What are you hoping to understand right now?</h2>
+
+  <label for="goals_and_intent">Intent (optional)</label>
+  <textarea id="goals_and_intent" rows="3"
+    placeholder="Examples: understanding what my body is doing, checking if slowing down makes sense, reassurance..."></textarea>
+
+  <p class="gentle">
+    You’ll be able to review and reflect on this information.
+    Nothing here triggers automatic changes.
   </p>
 
   <!-- ======================

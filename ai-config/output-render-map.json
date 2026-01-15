@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "purpose": "Provide approved, pre-written language blocks for AI-generated reflections. These blocks ensure outputs remain stabilizing, non-prescriptive, and body-led.",
+  "content_blocks": {
+
+    "body_communication": [
+      "What you’re describing is something many people notice when their system has been under sustained load.",
+      "This does not suggest failure, missed steps, or that anything has gone wrong.",
+      "It sounds like your body is communicating rather than breaking down."
+    ],
+
+    "regulation_over_escalation": [
+      "Your body appears to be asking for regulation rather than escalation.",
+      "This often happens when systems need integration, not more input.",
+      "Nothing here suggests that pushing harder would be supportive."
+    ],
+
+    "holding_steady": [
+      "Stability itself is meaningful progress.",
+      "There is no advantage to moving forward quickly here.",
+      "Holding steady allows systems to settle, organize, and regain capacity."
+    ],
+
+    "slow_down_reassurance": [
+      "Slowing the pace is not a setback.",
+      "Reducing intensity can protect progress rather than delay it.",
+      "Backing off slightly is often the most supportive response."
+    ],
+
+    "no_action_required": [
+      "Nothing needs to change right now.",
+      "Nothing needs to be added.",
+      "Consistency may be the most supportive choice at this stage."
+    ],
+
+    "readiness_acknowledgement": [
+      "Your body appears to be tolerating current support more steadily.",
+      "Some people find this is when curiosity about the next layer naturally arises.",
+      "Readiness can be acknowledged without needing immediate action."
+    ],
+
+    "optional_next_context": [
+      "If you choose to explore further, doing so slowly is usually best.",
+      "There is no requirement to move forward before you feel ready.",
+      "Stability remains the priority, even when readiness is present."
+    ],
+
+    "pause_and_support": [
+      "This may be a signal that your nervous system needs more support right now.",
+      "Reducing stimulation often helps restore balance.",
+      "Safety and regulation come before momentum."
+    ],
+
+    "external_support_context": [
+      "Some situations benefit from individualized guidance.",
+      "Working alongside a qualified practitioner can provide added safety.",
+      "This does not mean foundational work has failed."
+    ],
+
+    "closing_grounding": [
+      "Understanding your body builds confidence over time.",
+      "Nothing here requires urgency.",
+      "You are allowed to move at your body’s pace."
+    ]
+  }
+}
