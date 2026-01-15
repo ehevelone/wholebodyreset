@@ -42,11 +42,22 @@ exports.handler = async function (event) {
     return { statusCode: 400, body: "Missing email" };
   }
 
-  console.log("WEBHOOK HIT checkout.session.completed:", email);
+  // 🔑 ACCESS LEVEL FROM STRIPE
+  const access_level =
+    session.metadata?.access_level || "guided";
+
+  console.log(
+    "WEBHOOK checkout.session.completed:",
+    email,
+    "access_level:",
+    access_level
+  );
 
   try {
-    // SAME ENGINE AS GENERATOR
-    const result = await registerUser({ email });
+    const result = await registerUser({
+      email,
+      access_level
+    });
 
     console.log("WEBHOOK DONE user_id:", result?.user_id);
 
