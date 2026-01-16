@@ -9,20 +9,6 @@
   <link rel="stylesheet" href="/css/site.css">
   <meta name="robots" content="noindex, nofollow">
 
-  <!-- ACCESS GATE -->
-  <script>
-    (async function () {
-      try {
-        const res = await fetch("/.netlify/functions/check-access", {
-          credentials: "include"
-        });
-        if (!res.ok) window.location.href = "/access-required.html";
-      } catch {
-        window.location.href = "/access-required.html";
-      }
-    })();
-  </script>
-
   <style>
     body {
       margin: 0;
@@ -51,12 +37,12 @@
       padding: 24px;
       margin: 35px 0;
     }
-    .print-actions { margin-top: 40px; }
-    .print-btn {
+    button {
+      margin-top: 40px;
       background: #2f3b2f;
       color: #fff;
       border: none;
-      padding: 10px 18px;
+      padding: 12px 22px;
       border-radius: 6px;
       cursor: pointer;
     }
@@ -67,12 +53,10 @@
       font-size: 0.9rem;
       text-align: center;
     }
-
     @media print {
-      header, footer, .leafy-left, .leafy-right, .print-actions {
-        display: none !important;
+      header, footer, .leafy-left, .leafy-right, button {
+        display: none;
       }
-      body { background: #fff; color: #000; }
     }
   </style>
 </head>
@@ -91,43 +75,40 @@
   <h1>Your Guided Reflection</h1>
 
   <p class="gentle">
-    This reflection is based on what you shared.
     Nothing here requires action.
   </p>
 
-  <h2>What Your Body May Be Communicating</h2>
-  <p>
-    What you’re describing is something many people notice
-    when their system has been under sustained load.
-  </p>
-
-  <div class="callout">
-    <h2>Current State: Holding Steady</h2>
-    <p>
-      Stability itself is meaningful progress.
-      There is no advantage to moving forward quickly.
-    </p>
+  <div id="hold_steady" class="callout" style="display:none;">
+    <h2>Holding Steady</h2>
+    <p>Stability itself is meaningful progress.</p>
   </div>
 
-  <h2>What This Means Right Now</h2>
-  <p>
-    Nothing needs to change.
-    Nothing needs to be added.
-    Consistency is enough.
-  </p>
-
-  <div class="print-actions">
-    <button class="print-btn" onclick="window.print()">
-      Print This Reflection
-    </button>
+  <div id="slow_down" class="callout" style="display:none;">
+    <h2>Slowing Down</h2>
+    <p>Your system is asking for regulation.</p>
   </div>
+
+  <div id="integration" class="callout" style="display:none;">
+    <h2>Integration</h2>
+    <p>Your body is tolerating support steadily.</p>
+  </div>
+
+  <button onclick="window.print()">Print This Reflection</button>
 
 </main>
 
 <footer>
   <p>© ET Naturals. All rights reserved.</p>
-  <p>Educational content only. No medical claims.</p>
 </footer>
+
+<script>
+  const state =
+    new URLSearchParams(window.location.search).get("state") ||
+    "hold_steady";
+
+  const el = document.getElementById(state);
+  if (el) el.style.display = "block";
+</script>
 
 </body>
 </html>
