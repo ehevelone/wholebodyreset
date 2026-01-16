@@ -37,8 +37,8 @@
       padding: 24px;
       margin: 35px 0;
     }
+    .print-actions { margin-top: 40px; }
     button {
-      margin-top: 40px;
       background: #2f3b2f;
       color: #fff;
       border: none;
@@ -54,7 +54,7 @@
       text-align: center;
     }
     @media print {
-      header, footer, .leafy-left, .leafy-right, button {
+      header, footer, .leafy-left, .leafy-right, .print-actions {
         display: none;
       }
     }
@@ -72,42 +72,46 @@
 
 <main>
 
-  <h1>Your Guided Reflection</h1>
+<h1>Your Guided Reflection</h1>
 
-  <p class="gentle">
-    Nothing here requires action.
-  </p>
+<p class="gentle">
+This reflection is based on what you shared.
+Nothing here requires action.
+</p>
 
-  <div id="hold_steady" class="callout" style="display:none;">
-    <h2>Holding Steady</h2>
-    <p>Stability itself is meaningful progress.</p>
-  </div>
+<div id="aiReflection" class="callout">
+Loading reflection…
+</div>
 
-  <div id="slow_down" class="callout" style="display:none;">
-    <h2>Slowing Down</h2>
-    <p>Your system is asking for regulation.</p>
-  </div>
-
-  <div id="integration" class="callout" style="display:none;">
-    <h2>Integration</h2>
-    <p>Your body is tolerating support steadily.</p>
-  </div>
-
-  <button onclick="window.print()">Print This Reflection</button>
+<div class="print-actions">
+<button onclick="window.print()">Print This Reflection</button>
+</div>
 
 </main>
 
 <footer>
-  <p>© ET Naturals. All rights reserved.</p>
+<p>© ET Naturals. All rights reserved.</p>
 </footer>
 
 <script>
-  const state =
-    new URLSearchParams(window.location.search).get("state") ||
-    "hold_steady";
+(async function () {
+  const payload = sessionStorage.getItem("intakePayload");
+  if (!payload) {
+    document.getElementById("aiReflection").innerText =
+      "No intake data found.";
+    return;
+  }
 
-  const el = document.getElementById(state);
-  if (el) el.style.display = "block";
+  const res = await fetch("/.netlify/functions/ai-engine", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: payload
+  });
+
+  const data = await res.json();
+
+  document.getElementById("aiReflection").innerText = data.reflection;
+})();
 </script>
 
 </body>
