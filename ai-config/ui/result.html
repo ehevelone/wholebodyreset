@@ -20,8 +20,6 @@
     header {
       background: #e2d6b8;
       padding: 20px 40px;
-      display: flex;
-      align-items: center;
     }
     header img { height: 48px; }
     main {
@@ -29,16 +27,15 @@
       margin: 60px auto;
       padding: 0 20px;
     }
-    h1 { font-size: 2.4rem; }
-    .gentle { font-style: italic; color: #4a5a4a; }
     .callout {
       background: #d6cfb2;
       border-radius: 12px;
       padding: 24px;
       margin: 35px 0;
     }
-    .print-actions { margin-top: 40px; }
+    .gentle { font-style: italic; color: #4a5a4a; }
     button {
+      margin-top: 40px;
       background: #2f3b2f;
       color: #fff;
       border: none;
@@ -46,25 +43,13 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    footer {
-      margin-top: 80px;
-      padding: 40px 20px;
-      background: #e2d6b8;
-      font-size: 0.9rem;
-      text-align: center;
-    }
     @media print {
-      header, footer, .leafy-left, .leafy-right, .print-actions {
-        display: none;
-      }
+      header, button { display: none; }
     }
   </style>
 </head>
 
 <body>
-
-<div class="leafy-left"></div>
-<div class="leafy-right"></div>
 
 <header>
   <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
@@ -73,46 +58,27 @@
 <main>
 
   <h1>Your Guided Reflection</h1>
+  <p class="gentle">Nothing here requires action.</p>
 
-  <p class="gentle">
-    This reflection is based on what you shared.
-    Nothing here requires action.
-  </p>
+  <div id="output" class="callout"></div>
 
-  <div id="hold_steady" class="callout" style="display:none;">
-    <h2>Current State: Holding Steady</h2>
-    <p>Stability itself is meaningful progress.</p>
-    <p class="gentle">There is no advantage to moving forward quickly.</p>
-  </div>
-
-  <div id="slow_down" class="callout" style="display:none;">
-    <h2>Current State: Slowing Down</h2>
-    <p>Your body appears to be asking for regulation rather than escalation.</p>
-    <p class="gentle">Reducing intensity can protect progress.</p>
-  </div>
-
-  <div id="integration" class="callout" style="display:none;">
-    <h2>Current State: Integration</h2>
-    <p>Your body appears to be tolerating current support more steadily.</p>
-    <p class="gentle">Consistency allows gains to settle.</p>
-  </div>
-
-  <div class="print-actions">
-    <button onclick="window.print()">Print This Reflection</button>
-  </div>
+  <button onclick="window.print()">Print This Reflection</button>
 
 </main>
 
-<footer>
-  <p>© ET Naturals. All rights reserved.</p>
-</footer>
-
 <script>
-const state =
-  new URLSearchParams(window.location.search).get("state") || "hold_steady";
+const data = JSON.parse(sessionStorage.getItem("ai_result") || "{}");
 
-const el = document.getElementById(state);
-if (el) el.style.display = "block";
+if (!data.output_state) {
+  document.getElementById("output").innerHTML =
+    "<p>Unable to load reflection. Please restart intake.</p>";
+} else {
+  document.getElementById("output").innerHTML = `
+    <h2>Current State: ${data.output_state.replace(/_/g," ")}</h2>
+    <p>${data.message}</p>
+    <p class="gentle">No changes are required. This is informational only.</p>
+  `;
+}
 </script>
 
 </body>

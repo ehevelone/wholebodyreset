@@ -20,8 +20,6 @@
     header {
       background: #e2d6b8;
       padding: 20px 40px;
-      display: flex;
-      align-items: center;
     }
     header img { height: 48px; }
     main {
@@ -29,7 +27,6 @@
       margin: 60px auto;
       padding: 0 20px;
     }
-    h1 { font-size: 2.4rem; }
     label {
       display: block;
       margin-top: 25px;
@@ -44,7 +41,6 @@
       font-family: inherit;
     }
     textarea { min-height: 90px; }
-    .gentle { font-style: italic; color: #4a5a4a; }
     button {
       margin-top: 40px;
       background: #2f3b2f;
@@ -54,20 +50,11 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    footer {
-      margin-top: 80px;
-      padding: 40px 20px;
-      background: #e2d6b8;
-      font-size: 0.9rem;
-      text-align: center;
-    }
+    .gentle { font-style: italic; color: #4a5a4a; }
   </style>
 </head>
 
 <body>
-
-<div class="leafy-left"></div>
-<div class="leafy-right"></div>
 
 <header>
   <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
@@ -76,11 +63,7 @@
 <main>
 
   <h1>Guided Foundations Intake</h1>
-
-  <p class="gentle">
-    This intake helps the system understand your current state.
-    There are no right answers.
-  </p>
+  <p class="gentle">Answer honestly. Nothing here requires action.</p>
 
   <form id="intakeForm">
 
@@ -89,7 +72,7 @@
 
     <label>2. How long have these symptoms been present?</label>
     <select name="symptom_duration" required>
-      <option value="">Select one</option>
+      <option value="">Select</option>
       <option>Days</option>
       <option>Weeks</option>
       <option>Months</option>
@@ -97,67 +80,58 @@
       <option>On and off</option>
     </select>
 
-    <label>3. How would you describe the intensity overall?</label>
+    <label>3. How would you describe the intensity?</label>
     <select name="symptom_intensity" required>
-      <option value="">Select one</option>
+      <option value="">Select</option>
       <option>Mild</option>
       <option>Moderate</option>
       <option>Intense</option>
       <option>Fluctuating</option>
     </select>
 
-    <label>4. Have you noticed any patterns?</label>
+    <label>4. Any patterns you’ve noticed?</label>
     <textarea name="pattern_observations"></textarea>
 
-    <label>5. Are you currently using any supports?</label>
+    <label>5. Current supports (hydration, minerals, binders, etc)?</label>
     <textarea name="current_supports"></textarea>
 
-    <label>6. Are you taking any medications or under care?</label>
+    <label>6. Medications or diagnosed conditions?</label>
     <textarea name="medications_and_conditions"></textarea>
 
-    <label>7. How does your body respond to changes?</label>
+    <label>7. How do you tolerate changes?</label>
     <select name="tolerance_and_capacity" required>
-      <option value="">Select one</option>
+      <option value="">Select</option>
       <option>Easily overwhelmed</option>
       <option>Sensitive to changes</option>
       <option>Generally stable</option>
       <option>Able to tolerate slow additions</option>
     </select>
 
-    <label>8. What are you hoping to understand right now?</label>
+    <label>8. What are you hoping to understand?</label>
     <textarea name="goals_and_intent" required></textarea>
 
-    <button type="submit">Continue to Reflection</button>
+    <button type="submit">Continue</button>
   </form>
 
 </main>
 
-<footer>
-  <p>© ET Naturals. All rights reserved.</p>
-  <p>Educational content only. No medical claims.</p>
-</footer>
-
 <script>
-document.getElementById("intakeForm").addEventListener("submit", async function (e) {
+document.getElementById("intakeForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const data = Object.fromEntries(new FormData(e.target).entries());
+  const formData = new FormData(e.target);
+  const payload = Object.fromEntries(formData.entries());
 
   const res = await fetch("/.netlify/functions/ai-evaluate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
+    body: JSON.stringify(payload)
   });
 
   const result = await res.json();
 
-  if (!result.output_state) {
-    alert("Unable to generate reflection.");
-    return;
-  }
-
-  window.location.href =
-    "/ai-config/ui/result.html?state=" + result.output_state;
+  sessionStorage.setItem("ai_result", JSON.stringify(result));
+  window.location.href = "/ai-config/ui/results.html";
 });
 </script>
 
