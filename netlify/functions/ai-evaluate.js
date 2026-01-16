@@ -11,7 +11,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// simple stable hash so we don’t store raw email if you don’t want to
 function hashEmail(email = "") {
   return crypto.createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 }
@@ -34,25 +33,18 @@ export async function handler(event) {
   const sessionType = input.session_type || "initial";
   const tolerance = input.tolerance_and_capacity || "";
   const intensity = input.symptom_intensity || "";
+  const hasMeds = !!input.current_meds;
 
-  /* -----------------------------
-     LOAD EXISTING JOURNEY (IF ANY)
-  ------------------------------*/
   let journey = null;
-
   if (emailHash) {
     const { data } = await supabase
       .from("ai_journey")
       .select("*")
       .eq("email_hash", emailHash)
       .single();
-
     journey = data || null;
   }
 
-  /* -----------------------------
-     STATE LOGIC (STABLE + FINAL)
-  ------------------------------*/
   let output_state = journey?.current_state || "hold_steady";
 
   if (
@@ -71,9 +63,6 @@ export async function handler(event) {
     output_state = "integration";
   }
 
-  /* -----------------------------
-     SAFETY FLAGS
-  ------------------------------*/
   const flags = {
     pregnant: input.pregnant === true,
     breastfeeding: input.breastfeeding === true,
@@ -85,9 +74,6 @@ export async function handler(event) {
       tolerance === "Easily overwhelmed"
   };
 
-  /* -----------------------------
-     SYSTEM PROMPT (LOCKED)
-  ------------------------------*/
   const systemPrompt = `
 You are the Whole Body Reset AI Guide.
 
@@ -105,6 +91,14 @@ If a previous plan exists:
 - MODIFY it
 - Do NOT replace it
 - Make SMALL, targeted changes only
+
+MEDICATION CONTEXT (ALLOWED LANGUAGE)
+If the user listed current medications:
+- You MAY include ONE neutral sentence in the reflection:
+  "This plan is designed to work alongside existing care and does not suggest changes to medications. If questions arise over time, those discussions belong with your provider."
+- Do NOT name medications
+- Do NOT give instructions
+- Do NOT mention timing or stopping
 
 SUPPLEMENT WHITELIST ONLY
 - Magnesium (glycinate/malate/citrate)
@@ -162,15 +156,13 @@ OUTPUT FORMAT (STRICT JSON — NO EXTRA TEXT)
 }
 `;
 
-  /* -----------------------------
-     USER PROMPT
-  ------------------------------*/
   const userPrompt = `
 SYMPTOMS: ${input.current_symptoms || input.new_symptoms || "not provided"}
 PROGRESS: ${input.overall_progress || "not provided"}
 TOLERANCE: ${tolerance}
 CHANGES MADE: ${input.changes_made || "not provided"}
 GOALS: ${input.goals || "not provided"}
+CURRENT MEDS LISTED: ${hasMeds}
 
 SAFETY FLAGS:
 ${JSON.stringify(flags, null, 2)}
@@ -179,9 +171,6 @@ PREVIOUS PLAN (MODIFY ONLY):
 ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
 `;
 
-  /* -----------------------------
-     AI CALL
-  ------------------------------*/
   let parsed;
   try {
     const aiResponse = await openai.chat.completions.create({
@@ -202,9 +191,6 @@ ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
     };
   }
 
-  /* -----------------------------
-     SAVE / UPDATE JOURNEY
-  ------------------------------*/
   if (emailHash) {
     if (journey) {
       await supabase
@@ -228,9 +214,6 @@ ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
     }
   }
 
-  /* -----------------------------
-     RETURN TO FRONTEND
-  ------------------------------*/
   return {
     statusCode: 200,
     headers: { "Content-Type": "application/json" },
