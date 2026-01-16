@@ -112,10 +112,6 @@
 
 <main>
 
-  <!-- ======================
-       PAGE CONTENT START
-       ====================== -->
-
   <h1>Check-In</h1>
 
   <p class="gentle">
@@ -125,9 +121,7 @@
 
   <form id="checkinForm">
 
-    <!-- SECTION 1 -->
     <h2>1. Overall, how are things going?</h2>
-
     <label for="overall_progress">Overall progress</label>
     <select id="overall_progress" name="overall_progress" required>
       <option value="">Select one</option>
@@ -136,9 +130,7 @@
       <option>Worse</option>
     </select>
 
-    <!-- SECTION 2 -->
     <h2>2. Any new symptoms or reactions?</h2>
-
     <label for="new_symptoms">New observations (optional)</label>
     <textarea
       id="new_symptoms"
@@ -147,9 +139,7 @@
       placeholder="Anything new, different, or unexpected?"
     ></textarea>
 
-    <!-- SECTION 3 -->
     <h2>3. Did you change anything since the last plan?</h2>
-
     <label for="changes_made">Changes made (optional)</label>
     <textarea
       id="changes_made"
@@ -158,9 +148,7 @@
       placeholder="Examples: adjusted timing, skipped doses, added rest..."
     ></textarea>
 
-    <!-- SECTION 4 -->
     <h2>4. How does your tolerance feel right now?</h2>
-
     <label for="tolerance_and_capacity">Tolerance & Capacity</label>
     <select
       id="tolerance_and_capacity"
@@ -176,10 +164,6 @@
     <button type="submit">Update My Plan</button>
 
   </form>
-
-  <!-- ======================
-       PAGE CONTENT END
-       ====================== -->
 
 </main>
 
@@ -197,6 +181,7 @@ document.getElementById("checkinForm").addEventListener("submit", async (e) => {
 
   const payload = {
     session_type: "check-in",
+    entry_context: "os_escalation",
     previous_plan: lastResult.plan || null,
     ...data
   };

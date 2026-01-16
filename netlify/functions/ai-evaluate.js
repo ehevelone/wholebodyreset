@@ -12,7 +12,10 @@ const supabase = createClient(
 );
 
 function hashEmail(email = "") {
-  return crypto.createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
+  return crypto
+    .createHash("sha256")
+    .update(email.trim().toLowerCase())
+    .digest("hex");
 }
 
 export async function handler(event) {
@@ -27,24 +30,38 @@ export async function handler(event) {
     return { statusCode: 400, body: "Invalid JSON" };
   }
 
+  /* ============================
+     CORE INPUTS
+  ============================ */
   const email = input.email || null;
   const emailHash = email ? hashEmail(email) : null;
 
   const sessionType = input.session_type || "initial";
+  const entryContext = input.entry_context || "foundation"; 
+  // "foundation" | "os_escalation"
+
   const tolerance = input.tolerance_and_capacity || "";
   const intensity = input.symptom_intensity || "";
   const hasMeds = !!input.current_meds;
 
+  /* ============================
+     LOAD EXISTING JOURNEY
+  ============================ */
   let journey = null;
+
   if (emailHash) {
     const { data } = await supabase
       .from("ai_journey")
       .select("*")
       .eq("email_hash", emailHash)
       .single();
+
     journey = data || null;
   }
 
+  /* ============================
+     STATE LOGIC (FINAL)
+  ============================ */
   let output_state = journey?.current_state || "hold_steady";
 
   if (
@@ -63,6 +80,9 @@ export async function handler(event) {
     output_state = "integration";
   }
 
+  /* ============================
+     SAFETY FLAGS
+  ============================ */
   const flags = {
     pregnant: input.pregnant === true,
     breastfeeding: input.breastfeeding === true,
@@ -74,6 +94,9 @@ export async function handler(event) {
       tolerance === "Easily overwhelmed"
   };
 
+  /* ============================
+     SYSTEM PROMPT (LOCKED)
+  ============================ */
   const systemPrompt = `
 You are the Whole Body Reset AI Guide.
 
@@ -85,25 +108,33 @@ NON-NEGOTIABLE RULES
 
 PROGRAM FRAME (NON-NEGOTIABLE)
 
-All guidance MUST follow the Whole Body Reset sequence:
+All guidance MUST follow the Whole Body Reset philosophy:
+- Foundations are assumed unless stated otherwise
+- Aggressive detox is never used
+- Pacing always overrides speed
 
-1. Hydration and mineral balance come first
-2. Gentle drainage support (bowels, lymph, circulation) comes next
-3. Organ support is introduced only if tolerance allows
-4. Aggressive detox is never used
-5. Pacing always overrides speed
+ENTRY CONTEXT (NON-NEGOTIABLE)
 
-If symptoms are intense or tolerance is low:
-- Focus on hydration, stabilization, rest
-- Do NOT layer multiple supports
-- Avoid introducing organ support
+ENTRY CONTEXT: ${entryContext}
 
-If symptoms are mild and tolerance is stable:
-- Support gentle drainage
-- Introduce light organ support only if clearly appropriate
+Valid modes:
 
-Every plan must clearly reflect where the user is in this sequence,
-even if not explicitly named.
+1. foundation
+- User may be early or new
+- Introductory framing is allowed
+- Hydration and foundations may still be forming
+
+2. os_escalation
+- User has already completed foundational hydration
+- User is here due to repeated OS (overloaded system) responses
+- DO NOT restart the program
+- DO NOT recommend "just hydration"
+- Hydration is assumed baseline, not the solution
+- Focus on:
+  - load reduction
+  - pacing refinement
+  - identifying strain
+  - stabilization before progression
 
 SESSION TYPE: ${sessionType}
 CURRENT STATE: ${output_state}
@@ -115,12 +146,8 @@ If a previous plan exists:
 - Make SMALL, targeted changes only
 
 MEDICATION CONTEXT (ALLOWED LANGUAGE)
-If the user listed medications, you MAY include ONE sentence in reflection:
+If medications are listed, you MAY include ONE sentence:
 "This plan is designed to work alongside existing care and does not suggest changes to medications. If questions arise over time, those discussions belong with your provider."
-
-Do NOT name medications.
-Do NOT give instructions.
-Do NOT mention timing or stopping.
 
 SUPPLEMENT WHITELIST ONLY
 - Magnesium (glycinate/malate/citrate)
@@ -143,10 +170,6 @@ HARD EXCLUSIONS
 - On SSRIs: avoid serotonergic supplements
 
 CHECK-IN TIMING REQUIRED
-Include:
-- next_check_in.timing
-- next_check_in.what_to_watch
-- next_check_in.check_in_earlier_if
 
 OUTPUT FORMAT (STRICT JSON — NO EXTRA TEXT)
 
@@ -178,7 +201,12 @@ OUTPUT FORMAT (STRICT JSON — NO EXTRA TEXT)
 }
 `;
 
+  /* ============================
+     USER PROMPT
+  ============================ */
   const userPrompt = `
+ENTRY CONTEXT: ${entryContext}
+
 SYMPTOMS: ${input.current_symptoms || input.new_symptoms || "not provided"}
 PROGRESS: ${input.overall_progress || "not provided"}
 TOLERANCE: ${tolerance}
@@ -193,6 +221,9 @@ PREVIOUS PLAN (MODIFY ONLY):
 ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
 `;
 
+  /* ============================
+     AI CALL
+  ============================ */
   let parsed;
   try {
     const aiResponse = await openai.chat.completions.create({
@@ -213,6 +244,9 @@ ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
     };
   }
 
+  /* ============================
+     SAVE / UPDATE JOURNEY
+  ============================ */
   if (emailHash) {
     if (journey) {
       await supabase
@@ -236,6 +270,9 @@ ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
     }
   }
 
+  /* ============================
+     RETURN
+  ============================ */
   return {
     statusCode: 200,
     headers: { "Content-Type": "application/json" },
