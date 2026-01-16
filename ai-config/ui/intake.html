@@ -127,34 +127,38 @@
     <label>8. What are you hoping to understand right now?</label>
     <textarea name="goals_and_intent" required></textarea>
 
-    <button type="submit">Continue</button>
+    <button type="submit">Continue to Reflection</button>
   </form>
 
 </main>
 
 <footer>
   <p>© ET Naturals. All rights reserved.</p>
+  <p>Educational content only. No medical claims.</p>
 </footer>
 
 <script>
-  document.getElementById("intakeForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+document.getElementById("intakeForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
 
-    const formData = new FormData(e.target);
-    const payload = Object.fromEntries(formData.entries());
+  const data = Object.fromEntries(new FormData(e.target).entries());
 
-    const res = await fetch("/.netlify/functions/ai-evaluate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json();
-    const state = data.state || "hold_steady";
-
-    window.location.href =
-      "/ai/ai-config/ui/results.html?state=" + state;
+  const res = await fetch("/.netlify/functions/ai-evaluate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
   });
+
+  const result = await res.json();
+
+  if (!result.output_state) {
+    alert("Unable to generate reflection.");
+    return;
+  }
+
+  window.location.href =
+    "/ai-config/ui/result.html?state=" + result.output_state;
+});
 </script>
 
 </body>

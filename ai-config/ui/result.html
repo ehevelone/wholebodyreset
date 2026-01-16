@@ -72,46 +72,47 @@
 
 <main>
 
-<h1>Your Guided Reflection</h1>
+  <h1>Your Guided Reflection</h1>
 
-<p class="gentle">
-This reflection is based on what you shared.
-Nothing here requires action.
-</p>
+  <p class="gentle">
+    This reflection is based on what you shared.
+    Nothing here requires action.
+  </p>
 
-<div id="aiReflection" class="callout">
-Loading reflection…
-</div>
+  <div id="hold_steady" class="callout" style="display:none;">
+    <h2>Current State: Holding Steady</h2>
+    <p>Stability itself is meaningful progress.</p>
+    <p class="gentle">There is no advantage to moving forward quickly.</p>
+  </div>
 
-<div class="print-actions">
-<button onclick="window.print()">Print This Reflection</button>
-</div>
+  <div id="slow_down" class="callout" style="display:none;">
+    <h2>Current State: Slowing Down</h2>
+    <p>Your body appears to be asking for regulation rather than escalation.</p>
+    <p class="gentle">Reducing intensity can protect progress.</p>
+  </div>
+
+  <div id="integration" class="callout" style="display:none;">
+    <h2>Current State: Integration</h2>
+    <p>Your body appears to be tolerating current support more steadily.</p>
+    <p class="gentle">Consistency allows gains to settle.</p>
+  </div>
+
+  <div class="print-actions">
+    <button onclick="window.print()">Print This Reflection</button>
+  </div>
 
 </main>
 
 <footer>
-<p>© ET Naturals. All rights reserved.</p>
+  <p>© ET Naturals. All rights reserved.</p>
 </footer>
 
 <script>
-(async function () {
-  const payload = sessionStorage.getItem("intakePayload");
-  if (!payload) {
-    document.getElementById("aiReflection").innerText =
-      "No intake data found.";
-    return;
-  }
+const state =
+  new URLSearchParams(window.location.search).get("state") || "hold_steady";
 
-  const res = await fetch("/.netlify/functions/ai-engine", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: payload
-  });
-
-  const data = await res.json();
-
-  document.getElementById("aiReflection").innerText = data.reflection;
-})();
+const el = document.getElementById(state);
+if (el) el.style.display = "block";
 </script>
 
 </body>
