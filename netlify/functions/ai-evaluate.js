@@ -37,15 +37,37 @@ export async function handler(event) {
   const emailHash = email ? hashEmail(email) : null;
 
   const sessionType = input.session_type || "initial";
-  const entryContext = input.entry_context || "foundation"; 
-  // "foundation" | "os_escalation"
+  let entryContext = input.entry_context || "foundation";
+  // foundation | os_escalation
 
   const tolerance = input.tolerance_and_capacity || "";
   const intensity = input.symptom_intensity || "";
   const hasMeds = !!input.current_meds;
 
   /* ============================
-     LOAD EXISTING JOURNEY
+     VERIFY GUIDED USER (READ-ONLY)
+  ============================ */
+  let fromGuided = false;
+
+  if (email) {
+    const { data: guidedUser } = await supabase
+      .from("guided_users")
+      .select("id")
+      .eq("email", email)
+      .single();
+
+    if (guidedUser) {
+      fromGuided = true;
+    }
+  }
+
+  // Backend truth override (never downgrade Guided users)
+  if (fromGuided && entryContext === "foundation") {
+    entryContext = "os_escalation";
+  }
+
+  /* ============================
+     LOAD EXISTING AI JOURNEY
   ============================ */
   let journey = null;
 
@@ -107,8 +129,6 @@ NON-NEGOTIABLE RULES
 - No medical claims or urgency
 
 PROGRAM FRAME (NON-NEGOTIABLE)
-
-All guidance MUST follow the Whole Body Reset philosophy:
 - Foundations are assumed unless stated otherwise
 - Aggressive detox is never used
 - Pacing always overrides speed
@@ -117,24 +137,17 @@ ENTRY CONTEXT (NON-NEGOTIABLE)
 
 ENTRY CONTEXT: ${entryContext}
 
-Valid modes:
-
-1. foundation
+foundation:
 - User may be early or new
-- Introductory framing is allowed
-- Hydration and foundations may still be forming
+- Introductory framing allowed
 
-2. os_escalation
-- User has already completed foundational hydration
-- User is here due to repeated OS (overloaded system) responses
+os_escalation:
+- User completed Guided Foundations
+- User experienced repeated OS responses
 - DO NOT restart the program
 - DO NOT recommend "just hydration"
-- Hydration is assumed baseline, not the solution
-- Focus on:
-  - load reduction
-  - pacing refinement
-  - identifying strain
-  - stabilization before progression
+- Hydration is baseline, not solution
+- Focus on load reduction, pacing, stabilization
 
 SESSION TYPE: ${sessionType}
 CURRENT STATE: ${output_state}
@@ -143,10 +156,9 @@ PLAN CONTINUITY
 If a previous plan exists:
 - MODIFY it
 - Do NOT replace it
-- Make SMALL, targeted changes only
 
-MEDICATION CONTEXT (ALLOWED LANGUAGE)
-If medications are listed, you MAY include ONE sentence:
+MEDICATION CONTEXT (ALLOWED)
+If meds listed, include ONE sentence:
 "This plan is designed to work alongside existing care and does not suggest changes to medications. If questions arise over time, those discussions belong with your provider."
 
 SUPPLEMENT WHITELIST ONLY
@@ -154,24 +166,21 @@ SUPPLEMENT WHITELIST ONLY
 - Vitamin C, D3, B12, B-Complex
 - Electrolytes (no stimulants)
 - Omega-3
-- Probiotics (general)
+- Probiotics
 - Digestive enzymes
 - Zinc, Selenium
-- Iron (only if already using / deficiency wording)
-- Fiber (psyllium or food-based)
+- Iron (existing use only)
+- Fiber
 - Ginger, Turmeric (low dose)
 - Chamomile, Peppermint
 
 HARD EXCLUSIONS
-- No detox herbs, binders, adaptogens, parasite cleanses
-- Pregnant/breastfeeding: food-first only
-- On stimulants: no stimulatory supplements
-- On blood thinners: avoid turmeric beyond food
-- On SSRIs: avoid serotonergic supplements
+- No detox herbs, binders, cleanses
+- Pregnancy/breastfeeding: food-first only
+- SSRIs: no serotonergic supplements
+- Blood thinners: turmeric food-only
 
-CHECK-IN TIMING REQUIRED
-
-OUTPUT FORMAT (STRICT JSON — NO EXTRA TEXT)
+OUTPUT FORMAT (STRICT JSON)
 
 {
   "state": "${output_state}",
@@ -217,7 +226,7 @@ CURRENT MEDS LISTED: ${hasMeds}
 SAFETY FLAGS:
 ${JSON.stringify(flags, null, 2)}
 
-PREVIOUS PLAN (MODIFY ONLY):
+PREVIOUS PLAN:
 ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
 `;
 
@@ -245,7 +254,7 @@ ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
   }
 
   /* ============================
-     SAVE / UPDATE JOURNEY
+     SAVE AI JOURNEY
   ============================ */
   if (emailHash) {
     if (journey) {
@@ -270,9 +279,6 @@ ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
     }
   }
 
-  /* ============================
-     RETURN
-  ============================ */
   return {
     statusCode: 200,
     headers: { "Content-Type": "application/json" },
