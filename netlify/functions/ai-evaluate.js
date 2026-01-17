@@ -44,11 +44,28 @@ export async function handler(event) {
   const hasMeds = !!input.current_meds;
 
   /* ============================
+     MERGE CLARIFICATION ANSWERS
+  ============================ */
+  let mergedSignal = input.current_symptoms || "";
+
+  if (sessionType === "clarification" && input.clarified_details) {
+    const answers = Object.values(input.clarified_details)
+      .filter(Boolean)
+      .join(" | ");
+    mergedSignal = `${mergedSignal}\nAdditional clarification: ${answers}`;
+  }
+
+  /* ============================
      VAGUE INPUT DETECTION
+     (disabled after clarification)
   ============================ */
   const isVague =
-    (!input.current_symptoms || input.current_symptoms.trim().length < 40) ||
-    (!intensity && !tolerance);
+    sessionType !== "clarification" &&
+    (
+      !mergedSignal ||
+      mergedSignal.trim().length < 60 ||
+      (!intensity && !tolerance)
+    );
 
   /* ============================
      VERIFY GUIDED USER
@@ -120,7 +137,7 @@ export async function handler(event) {
   };
 
   /* ============================
-     SYSTEM PROMPT (EXPANDED)
+     SYSTEM PROMPT
   ============================ */
   const systemPrompt = `
 You are the Whole Body Reset AI Guide.
@@ -131,85 +148,39 @@ NON-NEGOTIABLE RULES
 - Never replace, stop, or adjust medications
 - No medical claims or urgency
 
-PROGRAM FRAME (NON-NEGOTIABLE)
-- Foundations are assumed unless explicitly stated otherwise
-- Aggressive detox is never used
-- Pacing always overrides speed
-- Goal is SYSTEM STABILITY, not symptom suppression
+PROGRAM FRAME
+- Foundations assumed unless stated
+- Aggressive detox never used
+- Pacing overrides speed
+- Goal is system stability
 
 ENTRY CONTEXT: ${entryContext}
 
-os_escalation REQUIREMENTS
-- User has completed Guided Foundations
-- Do NOT restart the program
+OS ESCALATION RULES
+- Do NOT restart program
 - Do NOT default to hydration or supplements
-- Assume load, congestion, or backlog first
 - Reduction precedes addition
 
-STABILIZATION WINDOW (FLEXIBLE)
-- May be 48 hours up to 10 days
-- You MUST explain why the chosen window fits the situation
-- You MUST explain what is intentionally NOT being added
+CLARIFICATION RULES
+- If clarification has already been provided, do NOT repeat questions
+- Ask again ONLY if genuinely new information is required
+- Never ask the same question twice
 
-SUPPLEMENT LOGIC (CRITICAL)
+STABILIZATION WINDOW
+- 48 hours to 10 days
+- Explain why chosen
+- Explain what is intentionally NOT added
+
+SUPPLEMENT RULES
 - Magnesium and fiber are NOT defaults
-- Include only if a clear mechanism is identified
-- If excluded, explicitly state why exclusion supports stabilization
+- Include only if mechanism is clear
+- Explicitly state why excluded if not used
 
-EXPANDED EXPLANATION REQUIREMENTS
-- Reflection: explain the system pattern you see
-- Plan overview: explain why this phase matters now
-- Each step: include brief reasoning (why this helps reduce load)
-- If something is paused or avoided, say why
-- Use calm, grounded, plain language
-
-CLARIFICATION MODE
-If input is vague:
-- Ask 4–6 targeted questions
-- Do NOT generate a plan
-- Focus questions on load, timing, reactions, and capacity
+EXPANDED EXPLANATION REQUIRED
+- Explain why each step exists
+- Explain why things are paused or avoided
 
 OUTPUT FORMAT (STRICT JSON ONLY)
-
-If clarification is needed, use:
-
-{
-  "state": "clarification_needed",
-  "clarification": {
-    "reason": "short explanation",
-    "questions": ["q1","q2","q3","q4","q5"]
-  },
-  "disclaimer": "Educational support only. Not medical advice."
-}
-
-Otherwise use:
-
-{
-  "state": "${output_state}",
-  "reflection": "2–4 sentences, expanded reasoning",
-  "plan": {
-    "focus_today": "clear + explained",
-    "plan_overview": "why this phase exists now",
-    "steps": ["step with why","step with why"],
-    "supplements": [{
-      "name": "if used",
-      "purpose": "why this fits now",
-      "how_to_take": "capsules + timing",
-      "adjust_up": "when/how",
-      "adjust_down": "when/how",
-      "pause_or_stop_if": "signals"
-    }],
-    "food_support": ["item with rationale"],
-    "hydration_and_movement": ["item with rationale"],
-    "red_flags_stop": ["item"],
-    "next_check_in": {
-      "timing": "why this timing",
-      "what_to_watch": ["item"],
-      "check_in_earlier_if": ["item"]
-    }
-  },
-  "disclaimer": "Educational support only. Not medical advice. Do not change medications without your provider."
-}
 `;
 
   /* ============================
@@ -217,14 +188,16 @@ Otherwise use:
   ============================ */
   const userPrompt = `
 ENTRY CONTEXT: ${entryContext}
-VAGUE INPUT DETECTED: ${isVague}
+SESSION TYPE: ${sessionType}
+VAGUE INPUT: ${isVague}
 
-SYMPTOMS: ${input.current_symptoms || input.new_symptoms || "not provided"}
+MERGED SIGNAL:
+${mergedSignal || "not provided"}
+
 PROGRESS: ${input.overall_progress || "not provided"}
 TOLERANCE: ${tolerance}
-CHANGES MADE: ${input.changes_made || "not provided"}
 GOALS: ${input.goals || "not provided"}
-CURRENT MEDS LISTED: ${hasMeds}
+MEDS LISTED: ${hasMeds}
 
 SAFETY FLAGS:
 ${JSON.stringify(flags, null, 2)}
