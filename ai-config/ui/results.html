@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
   <title>Your Guided Plan | Whole Body Reset</title>
-
   <link rel="stylesheet" href="/css/site.css">
   <meta name="robots" content="noindex, nofollow">
 
@@ -17,101 +16,114 @@
       color: #2f3b2f;
       line-height: 1.6;
     }
-    header { background: #e2d6b8; padding: 20px 40px; }
-    header img { height: 48px; }
-    main { max-width: 900px; margin: 60px auto; padding: 0 20px; }
-    .callout {
-      background: #d6cfb2;
-      border-radius: 12px;
-      padding: 28px;
+
+    header {
+      background: #e2d6b8;
+      padding: 20px 40px;
     }
+
+    main {
+      max-width: 900px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #dcd6bd;
+      padding: 30px;
+      border-radius: 10px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
     textarea {
       width: 100%;
-      min-height: 90px;
-      margin: 12px 0 24px;
       padding: 10px;
+      margin-top: 8px;
       font-family: inherit;
       border-radius: 6px;
       border: 1px solid #b9b29a;
     }
+
     button {
-      margin-top: 20px;
+      margin-top: 30px;
       background: #2f3b2f;
       color: #fff;
       border: none;
-      padding: 12px 22px;
+      padding: 14px 26px;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 1rem;
     }
-    .gentle { font-style: italic; color: #4a5a4a; }
-    .debug {
-      margin-top: 30px;
-      font-size: 0.85rem;
-      color: #665;
-      white-space: pre-wrap;
+
+    .error {
+      font-style: italic;
     }
   </style>
 </head>
 
 <body>
 
-<header>
-  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
-</header>
+<header></header>
 
 <main>
   <h1>Your Guided Plan</h1>
-  <div id="output" class="callout"></div>
+  <div id="content" class="card"></div>
 </main>
 
 <script>
-const out = document.getElementById("output");
+const container = document.getElementById("content");
+const aiResult = JSON.parse(sessionStorage.getItem("ai_result") || "null");
 
-let data = null;
-let intake = null;
-
-try {
-  data = JSON.parse(sessionStorage.getItem("ai_result"));
-  intake = JSON.parse(sessionStorage.getItem("intake_payload"));
-} catch (e) {}
-
-if (!data) {
-  out.innerHTML = `
-    <p><strong>Session data was not found.</strong></p>
-    <p>Please restart the intake so the system can continue safely.</p>
-  `;
+if (!aiResult) {
+  container.innerHTML = "<p class='error'>Unable to load your plan. Please restart the intake.</p>";
 }
 
-/* ============================
+/* ===============================
    CLARIFICATION MODE
-============================ */
-else if (data.state === "clarification_needed" && data.clarification) {
+================================ */
+else if (aiResult.state === "clarification_needed") {
+  const questions = aiResult.clarification.questions;
 
-  out.innerHTML = `
-    <h2>We Need a Little More Information</h2>
-    <p class="gentle">${data.clarification.reason || ""}</p>
-
-    <form id="clarificationForm">
-      ${data.clarification.questions.map((q, i) => `
-        <label><strong>${q}</strong></label>
-        <textarea name="q${i}" required></textarea>
-      `).join("")}
-
-      <button type="submit">Continue</button>
-    </form>
-
-    <p class="gentle">${data.disclaimer || ""}</p>
+  let html = `
+    <h2>We need a little more information</h2>
+    <p>${aiResult.clarification.reason || "To better tailor your plan, please answer the following:"}</p>
+    <form id="clarifyForm">
   `;
 
-  document.getElementById("clarificationForm").addEventListener("submit", async (e) => {
+  questions.forEach((q, i) => {
+    html += `
+      <label>${q}</label>
+      <textarea name="q_${i}" rows="3" required></textarea>
+    `;
+  });
+
+  html += `
+      <button type="submit">Continue</button>
+    </form>
+  `;
+
+  container.innerHTML = html;
+
+  document.getElementById("clarifyForm").addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const original = JSON.parse(sessionStorage.getItem("intake_payload") || "{}");
     const answers = Object.fromEntries(new FormData(e.target).entries());
 
     const payload = {
-      ...intake,
-      clarified_details: answers,
-      session_type: "clarification"
+      ...original,
+      clarification_answers: answers,
+      session_type: "clarification_followup"
     };
 
     const res = await fetch("/.netlify/functions/ai-evaluate", {
@@ -126,42 +138,26 @@ else if (data.state === "clarification_needed" && data.clarification) {
   });
 }
 
-/* ============================
-   PLAN MODE
-============================ */
-else if (data.plan) {
-  const p = data.plan;
-
-  out.innerHTML = `
-    <h2>Current State: ${data.state || "in progress"}</h2>
-    <p class="gentle">${data.reflection || ""}</p>
-
-    <h3>Today's Focus</h3>
-    <p>${p.focus_today || ""}</p>
-
-    <h3>What This Phase Is Doing</h3>
-    <p>${p.plan_overview || ""}</p>
-
-    <h3>Steps</h3>
-    <ul>${(p.steps || []).map(s => `<li>${s}</li>`).join("")}</ul>
-
-    <p class="gentle">${data.disclaimer || ""}</p>
-
-    <button onclick="window.print()">Print / Save as PDF</button>
+/* ===============================
+   NORMAL PLAN MODE
+================================ */
+else if (aiResult.plan) {
+  container.innerHTML = `
+    <h2>${aiResult.plan.focus_today}</h2>
+    <p>${aiResult.plan.plan_overview}</p>
+    <ul>${aiResult.plan.steps.map(s => `<li>${s}</li>`).join("")}</ul>
   `;
 }
 
-/* ============================
-   FALLBACK (DEBUG SAFE)
-============================ */
+/* ===============================
+   FALLBACK ERROR
+================================ */
 else {
-  out.innerHTML = `
-    <p><strong>We received an unexpected response.</strong></p>
-    <p>Please restart the intake.</p>
-
-    <div class="debug">
-      ${JSON.stringify(data, null, 2)}
-    </div>
+  container.innerHTML = `
+    <p class="error">
+      We received an unexpected response.<br><br>
+      Please restart the intake.
+    </p>
   `;
 }
 </script>
