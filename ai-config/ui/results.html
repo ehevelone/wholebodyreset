@@ -17,40 +17,21 @@
       color: #2f3b2f;
       line-height: 1.6;
     }
-
-    header {
-      background: #e2d6b8;
-      padding: 20px 40px;
-    }
-
+    header { background: #e2d6b8; padding: 20px 40px; }
     header img { height: 48px; }
-
-    main {
-      max-width: 900px;
-      margin: 60px auto;
-      padding: 0 20px;
-    }
-
-    .callout {
-      background: #d6cfb2;
-      border-radius: 12px;
-      padding: 28px;
-      margin: 35px 0;
-    }
-
+    main { max-width: 900px; margin: 60px auto; padding: 0 20px; }
+    .callout { background: #d6cfb2; border-radius: 12px; padding: 28px; }
     textarea {
       width: 100%;
       min-height: 80px;
-      margin-top: 8px;
-      margin-bottom: 18px;
+      margin: 10px 0 20px;
       padding: 10px;
       font-family: inherit;
       border-radius: 6px;
       border: 1px solid #b9b29a;
     }
-
     button {
-      margin-top: 30px;
+      margin-top: 20px;
       background: #2f3b2f;
       color: #fff;
       border: none;
@@ -58,23 +39,7 @@
       border-radius: 6px;
       cursor: pointer;
     }
-
-    .gentle {
-      font-style: italic;
-      color: #4a5a4a;
-    }
-
-    .disclaimer {
-      font-size: 0.9rem;
-      color: #4f5a45;
-      margin-top: 40px;
-      border-top: 1px solid #b9b29a;
-      padding-top: 20px;
-    }
-
-    @media print {
-      header, button { display: none; }
-    }
+    .gentle { font-style: italic; color: #4a5a4a; }
   </style>
 </head>
 
@@ -85,38 +50,37 @@
 </header>
 
 <main>
-
   <h1>Your Guided Plan</h1>
-
   <div id="output" class="callout"></div>
-
 </main>
 
 <script>
-const data = JSON.parse(sessionStorage.getItem("ai_result") || {});
+const data = JSON.parse(sessionStorage.getItem("ai_result") || "{}");
+const intake = JSON.parse(sessionStorage.getItem("intake_payload") || "{}");
 const out = document.getElementById("output");
+
+if (!data.state) {
+  out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
+}
 
 /* ============================
    CLARIFICATION MODE
 ============================ */
-if (data.state === "clarification_needed") {
-
-  const questions = data.clarification.questions || [];
+else if (data.state === "clarification_needed") {
 
   out.innerHTML = `
     <h2>We Need a Little More Information</h2>
     <p class="gentle">${data.clarification.reason}</p>
 
     <form id="clarificationForm">
-      ${questions.map((q, i) => `
+      ${data.clarification.questions.map((q, i) => `
         <label><strong>${q}</strong></label>
-        <textarea name="answer_${i}" required></textarea>
+        <textarea name="q${i}" required></textarea>
       `).join("")}
-
       <button type="submit">Continue</button>
     </form>
 
-    <div class="disclaimer">${data.disclaimer}</div>
+    <p class="gentle">${data.disclaimer}</p>
   `;
 
   document.getElementById("clarificationForm").addEventListener("submit", async (e) => {
@@ -124,12 +88,10 @@ if (data.state === "clarification_needed") {
 
     const answers = Object.fromEntries(new FormData(e.target).entries());
 
-    const previous = JSON.parse(sessionStorage.getItem("ai_result_prev") || "{}");
-
     const payload = {
+      ...intake,
       session_type: "clarification",
-      clarified_details: answers,
-      ...previous
+      clarified_details: answers
     };
 
     const res = await fetch("/.netlify/functions/ai-evaluate", {
@@ -142,13 +104,12 @@ if (data.state === "clarification_needed") {
     sessionStorage.setItem("ai_result", JSON.stringify(result));
     window.location.reload();
   });
-
 }
 
 /* ============================
    PLAN MODE
 ============================ */
-else if (data.plan) {
+else {
   const p = data.plan;
 
   out.innerHTML = `
@@ -161,29 +122,13 @@ else if (data.plan) {
     <h3>What This Phase Is Doing</h3>
     <p>${p.plan_overview}</p>
 
-    <h3>Step-by-Step Plan</h3>
+    <h3>Steps</h3>
     <ul>${p.steps.map(s => `<li>${s}</li>`).join("")}</ul>
 
-    <h3>Food Support</h3>
-    <ul>${p.food_support.map(f => `<li>${f}</li>`).join("")}</ul>
-
-    <h3>Hydration & Movement</h3>
-    <ul>${p.hydration_and_movement.map(h => `<li>${h}</li>`).join("")}</ul>
-
-    <h3>Stop & Reassess If</h3>
-    <ul>${p.red_flags_stop.map(r => `<li>${r}</li>`).join("")}</ul>
-
-    <div class="disclaimer">${data.disclaimer}</div>
+    <p class="gentle">${data.disclaimer}</p>
 
     <button onclick="window.print()">Print / Save as PDF</button>
   `;
-}
-
-/* ============================
-   FALLBACK
-============================ */
-else {
-  out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
 }
 </script>
 
