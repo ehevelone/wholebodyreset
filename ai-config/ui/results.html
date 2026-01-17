@@ -4,12 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <!-- PAGE TITLE -->
   <title>Your Guided Plan | Whole Body Reset</title>
 
-  <!-- GLOBAL SITE STYLES -->
   <link rel="stylesheet" href="/css/site.css">
-  
   <meta name="robots" content="noindex, nofollow">
 
   <style>
@@ -20,47 +17,11 @@
       color: #2f3b2f;
       line-height: 1.6;
     }
+    header { background: #e2d6b8; padding: 20px 40px; }
+    header img { height: 48px; }
+    main { max-width: 900px; margin: 60px auto; padding: 0 20px; }
 
-    header {
-      background: #e2d6b8;
-      padding: 20px 40px;
-      display: flex;
-      align-items: center;
-    }
-
-    header img {
-      height: 48px;
-      width: auto;
-      display: block;
-    }
-
-    main {
-      max-width: 900px;
-      margin: 60px auto;
-      padding: 0 20px;
-    }
-
-    h1 {
-      font-size: 2.4rem;
-      margin-bottom: 10px;
-    }
-
-    h2 {
-      font-size: 1.4rem;
-      margin-top: 45px;
-    }
-
-    h3 {
-      margin-top: 36px;
-    }
-
-    p {
-      margin-bottom: 18px;
-    }
-
-    ul {
-      padding-left: 22px;
-    }
+    h1, h2, h3 { margin-top: 36px; }
 
     .callout {
       background: #d6cfb2;
@@ -69,10 +30,7 @@
       margin: 35px 0;
     }
 
-    .gentle {
-      font-style: italic;
-      color: #4a5a4a;
-    }
+    .gentle { font-style: italic; color: #4a5a4a; }
 
     .supplement {
       background: #efe4c9;
@@ -83,17 +41,7 @@
       page-break-inside: avoid;
     }
 
-    .next-checkin {
-      background: #cfd8bf;
-      border-left: 6px solid #2f3b2f;
-      border-radius: 8px;
-      padding: 20px;
-      margin: 40px 0;
-    }
-
-    .actions {
-      margin-top: 40px;
-    }
+    .actions { margin-top: 40px; }
 
     button {
       background: #2f3b2f;
@@ -102,7 +50,6 @@
       padding: 12px 22px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 1rem;
     }
 
     .disclaimer {
@@ -118,7 +65,6 @@
       body { background: #fff; color: #000; }
       main { margin: 0; padding: 0; max-width: none; }
       .callout { background: none; padding: 0; margin: 0; }
-      .next-checkin { border: 1px solid #999; }
       @page { size: letter; margin: 0.75in; }
     }
   </style>
@@ -126,19 +72,11 @@
 
 <body>
 
-<!-- LEAFY BACKGROUND PLACEHOLDERS (DO NOT REMOVE) -->
-<div class="leafy-left"></div>
-<div class="leafy-right"></div>
-
 <header>
   <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
 </header>
 
 <main>
-
-  <!-- ======================
-       PAGE CONTENT START
-       ====================== -->
 
   <h1>Your Guided Plan</h1>
 
@@ -148,109 +86,98 @@
     <button onclick="window.print()">Print / Save as PDF</button>
   </div>
 
-  <!-- ======================
-       PAGE CONTENT END
-       ====================== -->
-
 </main>
-
-<footer>
-  <p>© ET Naturals. All rights reserved.</p>
-  <p>Educational content only. No medical claims.</p>
-</footer>
 
 <script>
 const current = JSON.parse(sessionStorage.getItem("ai_result") || "{}");
-const previous = JSON.parse(sessionStorage.getItem("ai_result_prev") || "{}");
 const out = document.getElementById("output");
 
-function diffSupplements(prevPlan, currPlan) {
-  if (!prevPlan || !currPlan) return [];
-  const prev = (prevPlan.supplements || []).reduce((m,s)=> (m[s.name]=s, m), {});
-  const curr = (currPlan.supplements || []).reduce((m,s)=> (m[s.name]=s, m), {});
-  const changes = [];
-
-  Object.keys(curr).forEach(name => {
-    if (!prev[name]) changes.push(`Added ${name}`);
-    else if (curr[name].how_to_take !== prev[name].how_to_take)
-      changes.push(`${name}: dose or timing adjusted`);
-  });
-  Object.keys(prev).forEach(name => {
-    if (!curr[name]) changes.push(`${name}: paused or removed`);
-  });
-  return changes;
-}
-
-if (!current.state || !current.plan) {
-  out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
-} else {
-
-  const supplementBlocks = (current.plan.supplements || []).map(s => `
-    <div class="supplement">
-      <h4>${s.name}</h4>
-      <p><strong>Purpose:</strong> ${s.purpose}</p>
-      <p><strong>How to take:</strong> ${s.how_to_take}</p>
-      <p><strong>Adjust up:</strong> ${s.adjust_up}</p>
-      <p><strong>Adjust down:</strong> ${s.adjust_down}</p>
-      <p><strong>Pause / stop if:</strong> ${s.pause_or_stop_if}</p>
-    </div>
-  `).join("");
-
-  const changes = diffSupplements(previous.plan, current.plan);
-  const changesHtml = changes.length ? `
-    <h2>What Changed Since Last Time</h2>
-    <ul>${changes.map(c=>`<li>${c}</li>`).join("")}</ul>
-  ` : "";
-
-  const next = current.plan.next_check_in;
-  const nextHtml = next ? `
-    <div class="next-checkin">
-      <h2>Next Check-In</h2>
-      <p><strong>Recommended timing:</strong> ${next.timing}</p>
-
-      <p><strong>What to watch:</strong></p>
-      <ul>${(next.what_to_watch||[]).map(w=>`<li>${w}</li>`).join("")}</ul>
-
-      <p><strong>Check in earlier if:</strong></p>
-      <ul>${(next.check_in_earlier_if||[]).map(e=>`<li>${e}</li>`).join("")}</ul>
-    </div>
-  ` : "";
-
+/* ============================
+   CLARIFICATION MODE
+============================ */
+if (current.state === "clarification_needed") {
   out.innerHTML = `
-    <h2>Current State</h2>
-    <p><strong>${current.state.replace(/_/g," ")}</strong></p>
+    <h2>We Need a Bit More Detail</h2>
 
-    <p class="gentle">${current.reflection || ""}</p>
+    <p>${current.clarification?.reason || ""}</p>
 
-    ${changesHtml}
-    ${nextHtml}
+    <ul>
+      ${(current.clarification?.questions || [])
+        .map(q => `<li>${q}</li>`)
+        .join("")}
+    </ul>
 
-    <h2>Today's Focus</h2>
-    <p>${current.plan.focus_today}</p>
-
-    <h2>What This Phase Is Doing</h2>
-    <p>${current.plan.plan_overview}</p>
-
-    <h2>Step-by-Step Plan</h2>
-    <ul>${(current.plan.steps||[]).map(s=>`<li>${s}</li>`).join("")}</ul>
-
-    <h2>Supplement Support</h2>
-    ${supplementBlocks || "<p>No supplements suggested at this time.</p>"}
-
-    <h2>Food Support</h2>
-    <ul>${(current.plan.food_support||[]).map(f=>`<li>${f}</li>`).join("")}</ul>
-
-    <h2>Hydration & Movement</h2>
-    <ul>${(current.plan.hydration_and_movement||[]).map(h=>`<li>${h}</li>`).join("")}</ul>
-
-    <h2>Stop & Reassess If</h2>
-    <ul>${(current.plan.red_flags_stop||[]).map(r=>`<li>${r}</li>`).join("")}</ul>
-
-    <div class="disclaimer">${current.disclaimer}</div>
+    <p class="gentle">
+      Answer these questions in the intake and resubmit to continue.
+      This helps the system give you accurate, safe guidance.
+    </p>
   `;
-
-  sessionStorage.setItem("ai_result_prev", JSON.stringify(current));
+  return;
 }
+
+/* ============================
+   ERROR STATE
+============================ */
+if (!current.state || !current.plan) {
+  out.innerHTML = `
+    <p>
+      Unable to load your plan.
+      Please restart the intake.
+    </p>
+  `;
+  return;
+}
+
+/* ============================
+   NORMAL PLAN RENDER
+============================ */
+const supplementBlocks = (current.plan.supplements || []).map(s => `
+  <div class="supplement">
+    <h4>${s.name}</h4>
+    <p><strong>Purpose:</strong> ${s.purpose}</p>
+    <p><strong>How to take:</strong> ${s.how_to_take}</p>
+    <p><strong>Adjust up:</strong> ${s.adjust_up}</p>
+    <p><strong>Adjust down:</strong> ${s.adjust_down}</p>
+    <p><strong>Pause / stop if:</strong> ${s.pause_or_stop_if}</p>
+  </div>
+`).join("");
+
+out.innerHTML = `
+  <h2>Current State: ${current.state.replace(/_/g," ")}</h2>
+
+  <p class="gentle">${current.reflection || ""}</p>
+
+  <h3>Today's Focus</h3>
+  <p>${current.plan.focus_today}</p>
+
+  <h3>What This Phase Is Doing</h3>
+  <p>${current.plan.plan_overview}</p>
+
+  <h3>Step-by-Step Plan</h3>
+  <ul>
+    ${(current.plan.steps || []).map(s => `<li>${s}</li>`).join("")}
+  </ul>
+
+  <h3>Supplement Support</h3>
+  ${supplementBlocks || "<p>No supplements suggested at this time.</p>"}
+
+  <h3>Food Support</h3>
+  <ul>
+    ${(current.plan.food_support || []).map(f => `<li>${f}</li>`).join("")}
+  </ul>
+
+  <h3>Hydration & Movement</h3>
+  <ul>
+    ${(current.plan.hydration_and_movement || []).map(h => `<li>${h}</li>`).join("")}
+  </ul>
+
+  <h3>Stop & Reassess If</h3>
+  <ul>
+    ${(current.plan.red_flags_stop || []).map(r => `<li>${r}</li>`).join("")}
+  </ul>
+
+  <div class="disclaimer">${current.disclaimer}</div>
+`;
 </script>
 
 </body>
