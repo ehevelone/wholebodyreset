@@ -41,37 +41,14 @@ export async function handler(event) {
 
   const tolerance = input.tolerance_and_capacity || "";
   const intensity = input.symptom_intensity || "";
-  const hasMeds = !!input.current_meds;
 
-  /* ============================
-     MERGE CLARIFICATION ANSWERS
-  ============================ */
-  let mergedSignal = input.current_symptoms || "";
-
-  if (sessionType === "clarification" && input.clarified_details) {
-    const answers = Object.values(input.clarified_details)
-      .filter(Boolean)
-      .join(" | ");
-    mergedSignal = `${mergedSignal}\nAdditional clarification: ${answers}`;
-  }
-
-  /* ============================
-     VAGUE INPUT DETECTION
-     (disabled after clarification)
-  ============================ */
   const isVague =
-    sessionType !== "clarification" &&
-    (
-      !mergedSignal ||
-      mergedSignal.trim().length < 60 ||
-      (!intensity && !tolerance)
-    );
+    (!input.current_symptoms || input.current_symptoms.trim().length < 40) ||
+    (!intensity && !tolerance);
 
   /* ============================
-     VERIFY GUIDED USER
+     GUIDED USER CHECK
   ============================ */
-  let fromGuided = false;
-
   if (email) {
     const { data } = await supabase
       .from("guided_users")
@@ -79,15 +56,13 @@ export async function handler(event) {
       .eq("email", email)
       .single();
 
-    if (data) fromGuided = true;
-  }
-
-  if (fromGuided && entryContext === "foundation") {
-    entryContext = "os_escalation";
+    if (data && entryContext === "foundation") {
+      entryContext = "os_escalation";
+    }
   }
 
   /* ============================
-     LOAD AI JOURNEY
+     LOAD JOURNEY
   ============================ */
   let journey = null;
 
@@ -102,41 +77,6 @@ export async function handler(event) {
   }
 
   /* ============================
-     STATE LOGIC
-  ============================ */
-  let output_state = journey?.current_state || "hold_steady";
-
-  if (
-    intensity === "Intense" ||
-    tolerance === "Easily overwhelmed" ||
-    tolerance === "Sensitive to changes" ||
-    tolerance === "Lower than before"
-  ) {
-    output_state = "slow_down";
-  }
-
-  if (
-    intensity === "Mild" &&
-    (tolerance === "Generally stable" || tolerance === "Better than before")
-  ) {
-    output_state = "integration";
-  }
-
-  /* ============================
-     SAFETY FLAGS
-  ============================ */
-  const flags = {
-    pregnant: input.pregnant === true,
-    breastfeeding: input.breastfeeding === true,
-    onStimulants: input.on_stimulants === true,
-    onBloodThinners: input.on_blood_thinners === true,
-    onSSRIs: input.on_ssris === true,
-    highSensitivity:
-      tolerance === "Sensitive to changes" ||
-      tolerance === "Easily overwhelmed"
-  };
-
-  /* ============================
      SYSTEM PROMPT
   ============================ */
   const systemPrompt = `
@@ -144,41 +84,21 @@ You are the Whole Body Reset AI Guide.
 
 NON-NEGOTIABLE RULES
 - Educational support only
-- No diagnosing, treating, curing
-- Never replace, stop, or adjust medications
-- No medical claims or urgency
+- No diagnosing or treating
+- Never change medications
+- No urgency language
 
-PROGRAM FRAME
-- Foundations assumed unless stated
-- Aggressive detox never used
+PROGRAM RULES
+- Foundations assumed
+- No aggressive detox
 - Pacing overrides speed
-- Goal is system stability
 
 ENTRY CONTEXT: ${entryContext}
 
-OS ESCALATION RULES
-- Do NOT restart program
-- Do NOT default to hydration or supplements
-- Reduction precedes addition
-
-CLARIFICATION RULES
-- If clarification has already been provided, do NOT repeat questions
-- Ask again ONLY if genuinely new information is required
-- Never ask the same question twice
-
-STABILIZATION WINDOW
-- 48 hours to 10 days
-- Explain why chosen
-- Explain what is intentionally NOT added
-
-SUPPLEMENT RULES
-- Magnesium and fiber are NOT defaults
-- Include only if mechanism is clear
-- Explicitly state why excluded if not used
-
-EXPANDED EXPLANATION REQUIRED
-- Explain why each step exists
-- Explain why things are paused or avoided
+If input is vague:
+- DO NOT generate a plan
+- Return clarification_needed
+- Ask 4–6 questions focused on load, reactions, timing
 
 OUTPUT FORMAT (STRICT JSON ONLY)
 `;
@@ -187,50 +107,54 @@ OUTPUT FORMAT (STRICT JSON ONLY)
      USER PROMPT
   ============================ */
   const userPrompt = `
-ENTRY CONTEXT: ${entryContext}
-SESSION TYPE: ${sessionType}
-VAGUE INPUT: ${isVague}
-
-MERGED SIGNAL:
-${mergedSignal || "not provided"}
-
-PROGRESS: ${input.overall_progress || "not provided"}
+SYMPTOMS: ${input.current_symptoms || "not provided"}
 TOLERANCE: ${tolerance}
+INTENSITY: ${intensity}
 GOALS: ${input.goals || "not provided"}
-MEDS LISTED: ${hasMeds}
-
-SAFETY FLAGS:
-${JSON.stringify(flags, null, 2)}
-
-PREVIOUS PLAN:
-${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
+VAGUE INPUT: ${isVague}
 `;
 
   /* ============================
-     AI CALL
+     AI CALL (SAFE)
   ============================ */
-  let parsed;
+  let raw = "";
+  let parsed = null;
+
   try {
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.15,
+      temperature: 0.1,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ]
     });
 
-    parsed = JSON.parse(aiResponse.choices[0].message.content);
+    raw = aiResponse.choices[0].message.content;
+    parsed = JSON.parse(raw);
+
   } catch (err) {
-    console.error("AI ERROR:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "AI generation failed" })
+    console.error("AI PARSE FAILURE — FALLING BACK");
+
+    parsed = {
+      state: "clarification_needed",
+      clarification: {
+        reason:
+          "We need a bit more detail to safely tailor guidance.",
+        questions: [
+          "What changed most recently before symptoms appeared?",
+          "What reactions occur after meals or supplements?",
+          "Are symptoms constant or do they fluctuate during the day?",
+          "What have you already tried that made things worse?",
+          "What feels easiest on your system right now?"
+        ]
+      },
+      disclaimer: "Educational support only. Not medical advice."
     };
   }
 
   /* ============================
-     SAVE AI JOURNEY
+     SAVE JOURNEY (PLANS ONLY)
   ============================ */
   if (emailHash && parsed.state !== "clarification_needed") {
     if (journey) {
