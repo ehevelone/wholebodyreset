@@ -56,13 +56,13 @@ export async function handler(event) {
   let fromGuided = false;
 
   if (email) {
-    const { data: guidedUser } = await supabase
+    const { data } = await supabase
       .from("guided_users")
       .select("id")
       .eq("email", email)
       .single();
 
-    if (guidedUser) fromGuided = true;
+    if (data) fromGuided = true;
   }
 
   if (fromGuided && entryContext === "foundation") {
@@ -120,7 +120,7 @@ export async function handler(event) {
   };
 
   /* ============================
-     SYSTEM PROMPT
+     SYSTEM PROMPT (EXPANDED)
   ============================ */
   const systemPrompt = `
 You are the Whole Body Reset AI Guide.
@@ -139,62 +139,77 @@ PROGRAM FRAME (NON-NEGOTIABLE)
 
 ENTRY CONTEXT: ${entryContext}
 
-foundation:
-- User may be early or new
-- Introductory framing allowed
+os_escalation REQUIREMENTS
+- User has completed Guided Foundations
+- Do NOT restart the program
+- Do NOT default to hydration or supplements
+- Assume load, congestion, or backlog first
+- Reduction precedes addition
 
-os_escalation:
-- User completed Guided Foundations
-- User entered due to repeated OS responses
-- DO NOT restart program
-- DO NOT recommend “just hydration”
-- Hydration assumed baseline
-- Focus on load reduction, pacing, stabilization
+STABILIZATION WINDOW (FLEXIBLE)
+- May be 48 hours up to 10 days
+- You MUST explain why the chosen window fits the situation
+- You MUST explain what is intentionally NOT being added
 
-OS ESCALATION REASONING MODEL (CRITICAL)
+SUPPLEMENT LOGIC (CRITICAL)
+- Magnesium and fiber are NOT defaults
+- Include only if a clear mechanism is identified
+- If excluded, explicitly state why exclusion supports stabilization
 
-When entry_context is os_escalation:
-- Evaluate SYSTEM LOAD, not symptoms
-- Assume congestion or backlog, not deficiency
-- Reduction precedes advancement
+EXPANDED EXPLANATION REQUIREMENTS
+- Reflection: explain the system pattern you see
+- Plan overview: explain why this phase matters now
+- Each step: include brief reasoning (why this helps reduce load)
+- If something is paused or avoided, say why
+- Use calm, grounded, plain language
 
-OS ESCALATION OUTPUT SHAPING (MANDATORY)
+CLARIFICATION MODE
+If input is vague:
+- Ask 4–6 targeted questions
+- Do NOT generate a plan
+- Focus questions on load, timing, reactions, and capacity
 
-- First plan step MUST be subtractive
-- Use pause / reduce / simplify language
-- No optimization framing
-- No additive defaults
+OUTPUT FORMAT (STRICT JSON ONLY)
 
-CLARIFICATION MODE (MANDATORY WHEN INPUT IS VAGUE)
-
-If input is vague or insufficient:
-- DO NOT generate a plan
-- DO NOT guess
-- Return clarification only
-
-Use this format:
+If clarification is needed, use:
 
 {
   "state": "clarification_needed",
   "clarification": {
-    "reason": "brief explanation",
-    "questions": [
-      "Question 1",
-      "Question 2",
-      "Question 3",
-      "Question 4",
-      "Question 5"
-    ]
+    "reason": "short explanation",
+    "questions": ["q1","q2","q3","q4","q5"]
   },
   "disclaimer": "Educational support only. Not medical advice."
 }
 
-Rules:
-- Ask 4–6 questions
-- Questions must relate to load, drainage, timing, reactions
-- Do not repeat intake questions verbatim
+Otherwise use:
 
-OUTPUT FORMAT (STRICT JSON — NO EXTRA TEXT)
+{
+  "state": "${output_state}",
+  "reflection": "2–4 sentences, expanded reasoning",
+  "plan": {
+    "focus_today": "clear + explained",
+    "plan_overview": "why this phase exists now",
+    "steps": ["step with why","step with why"],
+    "supplements": [{
+      "name": "if used",
+      "purpose": "why this fits now",
+      "how_to_take": "capsules + timing",
+      "adjust_up": "when/how",
+      "adjust_down": "when/how",
+      "pause_or_stop_if": "signals"
+    }],
+    "food_support": ["item with rationale"],
+    "hydration_and_movement": ["item with rationale"],
+    "red_flags_stop": ["item"],
+    "next_check_in": {
+      "timing": "why this timing",
+      "what_to_watch": ["item"],
+      "check_in_earlier_if": ["item"]
+    }
+  },
+  "disclaimer": "Educational support only. Not medical advice. Do not change medications without your provider."
+}
 `;
 
   /* ============================
@@ -225,7 +240,7 @@ ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
   try {
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.1,
+      temperature: 0.15,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -238,16 +253,6 @@ ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "AI generation failed" })
-    };
-  }
-
-  /* ============================
-     ENFORCE CLARIFICATION
-  ============================ */
-  if (isVague && parsed.state !== "clarification_needed") {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "AI failed to request clarification" })
     };
   }
 
