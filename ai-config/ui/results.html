@@ -34,19 +34,23 @@
     .callout {
       background: #d6cfb2;
       border-radius: 12px;
-      padding: 24px;
+      padding: 28px;
       margin: 35px 0;
     }
 
-    .gentle {
-      font-style: italic;
-      color: #4a5a4a;
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      margin-top: 8px;
+      margin-bottom: 18px;
+      padding: 10px;
+      font-family: inherit;
+      border-radius: 6px;
+      border: 1px solid #b9b29a;
     }
 
-    ul { padding-left: 22px; }
-
     button {
-      margin-top: 40px;
+      margin-top: 30px;
       background: #2f3b2f;
       color: #fff;
       border: none;
@@ -55,10 +59,15 @@
       cursor: pointer;
     }
 
+    .gentle {
+      font-style: italic;
+      color: #4a5a4a;
+    }
+
     .disclaimer {
       font-size: 0.9rem;
       color: #4f5a45;
-      margin-top: 50px;
+      margin-top: 40px;
       border-top: 1px solid #b9b29a;
       padding-top: 20px;
     }
@@ -81,84 +90,100 @@
 
   <div id="output" class="callout"></div>
 
-  <button onclick="window.print()">Print / Save as PDF</button>
-
 </main>
 
 <script>
-const data = JSON.parse(sessionStorage.getItem("ai_result") || "{}");
+const data = JSON.parse(sessionStorage.getItem("ai_result") || {});
 const out = document.getElementById("output");
-
-if (!data.state) {
-  out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
-}
 
 /* ============================
    CLARIFICATION MODE
 ============================ */
-else if (data.state === "clarification_needed") {
+if (data.state === "clarification_needed") {
+
+  const questions = data.clarification.questions || [];
+
   out.innerHTML = `
     <h2>We Need a Little More Information</h2>
-    <p class="gentle">${data.clarification?.reason || ""}</p>
+    <p class="gentle">${data.clarification.reason}</p>
 
-    <h3>Please answer the following:</h3>
-    <ul>
-      ${(data.clarification?.questions || [])
-        .map(q => `<li>${q}</li>`)
-        .join("")}
-    </ul>
+    <form id="clarificationForm">
+      ${questions.map((q, i) => `
+        <label><strong>${q}</strong></label>
+        <textarea name="answer_${i}" required></textarea>
+      `).join("")}
 
-    <p class="gentle">
-      Once you’ve clarified these, re-submit the intake so the plan can be tailored correctly.
-    </p>
+      <button type="submit">Continue</button>
+    </form>
 
-    <div class="disclaimer">
-      ${data.disclaimer || "Educational support only. Not medical advice."}
-    </div>
+    <div class="disclaimer">${data.disclaimer}</div>
   `;
+
+  document.getElementById("clarificationForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const answers = Object.fromEntries(new FormData(e.target).entries());
+
+    const previous = JSON.parse(sessionStorage.getItem("ai_result_prev") || "{}");
+
+    const payload = {
+      session_type: "clarification",
+      clarified_details: answers,
+      ...previous
+    };
+
+    const res = await fetch("/.netlify/functions/ai-evaluate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+    sessionStorage.setItem("ai_result", JSON.stringify(result));
+    window.location.reload();
+  });
+
 }
 
 /* ============================
    PLAN MODE
 ============================ */
-else {
-  const p = data.plan || {};
+else if (data.plan) {
+  const p = data.plan;
 
   out.innerHTML = `
     <h2>Current State: ${data.state.replace(/_/g," ")}</h2>
-    <p class="gentle">${data.reflection || ""}</p>
+    <p class="gentle">${data.reflection}</p>
 
     <h3>Today's Focus</h3>
-    <p>${p.focus_today || ""}</p>
+    <p>${p.focus_today}</p>
 
     <h3>What This Phase Is Doing</h3>
-    <p>${p.plan_overview || ""}</p>
+    <p>${p.plan_overview}</p>
 
     <h3>Step-by-Step Plan</h3>
-    <ul>${(p.steps || []).map(s => `<li>${s}</li>`).join("")}</ul>
-
-    ${
-      (p.supplements && p.supplements.length)
-        ? `<h3>Supplement Support</h3>` +
-          p.supplements.map(s => `
-            <p><strong>${s.name}</strong><br>
-            ${s.purpose}<br>
-            <em>${s.how_to_take}</em></p>
-          `).join("")
-        : `<p class="gentle">No supplements are being added at this time.</p>`
-    }
+    <ul>${p.steps.map(s => `<li>${s}</li>`).join("")}</ul>
 
     <h3>Food Support</h3>
-    <ul>${(p.food_support || []).map(f => `<li>${f}</li>`).join("")}</ul>
+    <ul>${p.food_support.map(f => `<li>${f}</li>`).join("")}</ul>
 
     <h3>Hydration & Movement</h3>
-    <ul>${(p.hydration_and_movement || []).map(h => `<li>${h}</li>`).join("")}</ul>
+    <ul>${p.hydration_and_movement.map(h => `<li>${h}</li>`).join("")}</ul>
 
     <h3>Stop & Reassess If</h3>
-    <ul>${(p.red_flags_stop || []).map(r => `<li>${r}</li>`).join("")}</ul>
+    <ul>${p.red_flags_stop.map(r => `<li>${r}</li>`).join("")}</ul>
 
-    <div class="disclaimer">${data.disclaimer || ""}</div>
+    <div class="disclaimer">${data.disclaimer}</div>
+
+    <button onclick="window.print()">Print / Save as PDF</button>
   `;
+}
+
+/* ============================
+   FALLBACK
+============================ */
+else {
+  out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
 }
 </script>
 
