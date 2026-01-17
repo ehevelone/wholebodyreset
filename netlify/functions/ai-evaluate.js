@@ -38,14 +38,20 @@ export async function handler(event) {
 
   const sessionType = input.session_type || "initial";
   let entryContext = input.entry_context || "foundation";
-  // foundation | os_escalation
 
   const tolerance = input.tolerance_and_capacity || "";
   const intensity = input.symptom_intensity || "";
   const hasMeds = !!input.current_meds;
 
   /* ============================
-     VERIFY GUIDED USER (READ-ONLY)
+     VAGUE INPUT DETECTION
+  ============================ */
+  const isVague =
+    (!input.current_symptoms || input.current_symptoms.trim().length < 40) ||
+    (!intensity && !tolerance);
+
+  /* ============================
+     VERIFY GUIDED USER
   ============================ */
   let fromGuided = false;
 
@@ -56,18 +62,15 @@ export async function handler(event) {
       .eq("email", email)
       .single();
 
-    if (guidedUser) {
-      fromGuided = true;
-    }
+    if (guidedUser) fromGuided = true;
   }
 
-  // Backend truth override (never downgrade Guided users)
   if (fromGuided && entryContext === "foundation") {
     entryContext = "os_escalation";
   }
 
   /* ============================
-     LOAD EXISTING AI JOURNEY
+     LOAD AI JOURNEY
   ============================ */
   let journey = null;
 
@@ -82,7 +85,7 @@ export async function handler(event) {
   }
 
   /* ============================
-     STATE LOGIC (FINAL)
+     STATE LOGIC
   ============================ */
   let output_state = journey?.current_state || "hold_steady";
 
@@ -117,7 +120,7 @@ export async function handler(event) {
   };
 
   /* ============================
-     SYSTEM PROMPT (LOCKED)
+     SYSTEM PROMPT
   ============================ */
   const systemPrompt = `
 You are the Whole Body Reset AI Guide.
@@ -125,15 +128,14 @@ You are the Whole Body Reset AI Guide.
 NON-NEGOTIABLE RULES
 - Educational support only
 - No diagnosing, treating, curing
-- Never replace or adjust medications
+- Never replace, stop, or adjust medications
 - No medical claims or urgency
 
 PROGRAM FRAME (NON-NEGOTIABLE)
-- Foundations are assumed unless stated otherwise
+- Foundations are assumed unless explicitly stated otherwise
 - Aggressive detox is never used
 - Pacing always overrides speed
-
-ENTRY CONTEXT (NON-NEGOTIABLE)
+- Goal is SYSTEM STABILITY, not symptom suppression
 
 ENTRY CONTEXT: ${entryContext}
 
@@ -143,71 +145,56 @@ foundation:
 
 os_escalation:
 - User completed Guided Foundations
-- User experienced repeated OS responses
-- DO NOT restart the program
-- DO NOT recommend "just hydration"
-- Hydration is baseline, not solution
+- User entered due to repeated OS responses
+- DO NOT restart program
+- DO NOT recommend “just hydration”
+- Hydration assumed baseline
 - Focus on load reduction, pacing, stabilization
 
-SESSION TYPE: ${sessionType}
-CURRENT STATE: ${output_state}
+OS ESCALATION REASONING MODEL (CRITICAL)
 
-PLAN CONTINUITY
-If a previous plan exists:
-- MODIFY it
-- Do NOT replace it
+When entry_context is os_escalation:
+- Evaluate SYSTEM LOAD, not symptoms
+- Assume congestion or backlog, not deficiency
+- Reduction precedes advancement
 
-MEDICATION CONTEXT (ALLOWED)
-If meds listed, include ONE sentence:
-"This plan is designed to work alongside existing care and does not suggest changes to medications. If questions arise over time, those discussions belong with your provider."
+OS ESCALATION OUTPUT SHAPING (MANDATORY)
 
-SUPPLEMENT WHITELIST ONLY
-- Magnesium (glycinate/malate/citrate)
-- Vitamin C, D3, B12, B-Complex
-- Electrolytes (no stimulants)
-- Omega-3
-- Probiotics
-- Digestive enzymes
-- Zinc, Selenium
-- Iron (existing use only)
-- Fiber
-- Ginger, Turmeric (low dose)
-- Chamomile, Peppermint
+- First plan step MUST be subtractive
+- Use pause / reduce / simplify language
+- No optimization framing
+- No additive defaults
 
-HARD EXCLUSIONS
-- No detox herbs, binders, cleanses
-- Pregnancy/breastfeeding: food-first only
-- SSRIs: no serotonergic supplements
-- Blood thinners: turmeric food-only
+CLARIFICATION MODE (MANDATORY WHEN INPUT IS VAGUE)
 
-OUTPUT FORMAT (STRICT JSON)
+If input is vague or insufficient:
+- DO NOT generate a plan
+- DO NOT guess
+- Return clarification only
+
+Use this format:
 
 {
-  "state": "${output_state}",
-  "reflection": "2–4 sentences",
-  "plan": {
-    "focus_today": "string",
-    "plan_overview": "string",
-    "steps": ["step","step"],
-    "supplements": [{
-      "name": "whitelist only",
-      "purpose": "plain language",
-      "how_to_take": "capsules + timing",
-      "adjust_up": "when/how",
-      "adjust_down": "when/how",
-      "pause_or_stop_if": "signals"
-    }],
-    "food_support": ["item"],
-    "hydration_and_movement": ["item"],
-    "red_flags_stop": ["item"],
-    "next_check_in": {
-      "timing": "string",
-      "what_to_watch": ["item"],
-      "check_in_earlier_if": ["item"]
-    }
+  "state": "clarification_needed",
+  "clarification": {
+    "reason": "brief explanation",
+    "questions": [
+      "Question 1",
+      "Question 2",
+      "Question 3",
+      "Question 4",
+      "Question 5"
+    ]
   },
-  "disclaimer": "Educational support only. Not medical advice. Do not change medications without your provider."
+  "disclaimer": "Educational support only. Not medical advice."
 }
+
+Rules:
+- Ask 4–6 questions
+- Questions must relate to load, drainage, timing, reactions
+- Do not repeat intake questions verbatim
+
+OUTPUT FORMAT (STRICT JSON — NO EXTRA TEXT)
 `;
 
   /* ============================
@@ -215,6 +202,7 @@ OUTPUT FORMAT (STRICT JSON)
   ============================ */
   const userPrompt = `
 ENTRY CONTEXT: ${entryContext}
+VAGUE INPUT DETECTED: ${isVague}
 
 SYMPTOMS: ${input.current_symptoms || input.new_symptoms || "not provided"}
 PROGRESS: ${input.overall_progress || "not provided"}
@@ -237,7 +225,7 @@ ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
   try {
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.15,
+      temperature: 0.1,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -254,9 +242,19 @@ ${journey?.last_plan ? JSON.stringify(journey.last_plan, null, 2) : "None"}
   }
 
   /* ============================
+     ENFORCE CLARIFICATION
+  ============================ */
+  if (isVague && parsed.state !== "clarification_needed") {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "AI failed to request clarification" })
+    };
+  }
+
+  /* ============================
      SAVE AI JOURNEY
   ============================ */
-  if (emailHash) {
+  if (emailHash && parsed.state !== "clarification_needed") {
     if (journey) {
       await supabase
         .from("ai_journey")
