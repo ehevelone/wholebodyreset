@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
   <title>Your Guided Plan | Whole Body Reset</title>
-  <link rel="stylesheet" href="/css/site.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="/css/site.css">
 
   <style>
     body {
@@ -14,7 +13,7 @@
       font-family: Georgia, "Times New Roman", serif;
       background: #efe4c9;
       color: #2f3b2f;
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
     header {
@@ -29,29 +28,26 @@
     }
 
     h1 {
-      font-size: 2.4rem;
+      font-size: 2.6rem;
       margin-bottom: 20px;
     }
 
-    .card {
-      background: #dcd6bd;
-      padding: 30px;
+    .panel {
+      background: #d9d2b5;
       border-radius: 10px;
+      padding: 30px;
     }
 
-    label {
-      display: block;
-      margin-top: 20px;
-      font-weight: bold;
+    .error {
+      font-style: italic;
     }
 
-    textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      font-family: inherit;
-      border-radius: 6px;
-      border: 1px solid #b9b29a;
+    ul {
+      margin-top: 15px;
+    }
+
+    li {
+      margin-bottom: 10px;
     }
 
     button {
@@ -65,101 +61,107 @@
       font-size: 1rem;
     }
 
-    .error {
-      font-style: italic;
+    footer {
+      margin-top: 80px;
+      padding: 40px 20px;
+      background: #e2d6b8;
+      font-size: 0.9rem;
+      color: #4f5a45;
+      text-align: center;
     }
   </style>
 </head>
 
 <body>
 
-<header></header>
+<header>
+  <h1>Your Guided Plan</h1>
+</header>
 
 <main>
-  <h1>Your Guided Plan</h1>
-  <div id="content" class="card"></div>
+  <div id="content" class="panel"></div>
 </main>
 
+<footer>
+  <p>Educational support only. Not medical advice.</p>
+</footer>
+
 <script>
-const container = document.getElementById("content");
-const aiResult = JSON.parse(sessionStorage.getItem("ai_result") || "null");
+(function () {
+  const container = document.getElementById("content");
+  let data;
 
-if (!aiResult) {
-  container.innerHTML = "<p class='error'>Unable to load your plan. Please restart the intake.</p>";
-}
-
-/* ===============================
-   CLARIFICATION MODE
-================================ */
-else if (aiResult.state === "clarification_needed") {
-  const questions = aiResult.clarification.questions;
-
-  let html = `
-    <h2>We need a little more information</h2>
-    <p>${aiResult.clarification.reason || "To better tailor your plan, please answer the following:"}</p>
-    <form id="clarifyForm">
-  `;
-
-  questions.forEach((q, i) => {
-    html += `
-      <label>${q}</label>
-      <textarea name="q_${i}" rows="3" required></textarea>
+  try {
+    data = JSON.parse(sessionStorage.getItem("ai_result"));
+  } catch (e) {
+    container.innerHTML = `
+      <p class="error">Unable to load your plan. Please restart the intake.</p>
     `;
-  });
+    return;
+  }
 
-  html += `
-      <button type="submit">Continue</button>
-    </form>
-  `;
+  if (!data || !data.state) {
+    container.innerHTML = `
+      <p class="error">Unable to load your plan. Please restart the intake.</p>
+    `;
+    return;
+  }
 
-  container.innerHTML = html;
+  /* ===========================
+     CLARIFICATION MODE
+  ============================ */
+  if (data.state === "clarification_needed" && data.clarification) {
+    container.innerHTML = `
+      <h2>We Need a Little More Information</h2>
+      <p>${data.clarification.reason || "To better tailor your plan, please answer the following:"}</p>
+      <ul>
+        ${data.clarification.questions.map(q => `<li>${q}</li>`).join("")}
+      </ul>
+      <p><em>Once you’ve answered these, return to the intake to continue.</em></p>
+    `;
+    return;
+  }
 
-  document.getElementById("clarifyForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+  /* ===========================
+     PLAN MODE
+  ============================ */
+  if (data.plan) {
+    container.innerHTML = `
+      <h2>Current State</h2>
+      <p><strong>${data.state.replace("_", " ")}</strong></p>
 
-    const original = JSON.parse(sessionStorage.getItem("intake_payload") || "{}");
-    const answers = Object.fromEntries(new FormData(e.target).entries());
+      <h3>Today's Focus</h3>
+      <p>${data.plan.focus_today}</p>
 
-    const payload = {
-      ...original,
-      clarification_answers: answers,
-      session_type: "clarification_followup"
-    };
+      <h3>What This Phase Is Doing</h3>
+      <p>${data.plan.plan_overview}</p>
 
-    const res = await fetch("/.netlify/functions/ai-evaluate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+      <h3>Step-by-Step Plan</h3>
+      <ul>
+        ${data.plan.steps.map(s => `<li>${s}</li>`).join("")}
+      </ul>
 
-    const result = await res.json();
-    sessionStorage.setItem("ai_result", JSON.stringify(result));
-    window.location.reload();
-  });
-}
+      ${data.plan.supplements?.length ? `
+        <h3>Supplement Support</h3>
+        ${data.plan.supplements.map(s => `
+          <p><strong>${s.name}</strong>: ${s.purpose}<br>
+          <em>${s.how_to_take}</em></p>
+        `).join("")}
+      ` : ""}
 
-/* ===============================
-   NORMAL PLAN MODE
-================================ */
-else if (aiResult.plan) {
+      <h3>Next Check-In</h3>
+      <p>${data.plan.next_check_in?.timing}</p>
+    `;
+    return;
+  }
+
+  /* ===========================
+     FALLBACK (SHOULD NEVER HIT)
+  ============================ */
   container.innerHTML = `
-    <h2>${aiResult.plan.focus_today}</h2>
-    <p>${aiResult.plan.plan_overview}</p>
-    <ul>${aiResult.plan.steps.map(s => `<li>${s}</li>`).join("")}</ul>
+    <p class="error">Unable to load your plan. Please restart the intake.</p>
   `;
-}
-
-/* ===============================
-   FALLBACK ERROR
-================================ */
-else {
-  container.innerHTML = `
-    <p class="error">
-      We received an unexpected response.<br><br>
-      Please restart the intake.
-    </p>
-  `;
-}
+})();
 </script>
 
 </body>
