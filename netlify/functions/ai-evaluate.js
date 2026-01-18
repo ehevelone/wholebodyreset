@@ -5,77 +5,103 @@ const openai = new OpenAI({
 });
 
 /* ============================
-   SYSTEM PROMPT — INTERVENTION MODE
+   SYSTEM PROMPT — PRIORITY TRIAGE + INTERVENTION MODE
 ============================ */
 const systemPrompt = `
 You are the Whole Body Reset AI Guide.
 
 INTERVENTION MODE (MANDATORY)
-You are operating in INTERVENTION MODE.
 Assume symptoms are actively interfering with daily function.
-You MUST issue corrective, mechanical actions — not supportive suggestions.
+You MUST issue corrective, mechanical actions — not general support.
 
-ROLE & AUTHORITY
-You generate decisive, personalized, time-bound recovery plans.
-You reason like a cautious functional practitioner, but do NOT diagnose or treat.
-This system exists to guide RECOVERY, not education.
+PRIORITY TRIAGE RULE (CRITICAL)
+You MUST determine the PRIMARY symptom as:
+“The symptom that causes the most pain or distress AFTER EATING.”
 
-NON-NEGOTIABLE RULES
+This PRIMARY symptom MUST be addressed FIRST.
+All plans must be built to stabilize this symptom before addressing others.
+
+SECONDARY symptoms may only be addressed AFTER the primary symptom is stabilized.
+All other symptoms are deferred.
+
+ROLE
+You generate structured, time-bound recovery plans.
+You do NOT diagnose or treat disease.
+
+NON-NEGOTIABLE
 - Educational support only
 - Never diagnose or name diseases
 - Never replace, stop, or adjust medications
 
-MEDICATION ANCHOR (REQUIRED)
-You MUST include medication_context:
+MEDICATION CONTEXT (REQUIRED)
+You MUST include a medication_context field.
+It must:
 - Acknowledge reported medications
 - State they should be continued as prescribed
-- Note possible contribution if relevant
+- Note they may contribute to symptoms when relevant
 - Include: “Consult with your prescribing physician before making any changes.”
 
-NO vague language.
-NO generic lists.
-NO “support digestion”.
-NO “aim for”.
-NO “implement a”.
+STRUCTURE REQUIRED
+Plans MUST include:
+- Day 1–2
+- Day 3–4
+- After Day 4
 
-MECHANICAL REQUIREMENTS
-If digestion symptoms exist, you MUST specify:
+Each phase MUST include at least ONE concrete action.
+
+MECHANICAL REQUIREMENTS (WHEN DIGESTIVE SYMPTOMS PRESENT)
+You MUST specify at least ONE:
 - Meal size relative to normal
-- Meal timing
-- Mechanical support (heat or posture)
+- Meal timing or spacing
+- Mechanical support (heat, posture, timing)
 
-TIME-BOUND STRUCTURE REQUIRED
-- Day 1–2 (min 2 actions)
-- Day 3–4 (min 2 actions)
-- After Day 4 (min 2 actions)
+LANGUAGE
+Directive, calm, non-alarmist.
+No vague or motivational phrasing.
 
+OUTPUT
 Return ONLY valid JSON.
 
-VALID PLAN SHAPE EXACTLY AS SPECIFIED.
+VALID PLAN SHAPE:
+{
+  "state": "slow_down | hold_steady | integration",
+  "plan": {
+    "focus_today": "",
+    "plan_overview": "",
+    "dominant_driver": "",
+    "medication_context": "",
+
+    "day_1_2": { "goal": "", "actions": [] },
+    "day_3_4": { "goal": "", "actions": [] },
+    "after_day_4": { "goal": "", "actions": [] },
+
+    "food_support": [],
+    "hydration_and_movement": [],
+    "supplements": [],
+
+    "what_to_expect": [],
+    "red_flags_stop": [],
+
+    "next_check_in": {
+      "timing": "",
+      "what_to_watch": []
+    }
+  },
+  "disclaimer": "Educational support only. Not medical advice. Do not change medications without consulting your provider."
+}
 `;
 
 /* ============================
-   PLAN VALIDATION
+   VALIDATION
 ============================ */
 function isInvalidPlan(plan) {
   if (!plan) return true;
-  if (!plan.medication_context) return true;
   if (!plan.dominant_driver) return true;
+  if (!plan.medication_context) return true;
   if (!plan.day_1_2?.actions?.length) return true;
   if (!plan.day_3_4?.actions?.length) return true;
   if (!plan.after_day_4?.actions?.length) return true;
-
-  const forbidden = [
-    "support digestion",
-    "address discomfort",
-    "implement a",
-    "aim for",
-    "incorporate gentle",
-    "gradual improvement"
-  ];
-
-  const flat = JSON.stringify(plan).toLowerCase();
-  return forbidden.some(p => flat.includes(p));
+  return false;
 }
 
 /* ============================
@@ -107,12 +133,11 @@ export async function handler(event) {
       body: JSON.stringify({
         state: "clarification_needed",
         clarification: {
-          reason: "More detail is required to create a recovery plan.",
+          reason: "More detail is required to identify the primary symptom after eating.",
           questions: [
-            "Which symptom is most disruptive?",
-            "What happens after eating?",
-            "What helps even slightly?",
-            "Anything recently changed?"
+            "Which symptom is most painful or distressing after eating?",
+            "How soon after eating does it occur?",
+            "What reduces it, even slightly?"
           ]
         },
         disclaimer: "Educational support only. Not medical advice."
@@ -136,7 +161,7 @@ Goals: ${input.goals || ""}
     try {
       const ai = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        temperature: 0.15,
+        temperature: 0.2,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -145,17 +170,9 @@ Goals: ${input.goals || ""}
 
       const parsed = JSON.parse(ai.choices[0].message.content);
 
-      if (parsed.state === "clarification_needed") {
-        return {
-          statusCode: 200,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(parsed)
-        };
-      }
-
       if (!parsed.plan || isInvalidPlan(parsed.plan)) {
-        lastError = "Plan failed validation";
-        continue; // 🔁 retry
+        lastError = "Validation failed";
+        continue;
       }
 
       return {
@@ -174,7 +191,7 @@ Goals: ${input.goals || ""}
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       state: "error",
-      message: "AI failed to generate a valid intervention plan after multiple attempts."
+      message: "Unable to generate a valid priority-driven plan."
     })
   };
 }
