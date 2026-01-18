@@ -11,19 +11,12 @@
   <style>
     body {
       margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
+      font-family: Georgia, serif;
       background: #efe4c9;
       color: #2f3b2f;
     }
-    header {
-      background: #e2d6b8;
-      padding: 20px 40px;
-    }
-    main {
-      max-width: 900px;
-      margin: 60px auto;
-      padding: 0 20px;
-    }
+    header { background: #e2d6b8; padding: 20px 40px; }
+    main { max-width: 900px; margin: 60px auto; padding: 0 20px; }
     textarea, select, input {
       width: 100%;
       padding: 10px;
@@ -86,25 +79,44 @@
 document.getElementById("intakeForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const data = Object.fromEntries(new FormData(e.target).entries());
+  const payload = Object.fromEntries(new FormData(e.target).entries());
 
   try {
     const res = await fetch("/.netlify/functions/ai-evaluate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify(payload)
     });
 
-    const json = await res.json();
+    const text = await res.text();
+    console.log("RAW AI RESPONSE:", text);
 
-    // 🔒 USE LOCAL STORAGE (NOT SESSION)
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new Error("AI did not return valid JSON");
+    }
+
+    // 🔒 STORE ONLY AFTER SUCCESS
     localStorage.setItem("ai_result", JSON.stringify(json));
+
+    if (!localStorage.getItem("ai_result")) {
+      throw new Error("Storage failed");
+    }
 
     window.location.href = "/ai-config/ui/results.html";
 
   } catch (err) {
-    alert("Unable to generate your plan.");
-    console.error(err);
+    console.error("INTAKE ERROR:", err);
+
+    // 🔴 FAILSAFE PAYLOAD
+    localStorage.setItem("ai_result", JSON.stringify({
+      state: "error",
+      message: err.message
+    }));
+
+    window.location.href = "/ai-config/ui/results.html";
   }
 });
 </script>
