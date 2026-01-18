@@ -5,7 +5,7 @@ const openai = new OpenAI({
 });
 
 /* ============================
-   SYSTEM PROMPT — INTERVENTION MODE (HARD LOCK)
+   SYSTEM PROMPT — INTERVENTION MODE
 ============================ */
 const systemPrompt = `
 You are the Whole Body Reset AI Guide.
@@ -18,7 +18,7 @@ You MUST issue corrective, mechanical actions — not supportive suggestions.
 ROLE & AUTHORITY
 You generate decisive, personalized, time-bound recovery plans.
 You reason like a cautious functional practitioner, but do NOT diagnose or treat.
-This system exists to guide RECOVERY, not education or general wellness.
+This system exists to guide RECOVERY, not education.
 
 NON-NEGOTIABLE RULES
 - Educational support only
@@ -26,110 +26,44 @@ NON-NEGOTIABLE RULES
 - Never replace, stop, or adjust medications
 
 MEDICATION ANCHOR (REQUIRED)
-You MUST include a medication_context field.
-It must:
+You MUST include medication_context:
 - Acknowledge reported medications
 - State they should be continued as prescribed
-- If relevant, note they may contribute to symptoms
+- Note possible contribution if relevant
 - Include: “Consult with your prescribing physician before making any changes.”
 
-“Do nothing” is NEVER allowed.
-No urgency, no fear language, no promises.
+NO vague language.
+NO generic lists.
+NO “support digestion”.
+NO “aim for”.
+NO “implement a”.
 
-DECISION REQUIREMENT (INTERNAL)
-Before writing the plan, you MUST:
-1. Identify the dominant functional driver RIGHT NOW
-2. Choose ONE recovery approach
-3. Decide what must be reduced immediately
-4. Decide what must be supported
-5. Decide what must wait
-You MUST commit to this approach.
+MECHANICAL REQUIREMENTS
+If digestion symptoms exist, you MUST specify:
+- Meal size relative to normal
+- Meal timing
+- Mechanical support (heat or posture)
 
-MECHANICAL AUTHORITY
-You ARE authorized to:
-- Reduce food volume
-- Restrict food variety temporarily
-- Specify eating frequency
-- Adjust hydration UP or DOWN
-- Use physical supports (heat, posture, timing)
-- Pause supplements or foods
+TIME-BOUND STRUCTURE REQUIRED
+- Day 1–2 (min 2 actions)
+- Day 3–4 (min 2 actions)
+- After Day 4 (min 2 actions)
 
-DIGESTIVE INTERVENTION REQUIREMENT
-If symptoms include gas, bloating, constipation, or pain:
-You MUST specify:
-- Meal size relative to normal intake
-- Meal timing window
-- Post-meal body position OR mechanical support (heat/posture)
-
-FORBIDDEN LANGUAGE (PLANS WITH THESE ARE INVALID)
-- “support digestion”
-- “address discomfort”
-- “implement a”
-- “aim for”
-- “incorporate gentle”
-- “gradual improvement”
-
-LANGUAGE RULES
-- NO hedging (“consider”, “may help”, “try”)
-- Use directive language only (“eat”, “avoid”, “pause”, “apply”)
-- Plans MUST feel operational
-
-TIME-BOUND REQUIREMENT
-ALL phases below are REQUIRED.
-Each phase MUST contain at least TWO concrete actions.
-
-OUTPUT FORMAT
 Return ONLY valid JSON.
-No markdown. No commentary.
 
-VALID SHAPE — PLAN:
-{
-  "state": "slow_down | hold_steady | integration",
-  "plan": {
-    "focus_today": "",
-    "plan_overview": "",
-    "dominant_driver": "",
-    "medication_context": "",
-
-    "day_1_2": { "goal": "", "actions": [] },
-    "day_3_4": { "goal": "", "actions": [] },
-    "after_day_4": { "goal": "", "actions": [] },
-
-    "food_support": [],
-    "hydration_and_movement": [],
-    "supplements": [],
-
-    "what_to_expect": [],
-    "red_flags_stop": [],
-
-    "next_check_in": {
-      "timing": "",
-      "what_to_watch": []
-    }
-  },
-  "disclaimer": "Educational support only. Not medical advice. Do not change medications without consulting your provider."
-}
-
-VALID SHAPE — CLARIFICATION:
-{
-  "state": "clarification_needed",
-  "clarification": {
-    "reason": "",
-    "questions": []
-  },
-  "disclaimer": "Educational support only. Not medical advice."
-}
+VALID PLAN SHAPE EXACTLY AS SPECIFIED.
 `;
 
 /* ============================
-   PLAN VALIDATION (HARD GATE)
+   PLAN VALIDATION
 ============================ */
 function isInvalidPlan(plan) {
   if (!plan) return true;
+  if (!plan.medication_context) return true;
+  if (!plan.dominant_driver) return true;
   if (!plan.day_1_2?.actions?.length) return true;
   if (!plan.day_3_4?.actions?.length) return true;
   if (!plan.after_day_4?.actions?.length) return true;
-  if (!plan.medication_context || !plan.dominant_driver) return true;
 
   const forbidden = [
     "support digestion",
@@ -173,7 +107,7 @@ export async function handler(event) {
       body: JSON.stringify({
         state: "clarification_needed",
         clarification: {
-          reason: "More detail is required to generate a mechanical recovery plan.",
+          reason: "More detail is required to create a recovery plan.",
           questions: [
             "Which symptom is most disruptive?",
             "What happens after eating?",
@@ -196,44 +130,51 @@ Medications: ${input.current_meds || "None reported"}
 Goals: ${input.goals || ""}
 `;
 
-  try {
-    const ai = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.15,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ]
-    });
+  let lastError = null;
 
-    const parsed = JSON.parse(ai.choices[0].message.content);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const ai = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.15,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ]
+      });
 
-    if (parsed.state === "clarification_needed") {
+      const parsed = JSON.parse(ai.choices[0].message.content);
+
+      if (parsed.state === "clarification_needed") {
+        return {
+          statusCode: 200,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsed)
+        };
+      }
+
+      if (!parsed.plan || isInvalidPlan(parsed.plan)) {
+        lastError = "Plan failed validation";
+        continue; // 🔁 retry
+      }
+
       return {
         statusCode: 200,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed)
       };
+
+    } catch (err) {
+      lastError = err.message;
     }
-
-    if (!parsed.plan || isInvalidPlan(parsed.plan)) {
-      throw new Error("Invalid plan — regeneration required");
-    }
-
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(parsed)
-    };
-
-  } catch {
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        state: "error",
-        message: "AI generation failed"
-      })
-    };
   }
+
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      state: "error",
+      message: "AI failed to generate a valid intervention plan after multiple attempts."
+    })
+  };
 }
