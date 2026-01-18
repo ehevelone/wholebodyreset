@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
   <title>Guided Foundations Intake | Whole Body Reset</title>
 
   <link rel="stylesheet" href="/css/site.css">
@@ -15,72 +14,19 @@
       font-family: Georgia, "Times New Roman", serif;
       background: #efe4c9;
       color: #2f3b2f;
-      line-height: 1.6;
     }
 
     header {
       background: #e2d6b8;
       padding: 20px 40px;
-      display: flex;
-      align-items: center;
     }
 
-    header img {
-      height: 48px;
-      width: auto;
-      display: block;
-    }
+    header img { height: 48px; }
 
     main {
       max-width: 900px;
       margin: 60px auto;
       padding: 0 20px;
-    }
-
-    h1 {
-      font-size: 2.4rem;
-      margin-bottom: 10px;
-    }
-
-    h2 {
-      font-size: 1.4rem;
-      margin-top: 45px;
-    }
-
-    label {
-      display: block;
-      margin-top: 20px;
-      font-weight: bold;
-    }
-
-    textarea,
-    select,
-    input[type="text"],
-    input[type="email"] {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      font-family: inherit;
-      font-size: 1rem;
-      border-radius: 6px;
-      border: 1px solid #b9b29a;
-      background: #fff;
-    }
-
-    .gentle {
-      font-style: italic;
-      color: #4a5a4a;
-    }
-
-    .section-note {
-      margin-top: 10px;
-      font-size: 0.95rem;
-      color: #4f5a45;
-    }
-
-    .flags label {
-      font-weight: normal;
-      margin-top: 10px;
     }
 
     button {
@@ -97,7 +43,7 @@
       gap: 10px;
     }
 
-    button:disabled {
+    button[disabled] {
       opacity: 0.7;
       cursor: not-allowed;
     }
@@ -105,8 +51,8 @@
     .spinner {
       width: 16px;
       height: 16px;
-      border: 2px solid rgba(255,255,255,0.4);
-      border-top: 2px solid #fff;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
       display: none;
@@ -115,154 +61,95 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-
-    footer {
-      margin-top: 80px;
-      padding: 40px 20px;
-      background: #e2d6b8;
-      font-size: 0.9rem;
-      color: #4f5a45;
-      text-align: center;
-    }
   </style>
 </head>
 
 <body>
-
-<div class="leafy-left"></div>
-<div class="leafy-right"></div>
 
 <header>
   <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
 </header>
 
 <main>
-
   <h1>Guided Foundations Intake</h1>
-
-  <p class="gentle">
-    This intake helps the system understand your body’s current state.
-    There are no right or wrong answers.
-    Nothing here commits you to action.
-  </p>
-
-  <p class="gentle">
-    The more complete your responses, the more accurately the system
-    can support pacing, safety, and stability.
-  </p>
 
   <form id="intakeForm">
 
-    <!-- EMAIL -->
-    <h2>0. How can we save your place?</h2>
-    <label>Email address</label>
-    <input type="email" name="email" required placeholder="you@example.com">
-    <p class="section-note">
-      This is used only to save your progress so you can return later.
-    </p>
+    <label>Email</label>
+    <input type="email" name="email" required>
 
-    <!-- SECTION 1 -->
-    <h2>1. What are you currently experiencing?</h2>
+    <label>What are you experiencing?</label>
     <textarea name="current_symptoms" rows="4" required></textarea>
 
-    <!-- SECTION 2 -->
-    <h2>2. How long have these experiences been present?</h2>
-    <select name="symptom_duration">
-      <option value="">Select one</option>
-      <option>Days</option>
-      <option>Weeks</option>
-      <option>Months</option>
-      <option>Years</option>
-      <option>On and off</option>
-    </select>
-
-    <!-- SECTION 3 -->
-    <h2>3. How intense do these experiences feel?</h2>
+    <label>Intensity</label>
     <select name="symptom_intensity" required>
-      <option value="">Select one</option>
+      <option value="">Select</option>
       <option>Mild</option>
       <option>Moderate</option>
       <option>Intense</option>
-      <option>Fluctuating</option>
-      <option>Comes in waves</option>
     </select>
 
-    <!-- SECTION 4 -->
-    <h2>4. Have you noticed any patterns?</h2>
-    <textarea name="symptom_patterns" rows="3"></textarea>
-
-    <!-- SECTION 5 -->
-    <h2>5. What supports are you currently using?</h2>
-    <textarea name="current_supports" rows="3"></textarea>
-    <p class="section-note">The system does not evaluate correctness or dosage.</p>
-
-    <!-- SECTION 6 -->
-    <h2>6. Medications or ongoing conditions</h2>
-    <textarea name="current_meds" rows="3"></textarea>
-
-    <!-- SECTION 7 -->
-    <h2>7. How would you describe your tolerance right now?</h2>
+    <label>Tolerance</label>
     <select name="tolerance_and_capacity" required>
-      <option value="">Select one</option>
+      <option value="">Select</option>
       <option>Easily overwhelmed</option>
       <option>Sensitive to changes</option>
       <option>Generally stable</option>
-      <option>Able to tolerate slow additions</option>
     </select>
 
-    <!-- SECTION 8 -->
-    <h2>8. What are you hoping to understand right now?</h2>
-    <textarea name="goals" rows="3"></textarea>
+    <label>Medications</label>
+    <textarea name="current_meds" rows="3"></textarea>
 
-    <!-- SECTION 9 -->
-    <h2>9. Safety context</h2>
-    <div class="flags">
-      <label><input type="checkbox" name="pregnant"> Pregnant</label>
-      <label><input type="checkbox" name="breastfeeding"> Breastfeeding</label>
-      <label><input type="checkbox" name="on_stimulants"> Using stimulant medications</label>
-      <label><input type="checkbox" name="on_blood_thinners"> Using blood thinners</label>
-      <label><input type="checkbox" name="on_ssris"> Using SSRIs</label>
-    </div>
-
-    <button id="submitBtn" type="submit">
+    <button type="submit" id="submitBtn">
       <span class="btn-text">Generate My Plan</span>
       <span class="spinner" id="spinner"></span>
     </button>
-
   </form>
-
 </main>
 
-<footer>
-  <p>© ET Naturals. All rights reserved.</p>
-  <p>Educational content only. No medical claims.</p>
-</footer>
-
 <script>
-document.getElementById("intakeForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+const form = document.getElementById("intakeForm");
+const btn = document.getElementById("submitBtn");
+const spinner = document.getElementById("spinner");
+const btnText = btn.querySelector(".btn-text");
 
-  const btn = document.getElementById("submitBtn");
-  const spinner = document.getElementById("spinner");
-  const text = btn.querySelector(".btn-text");
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
   btn.disabled = true;
   spinner.style.display = "inline-block";
-  text.textContent = "Generating…";
+  btnText.textContent = "Working…";
 
-  const data = Object.fromEntries(new FormData(e.target).entries());
-  ["pregnant","breastfeeding","on_stimulants","on_blood_thinners","on_ssris"]
-    .forEach(k => data[k] = !!data[k]);
+  const data = Object.fromEntries(new FormData(form).entries());
 
-  const res = await fetch("/.netlify/functions/ai-evaluate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
+  try {
+    const res = await fetch("/.netlify/functions/ai-evaluate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
 
-  const result = await res.json();
-  sessionStorage.setItem("ai_result", JSON.stringify(result));
-  window.location.href = "/ai-config/ui/results.html";
+    if (!res.ok) throw new Error("AI request failed");
+
+    const result = await res.json();
+
+    sessionStorage.setItem("ai_result", JSON.stringify(result));
+
+    // HARD GUARANTEE storage exists
+    if (!sessionStorage.getItem("ai_result")) {
+      throw new Error("Session storage failed");
+    }
+
+    window.location.href = "/ai-config/ui/results.html";
+
+  } catch (err) {
+    alert("Unable to generate plan. Please try again.");
+    console.error(err);
+
+    btn.disabled = false;
+    spinner.style.display = "none";
+    btnText.textContent = "Generate My Plan";
+  }
 });
 </script>
 
