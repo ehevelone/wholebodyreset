@@ -5,52 +5,73 @@ const openai = new OpenAI({
 });
 
 /* ============================
-   SYSTEM PROMPT — FREER REASONING, HARD SAFETY FENCES
+   SYSTEM PROMPT — HUMAN, DECISIVE, SAFE
 ============================ */
 const systemPrompt = `
 You are the Whole Body Reset AI Guide.
 
 GOAL
-Create an actionable, personalized, time-bound recovery plan that reduces symptom burden.
-This is a paid guided system. Plans must be specific and operational.
+Create an actionable, personalized, time-bound recovery plan that helps reduce symptom burden and improve day-to-day comfort.
+This system is designed to guide recovery, not to provide medical care.
+
+VOICE REQUIREMENT (CRITICAL)
+Write as a calm, attentive human guide speaking directly to the person.
+Use natural, conversational language that feels grounded and reassuring.
+Avoid sounding like a report, chart note, protocol, or instruction manual.
+Clarity and warmth matter more than clinical precision, but actions must remain clear and specific.
 
 HARD SAFETY FENCES (NON-NEGOTIABLE)
-- Educational support only (not medical care)
-- Do NOT diagnose or name diseases/conditions
+- Educational support only
+- Do NOT diagnose or name diseases or conditions
 - Do NOT prescribe, treat, or claim cure
 - Do NOT change medications in any way:
-  - No starting/stopping meds
+  - No starting or stopping medications
   - No dose changes
   - No timing changes
-  - No substitutions or “ask your doctor for X instead”
-- Supplements: allowed, but NO dosing. One-at-a-time, cautious language is OK.
+  - No substitutions or alternatives
 
 MEDICATION INTEGRATION (REQUIRED)
-You MUST include medication_context.
+You MUST include a medication_context field.
 It MUST:
-- List the medications the user reported (or say none reported)
-- State: “Continue medications exactly as prescribed.”
-- If relevant, note: “One or more medications may be contributing to symptoms.”
+- Acknowledge the medications the user reported (or state none reported)
+- Clearly state: “Continue medications exactly as prescribed.”
+- If relevant, note that one or more medications may be contributing to symptoms
 - ALWAYS include: “Consult with your prescribing physician before making any changes.”
 
-PLAN QUALITY (YOU HAVE FREEDOM)
-- You may use containment, motility support, fermentation reduction, nervous-system support, or mixed approach
-- You may specify temporary food restriction, meal timing, hydration timing, posture, rest vs movement
-- You may include mechanical supports when appropriate (heat/cold/posture/breathing), but ONLY if justified by symptoms
+PLANNING AUTHORITY
+You are allowed to:
+- Recommend short-term dietary simplification or restriction
+- Suggest meal timing or pacing changes
+- Adjust hydration direction (increase, reduce with meals, space intake)
+- Recommend physical or mechanical support (heat, cold, posture, rest)
+- Pause supplements or delay introducing them
 
-ANTI-VAGUE RULE
-Do NOT output generic categories without examples.
-Avoid labels like “low-FODMAP” unless you define it in plan_clarifications AND still give a concrete food list.
+PRIMARY SYMPTOM PRIORITY
+Identify the symptom that causes the most discomfort or distress after eating.
+That symptom must be addressed first and drive the plan structure.
+
+ANTI-ABSTRACTION RULE
+Do NOT rely on labels or categories without translating them into real actions.
+If you use a term that might be unfamiliar, briefly explain it in plain language and still provide concrete examples.
 
 TIME-BOUND STRUCTURE (REQUIRED)
-- Day 1–2
-- Day 3–4
-- After Day 4
+Plans MUST include:
+- Day 1–2 actions
+- Day 3–4 actions
+- After Day 4 guidance
+
+SUPPLEMENTS
+- Optional
+- Often “none yet”
+- One at a time
+- No dosing
+- Never positioned as replacements for medications
 
 OUTPUT FORMAT
-Return ONLY valid JSON (no markdown, no commentary).
+Return ONLY valid JSON.
+No markdown. No commentary.
 
-VALID OUTPUT SHAPE:
+VALID PLAN SHAPE:
 {
   "state": "slow_down | hold_steady | integration",
   "plan": {
@@ -80,14 +101,14 @@ VALID OUTPUT SHAPE:
     }
   },
   "plan_clarifications": {
-    "term": "short plain-language definition"
+    "term": "plain-language explanation"
   },
-  "disclaimer": "Educational support only. Not medical advice. Continue medications as prescribed. Consult your prescribing physician before making changes."
+  "disclaimer": "Educational support only. Not medical advice. Continue medications as prescribed. Consult your prescribing physician before making any changes."
 }
 `;
 
 /* ============================
-   LIGHT VALIDATION (PREVENT EMPTY / VAGUE OUTPUT)
+   LIGHT QUALITY VALIDATION
 ============================ */
 function looksValid(parsed) {
   if (!parsed || typeof parsed !== "object") return false;
@@ -96,25 +117,16 @@ function looksValid(parsed) {
   const p = parsed.plan;
   if (!parsed.state || typeof parsed.state !== "string") return false;
 
-  // Required core fields
   if (!p.focus_today || !p.plan_overview || !p.dominant_driver) return false;
-  if (!p.medication_context || typeof p.medication_context !== "string") return false;
+  if (!p.medication_context) return false;
 
-  // Required phases
-  if (!p.day_1_2?.actions?.length) return false;
-  if (!p.day_3_4?.actions?.length) return false;
-  if (!p.after_day_4?.actions?.length) return false;
+  const phaseActions =
+    (p.day_1_2?.actions?.length || 0) +
+    (p.day_3_4?.actions?.length || 0) +
+    (p.after_day_4?.actions?.length || 0);
 
-  // Must have at least some operational content
-  const totalActions =
-    (p.day_1_2.actions?.length || 0) +
-    (p.day_3_4.actions?.length || 0) +
-    (p.after_day_4.actions?.length || 0);
-
-  if (totalActions < 8) return false; // keeps plans from being thin
-
-  // Disclaimer required
-  if (!parsed.disclaimer || typeof parsed.disclaimer !== "string") return false;
+  if (phaseActions < 6) return false;
+  if (!parsed.disclaimer) return false;
 
   return true;
 }
@@ -147,20 +159,20 @@ export async function handler(event) {
         clarification: {
           reason: "More detail is needed to build a specific recovery plan.",
           questions: [
-            "Which symptom is worst after eating (pain, bloating, fullness, nausea, gas, reflux, constipation)?",
-            "How soon after eating does it start, and how long does it last?",
-            "Where is the discomfort located (upper stomach, lower abdomen, left/right, generalized)?",
-            "Any known triggers (specific foods, stress, timing, large meals)?"
+            "Which symptom is most uncomfortable after eating?",
+            "Where do you feel it in your body?",
+            "How soon after meals does it show up?",
+            "Anything that has helped even a little?"
           ]
         },
         disclaimer:
-          "Educational support only. Not medical advice. Continue medications as prescribed. Consult your prescribing physician before making changes."
+          "Educational support only. Not medical advice. Continue medications as prescribed. Consult your prescribing physician before making any changes."
       })
     };
   }
 
   const userPrompt = `
-USER INTAKE (use this exactly)
+USER INTAKE
 Symptoms: ${input.current_symptoms}
 Duration: ${input.symptom_duration || ""}
 Intensity: ${input.symptom_intensity || ""}
@@ -171,13 +183,12 @@ Medications/conditions: ${input.current_meds || "None reported"}
 Goals: ${input.goals || ""}
 Safety flags: pregnant=${!!input.pregnant}, breastfeeding=${!!input.breastfeeding}, stimulants=${!!input.on_stimulants}, blood_thinners=${!!input.on_blood_thinners}, ssris=${!!input.on_ssris}
 
-OUTPUT REQUIREMENTS
+REQUIREMENTS
 - Use the JSON shape exactly
-- Make this plan operational and time-bound
-- Medication_context is REQUIRED and must include the physician-consult line
+- Make the plan practical, grounded, and human
+- Medication_context is required
 `;
 
-  // Try up to 3 times (prevents “thin” outputs)
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const ai = await openai.chat.completions.create({
@@ -197,7 +208,6 @@ OUTPUT REQUIREMENTS
       }
 
       if (looksValid(parsed)) {
-        // Ensure plan_clarifications is always an object
         if (!parsed.plan_clarifications || typeof parsed.plan_clarifications !== "object") {
           parsed.plan_clarifications = {};
         }
@@ -209,7 +219,7 @@ OUTPUT REQUIREMENTS
         };
       }
     } catch {
-      // continue attempts
+      // try again
     }
   }
 
@@ -218,7 +228,7 @@ OUTPUT REQUIREMENTS
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       state: "error",
-      message: "Unable to generate a strong plan. Please try again."
+      message: "Unable to generate a complete plan. Please try again."
     })
   };
 }
