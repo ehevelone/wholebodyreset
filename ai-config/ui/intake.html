@@ -44,7 +44,7 @@
       background: #fff;
     }
     .test-banner {
-      background: #8b3a2b;
+      background: #5a1e14;
       color: #fff;
       padding: 12px 18px;
       font-weight: bold;
@@ -73,7 +73,7 @@
 <main>
 
 <div class="test-banner">
-  TEST MODE — INTAKE PREFILLED (SUBJECT #2)
+  TEST MODE — SEVERE DIGESTIVE CASE
 </div>
 
 <h1>Guided Foundations Intake</h1>
@@ -85,14 +85,14 @@
   <input
     type="email"
     name="email"
-    value="test2@wholebodyreset.life"
+    value="severegut@wholebodyreset.life"
     required
   >
 
   <!-- 1. CURRENT SYMPTOMS -->
   <h2>1. What are you currently experiencing?</h2>
   <textarea name="current_symptoms" rows="4" required>
-fatigue, brain fog, anxiety, heart racing at times, poor sleep, muscle tension, headaches
+severe bloating after meals, sharp upper abdominal pain, constipation alternating with loose stools, nausea, early fullness, fatigue after eating, food fear
   </textarea>
 
   <!-- 2. DURATION -->
@@ -101,9 +101,9 @@ fatigue, brain fog, anxiety, heart racing at times, poor sleep, muscle tension, 
     <option value="">Select one</option>
     <option>Days</option>
     <option>Weeks</option>
-    <option>Months</option>
+    <option selected>Months</option>
     <option>Years</option>
-    <option selected>On and off</option>
+    <option>On and off</option>
   </select>
 
   <!-- 3. INTENSITY -->
@@ -112,35 +112,35 @@ fatigue, brain fog, anxiety, heart racing at times, poor sleep, muscle tension, 
     <option value="">Select one</option>
     <option>Mild</option>
     <option>Moderate</option>
-    <option>Intense</option>
-    <option selected>Fluctuating</option>
+    <option selected>Intense</option>
+    <option>Fluctuating</option>
     <option>Comes in waves</option>
   </select>
 
   <!-- 4. PATTERNS -->
   <h2>4. Have you noticed any patterns?</h2>
   <textarea name="symptom_patterns" rows="3">
-worse with stress, caffeine, and poor sleep; better in the evenings sometimes
+pain and bloating start 20–30 minutes after eating; worse with larger meals, fiber, or raw foods; slightly better when eating very small portions
   </textarea>
 
   <!-- 5. SUPPORTS -->
   <h2>5. What supports are you currently using?</h2>
   <textarea name="current_supports" rows="3">
-coffee, occasional magnesium, deep breathing when anxious
+heating pad, peppermint tea, skipping meals, occasional laxatives
   </textarea>
 
   <!-- 6. MEDS -->
   <h2>6. Medications or ongoing conditions</h2>
   <textarea name="current_meds" rows="3">
-adderall, sertraline (SSRI), occasional ibuprofen
+linzess (middle dose), omeprazole, levothyroxine
   </textarea>
 
   <!-- 7. TOLERANCE -->
   <h2>7. How would you describe your tolerance right now?</h2>
   <select name="tolerance_and_capacity" required>
     <option value="">Select one</option>
-    <option>Easily overwhelmed</option>
-    <option selected>Sensitive to changes</option>
+    <option selected>Easily overwhelmed</option>
+    <option>Sensitive to changes</option>
     <option>Generally stable</option>
     <option>Able to tolerate slow additions</option>
   </select>
@@ -148,16 +148,16 @@ adderall, sertraline (SSRI), occasional ibuprofen
   <!-- 8. GOALS -->
   <h2>8. What are you hoping to understand right now?</h2>
   <textarea name="goals" rows="3">
-why my body feels stuck in overdrive and how to calm it down
+I want to eat without pain and stop feeling afraid of food
   </textarea>
 
   <!-- 9. SAFETY -->
   <h2>9. Safety context</h2>
   <label><input type="checkbox" name="pregnant"> Pregnant</label><br>
   <label><input type="checkbox" name="breastfeeding"> Breastfeeding</label><br>
-  <label><input type="checkbox" name="on_stimulants" checked> Using stimulant medications</label><br>
+  <label><input type="checkbox" name="on_stimulants"> Using stimulant medications</label><br>
   <label><input type="checkbox" name="on_blood_thinners"> Using blood thinners</label><br>
-  <label><input type="checkbox" name="on_ssris" checked> Using SSRIs</label>
+  <label><input type="checkbox" name="on_ssris"> Using SSRIs</label>
 
   <button type="submit">Generate My Plan</button>
 
