@@ -43,15 +43,6 @@
       border: 1px solid #b9b29a;
       background: #fff;
     }
-    .test-banner {
-      background: #5a1e14;
-      color: #fff;
-      padding: 12px 18px;
-      font-weight: bold;
-      border-radius: 6px;
-      margin-bottom: 30px;
-      text-align: center;
-    }
     button {
       margin-top: 40px;
       background: #2f3b2f;
@@ -60,6 +51,7 @@
       padding: 14px 26px;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 1rem;
     }
   </style>
 </head>
@@ -72,86 +64,67 @@
 
 <main>
 
-<div class="test-banner">
-  TEST MODE — SEVERE DIGESTIVE CASE
-</div>
-
 <h1>Guided Foundations Intake</h1>
 
 <form id="intakeForm">
 
-  <!-- 0. EMAIL -->
+  <!-- EMAIL -->
   <h2>0. How can we save your place?</h2>
-  <input
-    type="email"
-    name="email"
-    value="severegut@wholebodyreset.life"
-    required
-  >
+  <input type="email" name="email" required placeholder="you@example.com">
 
-  <!-- 1. CURRENT SYMPTOMS -->
+  <!-- SYMPTOMS -->
   <h2>1. What are you currently experiencing?</h2>
-  <textarea name="current_symptoms" rows="4" required>
-severe bloating after meals, sharp upper abdominal pain, constipation alternating with loose stools, nausea, early fullness, fatigue after eating, food fear
-  </textarea>
+  <textarea name="current_symptoms" rows="4" required></textarea>
 
-  <!-- 2. DURATION -->
+  <!-- DURATION -->
   <h2>2. How long have these experiences been present?</h2>
   <select name="symptom_duration">
     <option value="">Select one</option>
     <option>Days</option>
     <option>Weeks</option>
-    <option selected>Months</option>
+    <option>Months</option>
     <option>Years</option>
     <option>On and off</option>
   </select>
 
-  <!-- 3. INTENSITY -->
+  <!-- INTENSITY -->
   <h2>3. How intense do these experiences feel?</h2>
   <select name="symptom_intensity" required>
     <option value="">Select one</option>
     <option>Mild</option>
     <option>Moderate</option>
-    <option selected>Intense</option>
+    <option>Intense</option>
     <option>Fluctuating</option>
     <option>Comes in waves</option>
   </select>
 
-  <!-- 4. PATTERNS -->
+  <!-- PATTERNS -->
   <h2>4. Have you noticed any patterns?</h2>
-  <textarea name="symptom_patterns" rows="3">
-pain and bloating start 20–30 minutes after eating; worse with larger meals, fiber, or raw foods; slightly better when eating very small portions
-  </textarea>
+  <textarea name="symptom_patterns" rows="3"></textarea>
 
-  <!-- 5. SUPPORTS -->
+  <!-- SUPPORTS -->
   <h2>5. What supports are you currently using?</h2>
-  <textarea name="current_supports" rows="3">
-heating pad, peppermint tea, skipping meals, occasional laxatives
-  </textarea>
+  <textarea name="current_supports" rows="3"></textarea>
 
-  <!-- 6. MEDS -->
+  <!-- MEDS -->
   <h2>6. Medications or ongoing conditions</h2>
-  <textarea name="current_meds" rows="3">
-linzess (middle dose), omeprazole, levothyroxine
-  </textarea>
+  <textarea name="current_meds" rows="3"></textarea>
 
-  <!-- 7. TOLERANCE -->
+  <!-- TOLERANCE -->
   <h2>7. How would you describe your tolerance right now?</h2>
   <select name="tolerance_and_capacity" required>
     <option value="">Select one</option>
-    <option selected>Easily overwhelmed</option>
+    <option>Easily overwhelmed</option>
     <option>Sensitive to changes</option>
     <option>Generally stable</option>
     <option>Able to tolerate slow additions</option>
   </select>
 
-  <!-- 8. GOALS -->
+  <!-- GOALS -->
   <h2>8. What are you hoping to understand right now?</h2>
-  <textarea name="goals" rows="3">
-I want to eat without pain and stop feeling afraid of food
-  </textarea>
+  <textarea name="goals" rows="3"></textarea>
 
-  <!-- 9. SAFETY -->
+  <!-- SAFETY -->
   <h2>9. Safety context</h2>
   <label><input type="checkbox" name="pregnant"> Pregnant</label><br>
   <label><input type="checkbox" name="breastfeeding"> Breastfeeding</label><br>
@@ -172,16 +145,21 @@ document.getElementById("intakeForm").addEventListener("submit", async (e) => {
   const payload = Object.fromEntries(new FormData(e.target).entries());
 
   try {
+    // Save email to Supabase
+    await fetch("/.netlify/functions/save-intake-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: payload.email })
+    });
+
+    // Run AI
     const res = await fetch("/.netlify/functions/ai-evaluate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
-    const text = await res.text();
-    console.log("RAW AI RESPONSE:", text);
-
-    const json = JSON.parse(text);
+    const json = await res.json();
     localStorage.setItem("ai_result", JSON.stringify(json));
 
     window.location.href = "/ai-config/ui/results.html";
@@ -190,7 +168,7 @@ document.getElementById("intakeForm").addEventListener("submit", async (e) => {
     console.error("INTAKE ERROR:", err);
     localStorage.setItem("ai_result", JSON.stringify({
       state: "error",
-      message: err.message
+      message: "Unable to generate plan."
     }));
     window.location.href = "/ai-config/ui/results.html";
   }
