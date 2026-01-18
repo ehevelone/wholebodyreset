@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Your Guided Plan | Whole Body Reset</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="robots" content="noindex, nofollow">
+
+  <title>Your Guided Plan | Whole Body Reset</title>
+
   <link rel="stylesheet" href="/css/site.css">
+  <meta name="robots" content="noindex, nofollow">
 
   <style>
     body {
@@ -13,12 +15,16 @@
       font-family: Georgia, "Times New Roman", serif;
       background: #efe4c9;
       color: #2f3b2f;
-      line-height: 1.7;
+      line-height: 1.6;
     }
 
     header {
       background: #e2d6b8;
       padding: 20px 40px;
+    }
+
+    header img {
+      height: 48px;
     }
 
     main {
@@ -27,27 +33,32 @@
       padding: 0 20px;
     }
 
-    h1 {
-      font-size: 2.6rem;
-      margin-bottom: 20px;
+    .card {
+      background: #d8d1b5;
+      padding: 30px;
+      border-radius: 12px;
+      margin-top: 30px;
     }
 
-    .panel {
-      background: #d9d2b5;
-      border-radius: 10px;
-      padding: 30px;
+    h1 {
+      font-size: 2.6rem;
+    }
+
+    h2 {
+      margin-top: 30px;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    .gentle {
+      font-style: italic;
+      color: #4a5a4a;
     }
 
     .error {
       font-style: italic;
-    }
-
-    ul {
-      margin-top: 15px;
-    }
-
-    li {
-      margin-bottom: 10px;
     }
 
     button {
@@ -60,108 +71,98 @@
       cursor: pointer;
       font-size: 1rem;
     }
-
-    footer {
-      margin-top: 80px;
-      padding: 40px 20px;
-      background: #e2d6b8;
-      font-size: 0.9rem;
-      color: #4f5a45;
-      text-align: center;
-    }
   </style>
 </head>
 
 <body>
 
 <header>
-  <h1>Your Guided Plan</h1>
+  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
 </header>
 
 <main>
-  <div id="content" class="panel"></div>
+
+  <h1>Your Guided Plan</h1>
+
+  <div id="content" class="card">
+    <p class="gentle">Loading your plan…</p>
+  </div>
+
 </main>
 
-<footer>
-  <p>Educational support only. Not medical advice.</p>
-</footer>
-
 <script>
-(function () {
-  const container = document.getElementById("content");
-  let data;
+const container = document.getElementById("content");
 
-  try {
-    data = JSON.parse(sessionStorage.getItem("ai_result"));
-  } catch (e) {
-    container.innerHTML = `
-      <p class="error">Unable to load your plan. Please restart the intake.</p>
-    `;
-    return;
-  }
+let result;
+try {
+  result = JSON.parse(sessionStorage.getItem("ai_result"));
+} catch {
+  result = null;
+}
 
-  if (!data || !data.state) {
-    container.innerHTML = `
-      <p class="error">Unable to load your plan. Please restart the intake.</p>
-    `;
-    return;
-  }
-
-  /* ===========================
-     CLARIFICATION MODE
-  ============================ */
-  if (data.state === "clarification_needed" && data.clarification) {
-    container.innerHTML = `
-      <h2>We Need a Little More Information</h2>
-      <p>${data.clarification.reason || "To better tailor your plan, please answer the following:"}</p>
-      <ul>
-        ${data.clarification.questions.map(q => `<li>${q}</li>`).join("")}
-      </ul>
-      <p><em>Once you’ve answered these, return to the intake to continue.</em></p>
-    `;
-    return;
-  }
-
-  /* ===========================
-     PLAN MODE
-  ============================ */
-  if (data.plan) {
-    container.innerHTML = `
-      <h2>Current State</h2>
-      <p><strong>${data.state.replace("_", " ")}</strong></p>
-
-      <h3>Today's Focus</h3>
-      <p>${data.plan.focus_today}</p>
-
-      <h3>What This Phase Is Doing</h3>
-      <p>${data.plan.plan_overview}</p>
-
-      <h3>Step-by-Step Plan</h3>
-      <ul>
-        ${data.plan.steps.map(s => `<li>${s}</li>`).join("")}
-      </ul>
-
-      ${data.plan.supplements?.length ? `
-        <h3>Supplement Support</h3>
-        ${data.plan.supplements.map(s => `
-          <p><strong>${s.name}</strong>: ${s.purpose}<br>
-          <em>${s.how_to_take}</em></p>
-        `).join("")}
-      ` : ""}
-
-      <h3>Next Check-In</h3>
-      <p>${data.plan.next_check_in?.timing}</p>
-    `;
-    return;
-  }
-
-  /* ===========================
-     FALLBACK (SHOULD NEVER HIT)
-  ============================ */
+if (!result) {
   container.innerHTML = `
-    <p class="error">Unable to load your plan. Please restart the intake.</p>
+    <p class="error">Unable to load your plan.</p>
+    <p>Please restart the intake.</p>
   `;
-})();
+} 
+
+// ✅ CLARIFICATION MODE
+else if (result.state === "clarification_needed" && result.clarification) {
+  container.innerHTML = `
+    <h2>We Need a Little More Information</h2>
+    <p class="gentle">${result.clarification.reason || ""}</p>
+
+    <p><strong>Please answer the following:</strong></p>
+    <ul>
+      ${result.clarification.questions.map(q => `<li>${q}</li>`).join("")}
+    </ul>
+
+    <p class="gentle">
+      Once you’ve clarified these, return to the intake or check-in so the plan can be refined.
+    </p>
+  `;
+} 
+
+// ✅ NORMAL PLAN MODE
+else if (result.plan) {
+  container.innerHTML = `
+    <p><strong>Current State:</strong> ${result.state}</p>
+
+    <p class="gentle">${result.reflection || ""}</p>
+
+    <h2>Today's Focus</h2>
+    <p>${result.plan.focus_today || ""}</p>
+
+    <h2>What This Phase Is Doing</h2>
+    <p>${result.plan.plan_overview || ""}</p>
+
+    <h2>Step-by-Step</h2>
+    <ul>
+      ${(result.plan.steps || []).map(s => `<li>${s}</li>`).join("")}
+    </ul>
+
+    ${result.plan.supplements && result.plan.supplements.length ? `
+      <h2>Supplement Support</h2>
+      ${result.plan.supplements.map(s => `
+        <p><strong>${s.name}</strong><br>
+        ${s.purpose}<br>
+        <em>${s.how_to_take}</em></p>
+      `).join("")}
+    ` : ""}
+
+    <h2>Next Check-In</h2>
+    <p><strong>Timing:</strong> ${result.plan.next_check_in?.timing || ""}</p>
+  `;
+}
+
+// ❌ UNKNOWN SHAPE (DEV SAFETY)
+else {
+  container.innerHTML = `
+    <p class="error">We received an unexpected response.</p>
+    <p>Please restart the intake.</p>
+  `;
+}
 </script>
 
 </body>
