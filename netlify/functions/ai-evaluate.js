@@ -13,25 +13,12 @@ export async function handler(event) {
   try {
     input = JSON.parse(event.body);
   } catch {
-    return { statusCode: 400, body: "Invalid JSON" };
-  }
-
-  if (!input.current_symptoms || input.current_symptoms.length < 10) {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        state: "clarification_needed",
-        clarification: {
-          reason: "More detail is needed to tailor guidance.",
-          questions: [
-            "Which symptom is most disruptive?",
-            "What makes symptoms worse?",
-            "What helps even slightly?",
-            "Anything new recently?"
-          ]
-        },
-        disclaimer: "Educational only. Not medical advice."
+        state: "error",
+        message: "Invalid request payload"
       })
     };
   }
@@ -39,76 +26,45 @@ export async function handler(event) {
   const systemPrompt = `
 You are the Whole Body Reset AI Guide.
 
-NON-NEGOTIABLE RULES:
-- Educational support only
-- Never diagnose or treat
-- Never replace or adjust medications
-- No urgency language
-- Calm, grounding tone
-- Output ONLY valid JSON
+RULES:
+- Educational only
+- No diagnosis or treatment
+- Do not alter medications
+- Calm tone
+- RETURN JSON ONLY
 
-RETURN THIS EXACT STRUCTURE:
+You MUST return ALL fields below even if empty.
 
 {
   "state": "slow_down | hold_steady | integration",
   "plan": {
-    "focus_today": "1–2 sentences",
-    "plan_overview": "Short paragraph explaining the current approach",
-
-    "steps": [
-      "Gentle, concrete step",
-      "Gentle, concrete step"
-    ],
-
-    "food_support": [
-      "Foods to emphasize",
-      "Foods to temporarily reduce or avoid"
-    ],
-
-    "hydration_and_movement": [
-      "Hydration guidance",
-      "Gentle movement suggestion"
-    ],
-
-    "supplements": [
-      {
-        "name": "Optional supplement (if appropriate)",
-        "how_to_take": "General usage guidance only, no dosing"
-      }
-    ],
-
-    "what_to_expect": [
-      "Common early responses",
-      "Normal adjustments over time"
-    ],
-
-    "red_flags_stop": [
-      "When to pause",
-      "When to seek professional care"
-    ],
-
+    "focus_today": "",
+    "plan_overview": "",
+    "steps": [],
+    "food_support": [],
+    "hydration_and_movement": [],
+    "supplements": [],
+    "what_to_expect": [],
+    "red_flags_stop": [],
     "next_check_in": {
-      "timing": "Suggested timeframe",
-      "what_to_watch": [
-        "Specific symptom to observe"
-      ]
+      "timing": "",
+      "what_to_watch": []
     }
   },
-  "disclaimer": "Educational support only. Not medical advice. Do not change medications without your provider."
+  "disclaimer": ""
 }
 `;
 
   const userPrompt = `
-SYMPTOMS: ${input.current_symptoms}
-DURATION: ${input.symptom_duration || "not specified"}
-INTENSITY: ${input.symptom_intensity || "not specified"}
-TOLERANCE: ${input.tolerance_and_capacity || "not specified"}
-PATTERNS: ${input.symptom_patterns || "none noted"}
-MEDICATIONS: ${input.current_meds || "not specified"}
-GOALS: ${input.goals || "feeling better"}
+Symptoms: ${input.current_symptoms || "not provided"}
+Duration: ${input.symptom_duration || ""}
+Intensity: ${input.symptom_intensity || ""}
+Tolerance: ${input.tolerance_and_capacity || ""}
+Patterns: ${input.symptom_patterns || ""}
+Medications: ${input.current_meds || ""}
+Goals: ${input.goals || ""}
 `;
 
-  let parsed;
   try {
     const ai = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -119,21 +75,22 @@ GOALS: ${input.goals || "feeling better"}
       ]
     });
 
-    parsed = JSON.parse(ai.choices[0].message.content);
-  } catch (err) {
+    const parsed = JSON.parse(ai.choices[0].message.content);
+
     return {
-      statusCode: 500,
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsed)
+    };
+
+  } catch {
+    return {
+      statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         state: "error",
-        message: "AI failed to generate a valid plan."
+        message: "AI generation failed"
       })
     };
   }
-
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(parsed)
-  };
 }
