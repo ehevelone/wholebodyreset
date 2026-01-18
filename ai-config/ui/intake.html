@@ -49,29 +49,31 @@
       background: #fff;
     }
 
+    /* 🔑 CRITICAL FIX */
+    input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+    }
+
     .helper-text {
       font-size: 0.9rem;
       color: #4f5a45;
       margin-top: 8px;
     }
 
-    /* SAFETY LAYOUT FIX */
+    /* SAFETY GROUP */
     .safety-group {
       margin-top: 12px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
 
     .safety-item {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       font-size: 1rem;
-    }
-
-    .safety-item input {
-      margin: 0;
     }
 
     button {
@@ -121,15 +123,12 @@
 
 <form id="intakeForm">
 
-  <!-- EMAIL -->
   <h2>1. Email Address</h2>
   <input type="email" name="email" required placeholder="you@example.com">
 
-  <!-- SYMPTOMS -->
   <h2>2. What are you currently experiencing?</h2>
   <textarea name="current_symptoms" rows="4" required></textarea>
 
-  <!-- DURATION -->
   <h2>3. How long have these experiences been present?</h2>
   <select name="symptom_duration">
     <option value="">Select one</option>
@@ -140,7 +139,6 @@
     <option>On and off</option>
   </select>
 
-  <!-- INTENSITY -->
   <h2>4. How intense do these experiences feel?</h2>
   <select name="symptom_intensity" required>
     <option value="">Select one</option>
@@ -151,19 +149,15 @@
     <option>Comes in waves</option>
   </select>
 
-  <!-- PATTERNS -->
   <h2>5. Have you noticed any patterns?</h2>
   <textarea name="symptom_patterns" rows="3"></textarea>
 
-  <!-- SUPPORTS -->
   <h2>6. What supports are you currently using?</h2>
   <textarea name="current_supports" rows="3"></textarea>
 
-  <!-- MEDS -->
   <h2>7. Medications or ongoing conditions</h2>
   <textarea name="current_meds" rows="3"></textarea>
 
-  <!-- TOLERANCE -->
   <h2>8. How would you describe your tolerance right now?</h2>
   <select name="tolerance_and_capacity" required>
     <option value="">Select one</option>
@@ -173,11 +167,9 @@
     <option>Able to tolerate slow additions</option>
   </select>
 
-  <!-- GOALS -->
   <h2>9. What are you hoping to understand right now?</h2>
   <textarea name="goals" rows="3"></textarea>
 
-  <!-- SAFETY -->
   <h2>10. Anything important we should be aware of?</h2>
 
   <div class="safety-group">
@@ -211,7 +203,6 @@
     This helps us tailor guidance safely and avoid suggestions that may not be appropriate for you.
   </div>
 
-  <!-- SUBMIT -->
   <button id="submitBtn" type="submit">
     <span class="btn-text">Generate My Plan</span>
     <span class="spinner" id="spinner"></span>
