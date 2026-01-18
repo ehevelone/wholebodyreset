@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
   <title>Guided Foundations Intake | Whole Body Reset</title>
 
   <link rel="stylesheet" href="/css/site.css">
@@ -23,9 +22,7 @@
       display: flex;
       align-items: center;
     }
-    header img {
-      height: 48px;
-    }
+    header img { height: 48px; }
     main {
       max-width: 900px;
       margin: 60px auto;
@@ -33,7 +30,6 @@
     }
     h1 { font-size: 2.4rem; }
     h2 { font-size: 1.4rem; margin-top: 45px; }
-    label { display: block; margin-top: 20px; font-weight: bold; }
     textarea, select, input {
       width: 100%;
       padding: 10px;
@@ -42,8 +38,6 @@
       border-radius: 6px;
       border: 1px solid #b9b29a;
     }
-    .gentle { font-style: italic; color: #4a5a4a; }
-    .section-note { font-size: .95rem; color: #4f5a45; }
     button {
       margin-top: 40px;
       background: #2f3b2f;
@@ -53,8 +47,8 @@
       border-radius: 6px;
       cursor: pointer;
       display: inline-flex;
-      gap: 10px;
       align-items: center;
+      gap: 10px;
     }
     .spinner {
       width: 16px;
@@ -79,18 +73,11 @@
 
 <h1>Guided Foundations Intake</h1>
 
-<p class="gentle">This intake helps the system understand your current state.</p>
-
 <form id="intakeForm">
 
-  <!-- SYSTEM CONTEXT -->
-  <input type="hidden" name="session_type" value="initial">
-  <input type="hidden" name="entry_context" value="foundation">
+  <input type="email" name="email" placeholder="you@example.com" required>
 
-  <h2>Email</h2>
-  <input type="email" name="email" required>
-
-  <h2>Current symptoms</h2>
+  <h2>What are you experiencing?</h2>
   <textarea name="current_symptoms" rows="4" required></textarea>
 
   <h2>Intensity</h2>
@@ -139,11 +126,12 @@ document.getElementById("intakeForm").addEventListener("submit", async e => {
       body: JSON.stringify(data)
     });
 
-    const result = await res.json();
-    sessionStorage.setItem("ai_result", JSON.stringify(result));
+    const json = await res.json();
+    sessionStorage.setItem("ai_result", JSON.stringify(json));
     window.location.href = "/ai-config/ui/results.html";
-  } catch {
-    alert("Error generating plan.");
+  } catch (err) {
+    alert("AI request failed.");
+    console.error(err);
     btn.disabled = false;
     spinner.style.display = "none";
     text.textContent = "Generate My Plan";

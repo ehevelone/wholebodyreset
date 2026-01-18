@@ -1,28 +1,25 @@
 import OpenAI from "openai";
-import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-function hashEmail(email) {
-  return crypto.createHash("sha256").update(email).digest("hex");
-}
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "POST only" };
   }
 
-  const input = JSON.parse(event.body || "{}");
+  let input;
+  try {
+    input = JSON.parse(event.body);
+  } catch {
+    return { statusCode: 400, body: "Invalid JSON" };
+  }
 
   if (!input.current_symptoms || input.current_symptoms.length < 40) {
     return {
       statusCode: 200,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         state: "clarification_needed",
         clarification: {
@@ -43,14 +40,10 @@ export async function handler(event) {
 Return ONLY valid JSON.
 
 {
-  "state": "slow_down | hold_steady | integration",
+  "state": "hold_steady",
   "plan": {
     "focus_today": "string",
-    "steps": ["step"],
-    "supplements": [],
-    "food_support": [],
-    "hydration_and_movement": [],
-    "red_flags_stop": []
+    "steps": ["step"]
   },
   "disclaimer": "Educational only. Not medical advice."
 }
@@ -62,18 +55,32 @@ Intensity: ${input.symptom_intensity}
 Tolerance: ${input.tolerance_and_capacity}
 `;
 
-  const ai = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    temperature: 0.1,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt }
-    ]
-  });
+  let parsed;
+  try {
+    const ai = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.1,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ]
+    });
+
+    parsed = JSON.parse(ai.choices[0].message.content);
+  } catch (err) {
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        error: "AI returned invalid JSON",
+        raw: err.message
+      })
+    };
+  }
 
   return {
     statusCode: 200,
     headers: { "Content-Type": "application/json" },
-    body: ai.choices[0].message.content
+    body: JSON.stringify(parsed)
   };
 }
