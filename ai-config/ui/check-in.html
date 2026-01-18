@@ -14,27 +14,20 @@
       font-family: Georgia, "Times New Roman", serif;
       background: #efe4c9;
       color: #2f3b2f;
-      line-height: 1.6;
     }
     header {
       background: #e2d6b8;
       padding: 20px 40px;
-      display: flex;
-      align-items: center;
     }
-    header img { height: 48px; }
     main {
       max-width: 900px;
       margin: 60px auto;
       padding: 0 20px;
     }
-    h1 { font-size: 2.4rem; }
-    h2 { font-size: 1.4rem; margin-top: 45px; }
     textarea, select, input {
       width: 100%;
       padding: 10px;
       margin-top: 8px;
-      font-family: inherit;
       border-radius: 6px;
       border: 1px solid #b9b29a;
     }
@@ -46,27 +39,14 @@
       padding: 14px 26px;
       border-radius: 6px;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
     }
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,.4);
-      border-top: 2px solid #fff;
-      border-radius: 50%;
-      animation: spin .8s linear infinite;
-      display: none;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 
 <body>
 
 <header>
-  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
+  <img src="/images/et-naturals-logo.png" height="48">
 </header>
 
 <main>
@@ -96,26 +76,15 @@
     <option>Generally stable</option>
   </select>
 
-  <button id="submitBtn">
-    <span class="btn-text">Generate My Plan</span>
-    <span class="spinner" id="spinner"></span>
-  </button>
+  <button type="submit">Generate My Plan</button>
 
 </form>
 
 </main>
 
 <script>
-document.getElementById("intakeForm").addEventListener("submit", async e => {
+document.getElementById("intakeForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-
-  const btn = document.getElementById("submitBtn");
-  const spinner = document.getElementById("spinner");
-  const text = btn.querySelector(".btn-text");
-
-  btn.disabled = true;
-  spinner.style.display = "inline-block";
-  text.textContent = "Generating…";
 
   const data = Object.fromEntries(new FormData(e.target).entries());
 
@@ -127,14 +96,15 @@ document.getElementById("intakeForm").addEventListener("submit", async e => {
     });
 
     const json = await res.json();
-    sessionStorage.setItem("ai_result", JSON.stringify(json));
+
+    // 🔒 USE LOCAL STORAGE (NOT SESSION)
+    localStorage.setItem("ai_result", JSON.stringify(json));
+
     window.location.href = "/ai-config/ui/results.html";
+
   } catch (err) {
-    alert("AI request failed.");
+    alert("Unable to generate your plan.");
     console.error(err);
-    btn.disabled = false;
-    spinner.style.display = "none";
-    text.textContent = "Generate My Plan";
   }
 });
 </script>
