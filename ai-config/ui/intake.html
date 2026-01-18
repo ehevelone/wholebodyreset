@@ -55,6 +55,25 @@
       margin-top: 8px;
     }
 
+    /* SAFETY LAYOUT FIX */
+    .safety-group {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .safety-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1rem;
+    }
+
+    .safety-item input {
+      margin: 0;
+    }
+
     button {
       margin-top: 40px;
       background: #2f3b2f;
@@ -161,11 +180,32 @@
   <!-- SAFETY -->
   <h2>10. Anything important we should be aware of?</h2>
 
-  <label><input type="checkbox" name="pregnant"> Pregnant or trying to conceive</label><br>
-  <label><input type="checkbox" name="breastfeeding"> Breastfeeding</label><br>
-  <label><input type="checkbox" name="on_ssris"> Taking medications for mood or anxiety</label><br>
-  <label><input type="checkbox" name="on_blood_thinners"> Taking blood-thinning medications</label><br>
-  <label><input type="checkbox" name="on_stimulants"> Taking stimulant medications (for focus or energy)</label>
+  <div class="safety-group">
+    <label class="safety-item">
+      <input type="checkbox" name="pregnant">
+      <span>Pregnant or trying to conceive</span>
+    </label>
+
+    <label class="safety-item">
+      <input type="checkbox" name="breastfeeding">
+      <span>Breastfeeding</span>
+    </label>
+
+    <label class="safety-item">
+      <input type="checkbox" name="on_ssris">
+      <span>Taking medications for mood or anxiety</span>
+    </label>
+
+    <label class="safety-item">
+      <input type="checkbox" name="on_blood_thinners">
+      <span>Taking blood-thinning medications</span>
+    </label>
+
+    <label class="safety-item">
+      <input type="checkbox" name="on_stimulants">
+      <span>Taking stimulant medications (for focus or energy)</span>
+    </label>
+  </div>
 
   <div class="helper-text">
     This helps us tailor guidance safely and avoid suggestions that may not be appropriate for you.
