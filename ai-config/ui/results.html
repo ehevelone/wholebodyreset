@@ -64,92 +64,103 @@
 
 <script>
 const out = document.getElementById("output");
-const raw = localStorage.getItem("ai_result");
 
-if (!raw) {
-  out.innerHTML = "<p>No plan found. Please return to the intake.</p>";
-  throw new Error("Missing plan data");
+try {
+  const raw = localStorage.getItem("ai_result");
+  console.log("RAW ai_result:", raw);
+
+  if (!raw) {
+    out.innerHTML = "<p>No plan found. Please return to the intake.</p>";
+  } else {
+    const data = JSON.parse(raw);
+    console.log("PARSED DATA:", data);
+
+    if (data.state === "error") {
+      out.innerHTML = `
+        <h2>Something went wrong</h2>
+        <p>${data.message || "Please try again."}</p>
+      `;
+    }
+
+    else if (data.state === "clarification_needed") {
+      out.innerHTML = `
+        <h2>We need more information</h2>
+        <p>${data.clarification?.reason || ""}</p>
+        <ul>
+          ${(data.clarification?.questions || []).map(q => `<li>${q}</li>`).join("")}
+        </ul>
+        <div class="disclaimer">${data.disclaimer || ""}</div>
+      `;
+    }
+
+    else if (data.plan) {
+      const p = data.plan;
+
+      out.innerHTML = `
+        <h2>Focus Today</h2>
+        <p>${p.focus_today || ""}</p>
+
+        ${p.plan_overview ? `
+          <h3>What’s Going On</h3>
+          <p>${p.plan_overview}</p>
+        ` : ""}
+
+        ${Array.isArray(p.steps) ? `
+          <h3>Steps</h3>
+          <ul>${p.steps.map(s => `<li>${s}</li>`).join("")}</ul>
+        ` : ""}
+
+        ${Array.isArray(p.food_support) ? `
+          <h3>Food Support</h3>
+          <ul>${p.food_support.map(f => `<li>${f}</li>`).join("")}</ul>
+        ` : ""}
+
+        ${Array.isArray(p.hydration_and_movement) ? `
+          <h3>Hydration & Movement</h3>
+          <ul>${p.hydration_and_movement.map(h => `<li>${h}</li>`).join("")}</ul>
+        ` : ""}
+
+        ${Array.isArray(p.supplements) ? `
+          <h3>Supplement Support</h3>
+          ${p.supplements.map(s => `
+            <div class="supplement">
+              <strong>${s.name || ""}</strong><br>
+              ${s.how_to_take || ""}
+            </div>
+          `).join("")}
+        ` : ""}
+
+        ${Array.isArray(p.what_to_expect) ? `
+          <h3>What to Expect</h3>
+          <ul>${p.what_to_expect.map(w => `<li>${w}</li>`).join("")}</ul>
+        ` : ""}
+
+        ${Array.isArray(p.red_flags_stop) ? `
+          <h3>Pause & Reassess If</h3>
+          <ul>${p.red_flags_stop.map(r => `<li>${r}</li>`).join("")}</ul>
+        ` : ""}
+
+        ${p.next_check_in ? `
+          <h3>Next Check-In</h3>
+          <p><strong>Timing:</strong> ${p.next_check_in.timing || ""}</p>
+          <ul>
+            ${(p.next_check_in.what_to_watch || []).map(w => `<li>${w}</li>`).join("")}
+          </ul>
+        ` : ""}
+
+        <div class="disclaimer">${data.disclaimer || ""}</div>
+      `;
+    }
+
+    else {
+      out.innerHTML = "<p>Plan data missing.</p>";
+    }
+  }
 }
-
-const data = JSON.parse(raw);
-
-/* ERROR */
-if (data.state === "error") {
-  out.innerHTML = `
-    <h2>Something went wrong</h2>
-    <p>${data.message || "Please try again."}</p>
-  `;
-  return;
+catch (err) {
+  console.error("RESULTS RENDER ERROR:", err);
+  out.innerHTML = "<p>Unable to display plan. Please refresh.</p>";
 }
-
-/* CLARIFICATION */
-if (data.state === "clarification_needed") {
-  out.innerHTML = `
-    <h2>We need more information</h2>
-    <p>${data.clarification.reason}</p>
-    <ul>${data.clarification.questions.map(q => `<li>${q}</li>`).join("")}</ul>
-    <div class="disclaimer">${data.disclaimer || ""}</div>
-  `;
-  return;
-}
-
-/* PLAN */
-const p = data.plan || {};
-
-out.innerHTML = `
-  <h2>Focus Today</h2>
-  <p>${p.focus_today || ""}</p>
-
-  ${p.plan_overview ? `
-    <h3>What’s Going On</h3>
-    <p>${p.plan_overview}</p>
-  ` : ""}
-
-  ${Array.isArray(p.steps) && p.steps.length ? `
-    <h3>Step-by-Step</h3>
-    <ul>${p.steps.map(s => `<li>${s}</li>`).join("")}</ul>
-  ` : ""}
-
-  ${Array.isArray(p.food_support) && p.food_support.length ? `
-    <h3>Food Support</h3>
-    <ul>${p.food_support.map(f => `<li>${f}</li>`).join("")}</ul>
-  ` : ""}
-
-  ${Array.isArray(p.hydration_and_movement) && p.hydration_and_movement.length ? `
-    <h3>Hydration & Movement</h3>
-    <ul>${p.hydration_and_movement.map(h => `<li>${h}</li>`).join("")}</ul>
-  ` : ""}
-
-  ${Array.isArray(p.supplements) && p.supplements.length ? `
-    <h3>Supplement Support</h3>
-    ${p.supplements.map(s => `
-      <div class="supplement">
-        <strong>${s.name || ""}</strong><br>
-        ${s.how_to_take || ""}
-      </div>
-    `).join("")}
-  ` : ""}
-
-  ${Array.isArray(p.what_to_expect) && p.what_to_expect.length ? `
-    <h3>What to Expect</h3>
-    <ul>${p.what_to_expect.map(w => `<li>${w}</li>`).join("")}</ul>
-  ` : ""}
-
-  ${Array.isArray(p.red_flags_stop) && p.red_flags_stop.length ? `
-    <h3>Pause & Reassess If</h3>
-    <ul>${p.red_flags_stop.map(r => `<li>${r}</li>`).join("")}</ul>
-  ` : ""}
-
-  ${p.next_check_in ? `
-    <h3>Next Check-In</h3>
-    <p><strong>Timing:</strong> ${p.next_check_in.timing || ""}</p>
-    ${Array.isArray(p.next_check_in.what_to_watch) ? `
-      <ul>${p.next_check_in.what_to_watch.map(w => `<li>${w}</li>`).join("")}</ul>
-    ` : ""}
-  ` : ""}
-
-  <div class="disclaimer">${data.disclaimer || ""}</div>
-`;
 </script>
 
 </body>
