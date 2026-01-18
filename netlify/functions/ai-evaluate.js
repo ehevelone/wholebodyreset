@@ -16,18 +16,18 @@ export async function handler(event) {
     return { statusCode: 400, body: "Invalid JSON" };
   }
 
-  if (!input.current_symptoms || input.current_symptoms.length < 40) {
+  if (!input.current_symptoms || input.current_symptoms.length < 10) {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         state: "clarification_needed",
         clarification: {
-          reason: "More detail is needed to proceed safely.",
+          reason: "More detail is needed to tailor guidance.",
           questions: [
-            "What symptoms are most disruptive?",
-            "What makes them worse?",
-            "What helps?",
+            "Which symptom is most disruptive?",
+            "What makes symptoms worse?",
+            "What helps even slightly?",
             "Anything new recently?"
           ]
         },
@@ -37,29 +37,82 @@ export async function handler(event) {
   }
 
   const systemPrompt = `
-Return ONLY valid JSON.
+You are the Whole Body Reset AI Guide.
+
+NON-NEGOTIABLE RULES:
+- Educational support only
+- Never diagnose or treat
+- Never replace or adjust medications
+- No urgency language
+- Calm, grounding tone
+- Output ONLY valid JSON
+
+RETURN THIS EXACT STRUCTURE:
 
 {
-  "state": "hold_steady",
+  "state": "slow_down | hold_steady | integration",
   "plan": {
-    "focus_today": "string",
-    "steps": ["step"]
+    "focus_today": "1–2 sentences",
+    "plan_overview": "Short paragraph explaining the current approach",
+
+    "steps": [
+      "Gentle, concrete step",
+      "Gentle, concrete step"
+    ],
+
+    "food_support": [
+      "Foods to emphasize",
+      "Foods to temporarily reduce or avoid"
+    ],
+
+    "hydration_and_movement": [
+      "Hydration guidance",
+      "Gentle movement suggestion"
+    ],
+
+    "supplements": [
+      {
+        "name": "Optional supplement (if appropriate)",
+        "how_to_take": "General usage guidance only, no dosing"
+      }
+    ],
+
+    "what_to_expect": [
+      "Common early responses",
+      "Normal adjustments over time"
+    ],
+
+    "red_flags_stop": [
+      "When to pause",
+      "When to seek professional care"
+    ],
+
+    "next_check_in": {
+      "timing": "Suggested timeframe",
+      "what_to_watch": [
+        "Specific symptom to observe"
+      ]
+    }
   },
-  "disclaimer": "Educational only. Not medical advice."
+  "disclaimer": "Educational support only. Not medical advice. Do not change medications without your provider."
 }
 `;
 
   const userPrompt = `
-Symptoms: ${input.current_symptoms}
-Intensity: ${input.symptom_intensity}
-Tolerance: ${input.tolerance_and_capacity}
+SYMPTOMS: ${input.current_symptoms}
+DURATION: ${input.symptom_duration || "not specified"}
+INTENSITY: ${input.symptom_intensity || "not specified"}
+TOLERANCE: ${input.tolerance_and_capacity || "not specified"}
+PATTERNS: ${input.symptom_patterns || "none noted"}
+MEDICATIONS: ${input.current_meds || "not specified"}
+GOALS: ${input.goals || "feeling better"}
 `;
 
   let parsed;
   try {
     const ai = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.1,
+      temperature: 0.3,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -72,8 +125,8 @@ Tolerance: ${input.tolerance_and_capacity}
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        error: "AI returned invalid JSON",
-        raw: err.message
+        state: "error",
+        message: "AI failed to generate a valid plan."
       })
     };
   }
