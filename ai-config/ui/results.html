@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
   <title>Your Guided Plan | Whole Body Reset</title>
 
   <link rel="stylesheet" href="/css/site.css">
@@ -15,7 +14,6 @@
       font-family: Georgia, "Times New Roman", serif;
       background: #efe4c9;
       color: #2f3b2f;
-      line-height: 1.6;
     }
 
     header {
@@ -23,9 +21,7 @@
       padding: 20px 40px;
     }
 
-    header img {
-      height: 48px;
-    }
+    header img { height: 48px; }
 
     main {
       max-width: 900px;
@@ -37,40 +33,24 @@
       background: #d8d1b5;
       padding: 30px;
       border-radius: 12px;
-      margin-top: 30px;
-    }
-
-    h1 {
-      font-size: 2.6rem;
-    }
-
-    h2 {
-      margin-top: 30px;
-    }
-
-    ul {
-      padding-left: 20px;
-    }
-
-    .gentle {
-      font-style: italic;
-      color: #4a5a4a;
     }
 
     .error {
       font-style: italic;
+      color: #5a3b3b;
     }
 
-    button {
-      margin-top: 30px;
-      background: #2f3b2f;
-      color: #fff;
-      border: none;
-      padding: 14px 26px;
+    pre {
+      background: #efe4c9;
+      padding: 15px;
       border-radius: 6px;
-      cursor: pointer;
-      font-size: 1rem;
+      overflow-x: auto;
+      font-size: 0.9rem;
     }
+
+    h1 { font-size: 2.6rem; }
+    h2 { margin-top: 30px; }
+    ul { padding-left: 20px; }
   </style>
 </head>
 
@@ -81,88 +61,76 @@
 </header>
 
 <main>
-
   <h1>Your Guided Plan</h1>
-
-  <div id="content" class="card">
-    <p class="gentle">Loading your plan…</p>
-  </div>
-
+  <div id="content" class="card"></div>
 </main>
 
 <script>
 const container = document.getElementById("content");
 
-let result;
-try {
-  result = JSON.parse(sessionStorage.getItem("ai_result"));
-} catch {
-  result = null;
+let raw = sessionStorage.getItem("ai_result");
+
+if (!raw) {
+  container.innerHTML = `
+    <p class="error">No plan data was found.</p>
+    <p>This usually means the request did not finish before redirect.</p>
+  `;
+  throw new Error("ai_result missing");
 }
 
-if (!result) {
+let result;
+try {
+  result = JSON.parse(raw);
+} catch (e) {
   container.innerHTML = `
-    <p class="error">Unable to load your plan.</p>
-    <p>Please restart the intake.</p>
+    <p class="error">Plan data could not be read.</p>
+    <pre>${raw}</pre>
   `;
-} 
+  throw e;
+}
 
-// ✅ CLARIFICATION MODE
-else if (result.state === "clarification_needed" && result.clarification) {
+/* =====================
+   CLARIFICATION MODE
+===================== */
+if (result.state === "clarification_needed" && result.clarification) {
   container.innerHTML = `
     <h2>We Need a Little More Information</h2>
-    <p class="gentle">${result.clarification.reason || ""}</p>
-
-    <p><strong>Please answer the following:</strong></p>
+    <p>${result.clarification.reason || ""}</p>
     <ul>
       ${result.clarification.questions.map(q => `<li>${q}</li>`).join("")}
     </ul>
-
-    <p class="gentle">
-      Once you’ve clarified these, return to the intake or check-in so the plan can be refined.
-    </p>
+    <p><em>Please return to the intake to continue.</em></p>
   `;
-} 
+  return;
+}
 
-// ✅ NORMAL PLAN MODE
-else if (result.plan) {
+/* =====================
+   NORMAL PLAN MODE
+===================== */
+if (result.plan) {
   container.innerHTML = `
     <p><strong>Current State:</strong> ${result.state}</p>
-
-    <p class="gentle">${result.reflection || ""}</p>
+    <p>${result.reflection || ""}</p>
 
     <h2>Today's Focus</h2>
-    <p>${result.plan.focus_today || ""}</p>
+    <p>${result.plan.focus_today}</p>
 
-    <h2>What This Phase Is Doing</h2>
-    <p>${result.plan.plan_overview || ""}</p>
+    <h2>Plan Overview</h2>
+    <p>${result.plan.plan_overview}</p>
 
-    <h2>Step-by-Step</h2>
-    <ul>
-      ${(result.plan.steps || []).map(s => `<li>${s}</li>`).join("")}
-    </ul>
-
-    ${result.plan.supplements && result.plan.supplements.length ? `
-      <h2>Supplement Support</h2>
-      ${result.plan.supplements.map(s => `
-        <p><strong>${s.name}</strong><br>
-        ${s.purpose}<br>
-        <em>${s.how_to_take}</em></p>
-      `).join("")}
-    ` : ""}
-
-    <h2>Next Check-In</h2>
-    <p><strong>Timing:</strong> ${result.plan.next_check_in?.timing || ""}</p>
+    <h2>Steps</h2>
+    <ul>${result.plan.steps.map(s => `<li>${s}</li>`).join("")}</ul>
   `;
+  return;
 }
 
-// ❌ UNKNOWN SHAPE (DEV SAFETY)
-else {
-  container.innerHTML = `
-    <p class="error">We received an unexpected response.</p>
-    <p>Please restart the intake.</p>
-  `;
-}
+/* =====================
+   FALLBACK DEBUG
+===================== */
+container.innerHTML = `
+  <p class="error">Unexpected response shape.</p>
+  <pre>${JSON.stringify(result, null, 2)}</pre>
+`;
 </script>
 
 </body>
