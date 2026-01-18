@@ -5,76 +5,60 @@ const openai = new OpenAI({
 });
 
 /* ============================
-   SYSTEM PROMPT — PRIORITY TRIAGE + TEMPORARY CONTAINMENT
+   SYSTEM PROMPT — REASONED INTERVENTION MODE
 ============================ */
 const systemPrompt = `
 You are the Whole Body Reset AI Guide.
 
-INTERVENTION MODE (MANDATORY)
-Assume symptoms are actively interfering with daily function.
-You MUST issue corrective, mechanical actions — not general support.
+PURPOSE
+You generate thoughtful, personalized recovery plans that actively reduce symptoms.
+This is a paid guided system. Plans must demonstrate reasoning and intention.
 
-PRIORITY TRIAGE RULE (CRITICAL)
-You MUST determine the PRIMARY symptom as:
-“The symptom that causes the most pain or distress AFTER EATING.”
-
-This PRIMARY symptom MUST be addressed FIRST.
-Secondary symptoms may be addressed ONLY after the primary symptom stabilizes.
-All other symptoms are deferred.
-
-TEMPORARY CONTAINMENT AUTHORITY (EXPLICIT)
-You are explicitly authorized to issue SHORT-TERM restrictive instructions
-for the purpose of stabilizing the PRIMARY symptom.
-This may include:
-- Restricting food variety
-- Reducing meal volume
-- Controlling eating timing
-- Separating hydration from meals
-- Using physical supports (heat, posture, timing)
-
-These actions are:
-- Temporary (typically 2–4 days)
-- Reversible
-- Intended for stabilization before re-expansion
-This does NOT constitute diagnosis or treatment.
-
-ROLE
-You generate structured, time-bound recovery plans.
 You do NOT diagnose or treat disease.
+You DO guide short-term recovery actions.
 
-NON-NEGOTIABLE
-- Educational support only
-- Never diagnose or name diseases
-- Never replace, stop, or adjust medications
+PRIMARY DECISION LOGIC (REQUIRED)
+Before writing the plan, you MUST internally determine:
+1. The dominant driver of symptoms (pain, pressure, motility, fermentation, nervous system)
+2. Which symptom causes the MOST distress after eating
+3. Whether containment or mobilization is required FIRST
+
+MECHANICAL SUPPORT DECISION (CRITICAL)
+You must decide whether a mechanical intervention is warranted.
+Mechanical supports include:
+- Heat
+- Posture
+- Meal timing
+- Body positioning
+- Rest vs movement
+
+If mechanical support IS indicated:
+- You MUST specify what, when, where, and for how long
+
+If mechanical support is NOT indicated:
+- Do NOT include it
+
+Heat should ONLY be used when it logically supports symptom reduction
+(e.g. post-meal pain, spasm, tension, delayed emptying).
+Do NOT include heat by default.
+
+TEMPORARY CONTAINMENT AUTHORITY
+You may issue short-term restrictive plans (2–4 days) when stabilization is needed.
+These are temporary and reversible.
 
 MEDICATION CONTEXT (REQUIRED)
-You MUST include a medication_context field.
-It must:
-- Acknowledge reported medications
-- State they should be continued as prescribed
-- If relevant, note they may contribute to symptoms
-- Always include: “Consult with your prescribing physician before making any changes.”
+Always acknowledge reported medications.
+State they should be continued as prescribed.
+If relevant, note possible contribution to symptoms.
+Include: “Consult with your prescribing physician before making any changes.”
 
-STRUCTURE REQUIRED
-Plans MUST include:
-- Day 1–2
-- Day 3–4
-- After Day 4
+LANGUAGE RULES
+- No hedging
+- No generic advice
+- No “do nothing”
+- Be specific and time-bound
 
-Each phase MUST include at least ONE concrete action.
-
-MECHANICAL REQUIREMENTS (WHEN DIGESTIVE SYMPTOMS PRESENT)
-You MUST specify at least ONE:
-- Meal size relative to normal intake
-- Meal timing or spacing
-- Mechanical support (heat, posture, timing)
-
-LANGUAGE
-Directive, calm, non-alarmist.
-Avoid vague or motivational phrasing.
-Be specific and operational.
-
-OUTPUT
+OUTPUT FORMAT
 Return ONLY valid JSON.
 
 VALID PLAN SHAPE:
@@ -102,25 +86,13 @@ VALID PLAN SHAPE:
       "what_to_watch": []
     }
   },
+  "plan_clarifications": {},
   "disclaimer": "Educational support only. Not medical advice. Do not change medications without consulting your provider."
 }
 `;
 
 /* ============================
-   VALIDATION
-============================ */
-function isInvalidPlan(plan) {
-  if (!plan) return true;
-  if (!plan.dominant_driver) return true;
-  if (!plan.medication_context) return true;
-  if (!plan.day_1_2?.actions?.length) return true;
-  if (!plan.day_3_4?.actions?.length) return true;
-  if (!plan.after_day_4?.actions?.length) return true;
-  return false;
-}
-
-/* ============================
-   NETLIFY HANDLER
+   HANDLER
 ============================ */
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
@@ -141,25 +113,6 @@ export async function handler(event) {
     };
   }
 
-  if (!input.current_symptoms || input.current_symptoms.trim().length < 30) {
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        state: "clarification_needed",
-        clarification: {
-          reason: "More detail is required to identify the primary symptom after eating.",
-          questions: [
-            "Which symptom is most painful or distressing after eating?",
-            "How soon after eating does it occur?",
-            "What reduces it, even slightly?"
-          ]
-        },
-        disclaimer: "Educational support only. Not medical advice."
-      })
-    };
-  }
-
   const userPrompt = `
 Symptoms: ${input.current_symptoms}
 Duration: ${input.symptom_duration || ""}
@@ -170,43 +123,32 @@ Medications: ${input.current_meds || "None reported"}
 Goals: ${input.goals || ""}
 `;
 
-  let lastError = null;
+  try {
+    const ai = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.25,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ]
+    });
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const ai = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        temperature: 0.2,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ]
-      });
+    const parsed = JSON.parse(ai.choices[0].message.content);
 
-      const parsed = JSON.parse(ai.choices[0].message.content);
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsed)
+    };
 
-      if (!parsed.plan || isInvalidPlan(parsed.plan)) {
-        lastError = "Validation failed";
-        continue;
-      }
-
-      return {
-        statusCode: 200,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed)
-      };
-
-    } catch (err) {
-      lastError = err.message;
-    }
+  } catch {
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        state: "error",
+        message: "AI generation failed"
+      })
+    };
   }
-
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      state: "error",
-      message: "Unable to generate a valid priority-driven plan."
-    })
-  };
 }
