@@ -17,22 +17,27 @@
       color: #2f3b2f;
       line-height: 1.6;
     }
+
     header {
       background: #e2d6b8;
       padding: 20px 40px;
       display: flex;
       align-items: center;
     }
+
     header img {
       height: 48px;
     }
+
     main {
       max-width: 900px;
       margin: 60px auto;
       padding: 0 20px;
     }
+
     h1 { font-size: 2.4rem; margin-bottom: 10px; }
     h2 { font-size: 1.4rem; margin-top: 45px; }
+
     textarea, select, input {
       width: 100%;
       padding: 10px;
@@ -43,6 +48,13 @@
       border: 1px solid #b9b29a;
       background: #fff;
     }
+
+    .helper-text {
+      font-size: 0.9rem;
+      color: #4f5a45;
+      margin-top: 8px;
+    }
+
     button {
       margin-top: 40px;
       background: #2f3b2f;
@@ -52,6 +64,28 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -69,15 +103,15 @@
 <form id="intakeForm">
 
   <!-- EMAIL -->
-  <h2>0. How can we save your place?</h2>
+  <h2>1. Email Address</h2>
   <input type="email" name="email" required placeholder="you@example.com">
 
   <!-- SYMPTOMS -->
-  <h2>1. What are you currently experiencing?</h2>
+  <h2>2. What are you currently experiencing?</h2>
   <textarea name="current_symptoms" rows="4" required></textarea>
 
   <!-- DURATION -->
-  <h2>2. How long have these experiences been present?</h2>
+  <h2>3. How long have these experiences been present?</h2>
   <select name="symptom_duration">
     <option value="">Select one</option>
     <option>Days</option>
@@ -88,7 +122,7 @@
   </select>
 
   <!-- INTENSITY -->
-  <h2>3. How intense do these experiences feel?</h2>
+  <h2>4. How intense do these experiences feel?</h2>
   <select name="symptom_intensity" required>
     <option value="">Select one</option>
     <option>Mild</option>
@@ -99,19 +133,19 @@
   </select>
 
   <!-- PATTERNS -->
-  <h2>4. Have you noticed any patterns?</h2>
+  <h2>5. Have you noticed any patterns?</h2>
   <textarea name="symptom_patterns" rows="3"></textarea>
 
   <!-- SUPPORTS -->
-  <h2>5. What supports are you currently using?</h2>
+  <h2>6. What supports are you currently using?</h2>
   <textarea name="current_supports" rows="3"></textarea>
 
   <!-- MEDS -->
-  <h2>6. Medications or ongoing conditions</h2>
+  <h2>7. Medications or ongoing conditions</h2>
   <textarea name="current_meds" rows="3"></textarea>
 
   <!-- TOLERANCE -->
-  <h2>7. How would you describe your tolerance right now?</h2>
+  <h2>8. How would you describe your tolerance right now?</h2>
   <select name="tolerance_and_capacity" required>
     <option value="">Select one</option>
     <option>Easily overwhelmed</option>
@@ -121,18 +155,27 @@
   </select>
 
   <!-- GOALS -->
-  <h2>8. What are you hoping to understand right now?</h2>
+  <h2>9. What are you hoping to understand right now?</h2>
   <textarea name="goals" rows="3"></textarea>
 
   <!-- SAFETY -->
-  <h2>9. Safety context</h2>
-  <label><input type="checkbox" name="pregnant"> Pregnant</label><br>
-  <label><input type="checkbox" name="breastfeeding"> Breastfeeding</label><br>
-  <label><input type="checkbox" name="on_stimulants"> Using stimulant medications</label><br>
-  <label><input type="checkbox" name="on_blood_thinners"> Using blood thinners</label><br>
-  <label><input type="checkbox" name="on_ssris"> Using SSRIs</label>
+  <h2>10. Anything important we should be aware of?</h2>
 
-  <button type="submit">Generate My Plan</button>
+  <label><input type="checkbox" name="pregnant"> Pregnant or trying to conceive</label><br>
+  <label><input type="checkbox" name="breastfeeding"> Breastfeeding</label><br>
+  <label><input type="checkbox" name="on_ssris"> Taking medications for mood or anxiety</label><br>
+  <label><input type="checkbox" name="on_blood_thinners"> Taking blood-thinning medications</label><br>
+  <label><input type="checkbox" name="on_stimulants"> Taking stimulant medications (for focus or energy)</label>
+
+  <div class="helper-text">
+    This helps us tailor guidance safely and avoid suggestions that may not be appropriate for you.
+  </div>
+
+  <!-- SUBMIT -->
+  <button id="submitBtn" type="submit">
+    <span class="btn-text">Generate My Plan</span>
+    <span class="spinner" id="spinner"></span>
+  </button>
 
 </form>
 
@@ -142,17 +185,23 @@
 document.getElementById("intakeForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const btn = document.getElementById("submitBtn");
+  const spinner = document.getElementById("spinner");
+  const text = btn.querySelector(".btn-text");
+
+  btn.disabled = true;
+  spinner.style.display = "inline-block";
+  text.textContent = "Generating…";
+
   const payload = Object.fromEntries(new FormData(e.target).entries());
 
   try {
-    // Save email to Supabase
     await fetch("/.netlify/functions/save-intake-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: payload.email })
     });
 
-    // Run AI
     const res = await fetch("/.netlify/functions/ai-evaluate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -161,11 +210,13 @@ document.getElementById("intakeForm").addEventListener("submit", async (e) => {
 
     const json = await res.json();
     localStorage.setItem("ai_result", JSON.stringify(json));
-
     window.location.href = "/ai-config/ui/results.html";
 
   } catch (err) {
-    console.error("INTAKE ERROR:", err);
+    btn.disabled = false;
+    spinner.style.display = "none";
+    text.textContent = "Generate My Plan";
+
     localStorage.setItem("ai_result", JSON.stringify({
       state: "error",
       message: "Unable to generate plan."
