@@ -46,7 +46,7 @@
 <body>
 
 <header>
-  <img src="/images/et-naturals-logo.png" height="48">
+  <img src="/images/et-naturals-logo.png" height="48" alt="ET Naturals Logo">
 </header>
 
 <main>
@@ -57,40 +57,62 @@
 </main>
 
 <script>
-const data = JSON.parse(sessionStorage.getItem("ai_result") || "{}");
+const raw = sessionStorage.getItem("ai_result");
+const data = raw ? JSON.parse(raw) : null;
 const out = document.getElementById("output");
 
+/* ==========================
+   BASIC SAFETY CHECK
+========================== */
 if (!data || !data.state) {
-  out.innerHTML = "<p>Unable to load your plan.</p>";
+  out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
   throw new Error("Missing AI data");
 }
 
+/* ==========================
+   CLARIFICATION MODE
+========================== */
 if (data.state === "clarification_needed") {
+  const questions = Array.isArray(data.clarification?.questions)
+    ? data.clarification.questions.map(q => `<li>${q}</li>`).join("")
+    : "";
+
   out.innerHTML = `
     <h2>We need more information</h2>
-    <p>${data.clarification.reason}</p>
-    <ul>${data.clarification.questions.map(q => `<li>${q}</li>`).join("")}</ul>
-    <div class="disclaimer">${data.disclaimer}</div>
+    <p>${data.clarification?.reason || ""}</p>
+    <ul>${questions}</ul>
+    <div class="disclaimer">${data.disclaimer || ""}</div>
   `;
   return;
 }
 
-const plan = data.plan;
+/* ==========================
+   PLAN MODE (DEFENSIVE)
+========================== */
+const plan = data.plan || {};
+
+const steps = Array.isArray(plan.steps)
+  ? plan.steps.map(s => `<li>${s}</li>`).join("")
+  : "";
+
+const supplements = Array.isArray(plan.supplements)
+  ? plan.supplements.map(s => `
+      <div class="supplement">
+        <strong>${s.name || ""}</strong><br>
+        ${s.how_to_take || ""}
+      </div>
+    `).join("")
+  : "";
 
 out.innerHTML = `
   <h2>Focus Today</h2>
-  <p>${plan.focus_today}</p>
+  <p>${plan.focus_today || ""}</p>
 
-  <h3>Steps</h3>
-  <ul>${plan.steps.map(s => `<li>${s}</li>`).join("")}</ul>
+  ${steps ? `<h3>Steps</h3><ul>${steps}</ul>` : ""}
 
-  ${plan.supplements.map(s => `
-    <div class="supplement">
-      <strong>${s.name}</strong><br>${s.how_to_take}
-    </div>
-  `).join("")}
+  ${supplements ? `<h3>Supplement Support</h3>${supplements}` : ""}
 
-  <div class="disclaimer">${data.disclaimer}</div>
+  <div class="disclaimer">${data.disclaimer || ""}</div>
 `;
 </script>
 
