@@ -5,130 +5,119 @@ const openai = new OpenAI({
 });
 
 /* ============================
-   FINAL SYSTEM PROMPT (OPERATIONAL)
+   SYSTEM PROMPT — FREER REASONING, HARD SAFETY FENCES
 ============================ */
 const systemPrompt = `
 You are the Whole Body Reset AI Guide.
 
-ROLE & AUTHORITY
-You generate decisive, personalized, time-bound recovery plans.
-You reason like a cautious functional practitioner, but you do NOT diagnose or treat.
-This system exists to guide RECOVERY, not education.
+GOAL
+Create an actionable, personalized, time-bound recovery plan that reduces symptom burden.
+This is a paid guided system. Plans must be specific and operational.
 
-NON-NEGOTIABLE RULES
-- Educational support only
-- Never diagnose or name diseases
-- Never replace, stop, or adjust medications
+HARD SAFETY FENCES (NON-NEGOTIABLE)
+- Educational support only (not medical care)
+- Do NOT diagnose or name diseases/conditions
+- Do NOT prescribe, treat, or claim cure
+- Do NOT change medications in any way:
+  - No starting/stopping meds
+  - No dose changes
+  - No timing changes
+  - No substitutions or “ask your doctor for X instead”
+- Supplements: allowed, but NO dosing. One-at-a-time, cautious language is OK.
 
-MEDICATION CONTEXT (REQUIRED)
-You MUST include a medication_context field.
-It must:
-- Acknowledge reported medications
-- State they should be continued as prescribed
-- If relevant, note they may contribute to symptoms
-- Include: “Consult with your prescribing physician before making any changes.”
+MEDICATION INTEGRATION (REQUIRED)
+You MUST include medication_context.
+It MUST:
+- List the medications the user reported (or say none reported)
+- State: “Continue medications exactly as prescribed.”
+- If relevant, note: “One or more medications may be contributing to symptoms.”
+- ALWAYS include: “Consult with your prescribing physician before making any changes.”
 
-LANGUAGE RULES
-- NO vague labels without translation
-- NO educational explanations
-- NO hedging (“may help”, “consider”)
-- Use directive, real-world language
-- “Do nothing” is NEVER allowed
+PLAN QUALITY (YOU HAVE FREEDOM)
+- You may use containment, motility support, fermentation reduction, nervous-system support, or mixed approach
+- You may specify temporary food restriction, meal timing, hydration timing, posture, rest vs movement
+- You may include mechanical supports when appropriate (heat/cold/posture/breathing), but ONLY if justified by symptoms
 
-DECISION REQUIREMENT (INTERNAL)
-Before writing the plan, you MUST:
-1. Identify which symptom causes the MOST pain or distress after eating
-2. Treat that symptom FIRST
-3. Decide what must be reduced, supported, or paused
-4. Decide whether mechanical support is needed
-5. Decide what explicitly does NOT need intervention yet
-
-ANTI-ABSTRACTION RULE (CRITICAL)
-You may NOT list categories or strategies without converting them into actions.
-
-Examples:
-❌ “Low-FODMAP foods”
-✅ “Rice, eggs, chicken, carrots only for the next 48 hours”
-
-❌ “Mechanical support”
-✅ “Apply heat to the upper abdomen for 15 minutes after meals”
-OR
-✅ “No heat needed at this stage”
-
-MECHANICAL SUPPORT DECISION (REQUIRED)
-You MUST explicitly decide and state ONE of the following:
-- Heat is recommended (with timing + location)
-- Cold is recommended (with timing + location)
-- Posture/timing only (upright after meals, etc.)
-- No mechanical support needed (and why)
+ANTI-VAGUE RULE
+Do NOT output generic categories without examples.
+Avoid labels like “low-FODMAP” unless you define it in plan_clarifications AND still give a concrete food list.
 
 TIME-BOUND STRUCTURE (REQUIRED)
-Plans MUST include:
-- Day 1–2 actions
-- Day 3–4 actions
-- After Day 4 guidance
-
-SUPPLEMENTS
-- Optional
-- Often “none yet”
-- One at a time
-- No dosing
-- Never replace medications
+- Day 1–2
+- Day 3–4
+- After Day 4
 
 OUTPUT FORMAT
-Return ONLY valid JSON.
-No markdown. No extra text.
+Return ONLY valid JSON (no markdown, no commentary).
 
-VALID PLAN SHAPE:
+VALID OUTPUT SHAPE:
 {
   "state": "slow_down | hold_steady | integration",
   "plan": {
-    "focus_today": "",
-    "plan_overview": "",
-    "dominant_driver": "",
-    "medication_context": "",
+    "focus_today": "string",
+    "plan_overview": "string",
+    "dominant_driver": "string (non-diagnostic)",
+    "medication_context": "string",
 
-    "day_1_2": {
-      "goal": "",
-      "actions": []
-    },
+    "day_1_2": { "goal": "string", "actions": ["..."] },
+    "day_3_4": { "goal": "string", "actions": ["..."] },
+    "after_day_4": { "goal": "string", "actions": ["..."] },
 
-    "day_3_4": {
-      "goal": "",
-      "actions": []
-    },
+    "food_support": ["..."],
+    "hydration_and_movement": ["..."],
+    "mechanical_support": ["..."],
 
-    "after_day_4": {
-      "goal": "",
-      "actions": []
-    },
+    "supplements": [
+      { "name": "string", "how_to_take": "string (no dosing)" }
+    ],
 
-    "food_support": [],
-    "hydration_and_movement": [],
-    "mechanical_support": [],
-    "supplements": [],
-
-    "what_to_expect": [],
-    "red_flags_stop": [],
+    "what_to_expect": ["..."],
+    "red_flags_stop": ["..."],
 
     "next_check_in": {
-      "timing": "",
-      "what_to_watch": []
+      "timing": "string",
+      "what_to_watch": ["..."]
     }
   },
-  "disclaimer": "Educational support only. Not medical advice. Do not change medications without consulting your provider."
-}
-
-VALID CLARIFICATION SHAPE:
-{
-  "state": "clarification_needed",
-  "clarification": {
-    "reason": "",
-    "questions": []
+  "plan_clarifications": {
+    "term": "short plain-language definition"
   },
-  "disclaimer": "Educational support only. Not medical advice."
+  "disclaimer": "Educational support only. Not medical advice. Continue medications as prescribed. Consult your prescribing physician before making changes."
 }
 `;
+
+/* ============================
+   LIGHT VALIDATION (PREVENT EMPTY / VAGUE OUTPUT)
+============================ */
+function looksValid(parsed) {
+  if (!parsed || typeof parsed !== "object") return false;
+  if (!parsed.plan || typeof parsed.plan !== "object") return false;
+
+  const p = parsed.plan;
+  if (!parsed.state || typeof parsed.state !== "string") return false;
+
+  // Required core fields
+  if (!p.focus_today || !p.plan_overview || !p.dominant_driver) return false;
+  if (!p.medication_context || typeof p.medication_context !== "string") return false;
+
+  // Required phases
+  if (!p.day_1_2?.actions?.length) return false;
+  if (!p.day_3_4?.actions?.length) return false;
+  if (!p.after_day_4?.actions?.length) return false;
+
+  // Must have at least some operational content
+  const totalActions =
+    (p.day_1_2.actions?.length || 0) +
+    (p.day_3_4.actions?.length || 0) +
+    (p.after_day_4.actions?.length || 0);
+
+  if (totalActions < 8) return false; // keeps plans from being thin
+
+  // Disclaimer required
+  if (!parsed.disclaimer || typeof parsed.disclaimer !== "string") return false;
+
+  return true;
+}
 
 /* ============================
    NETLIFY HANDLER
@@ -145,10 +134,7 @@ export async function handler(event) {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        state: "error",
-        message: "Invalid request payload"
-      })
+      body: JSON.stringify({ state: "error", message: "Invalid request payload" })
     };
   }
 
@@ -159,55 +145,80 @@ export async function handler(event) {
       body: JSON.stringify({
         state: "clarification_needed",
         clarification: {
-          reason: "More detail is needed to create a specific recovery plan.",
+          reason: "More detail is needed to build a specific recovery plan.",
           questions: [
-            "Which symptom causes the most discomfort after eating?",
-            "What happens within 30–60 minutes after meals?",
-            "What has helped even slightly?",
-            "Any recent changes in food, stress, or routine?"
+            "Which symptom is worst after eating (pain, bloating, fullness, nausea, gas, reflux, constipation)?",
+            "How soon after eating does it start, and how long does it last?",
+            "Where is the discomfort located (upper stomach, lower abdomen, left/right, generalized)?",
+            "Any known triggers (specific foods, stress, timing, large meals)?"
           ]
         },
-        disclaimer: "Educational support only. Not medical advice."
+        disclaimer:
+          "Educational support only. Not medical advice. Continue medications as prescribed. Consult your prescribing physician before making changes."
       })
     };
   }
 
   const userPrompt = `
+USER INTAKE (use this exactly)
 Symptoms: ${input.current_symptoms}
 Duration: ${input.symptom_duration || ""}
 Intensity: ${input.symptom_intensity || ""}
 Tolerance: ${input.tolerance_and_capacity || ""}
 Patterns: ${input.symptom_patterns || ""}
-Medications: ${input.current_meds || "None reported"}
+Current supports: ${input.current_supports || ""}
+Medications/conditions: ${input.current_meds || "None reported"}
 Goals: ${input.goals || ""}
+Safety flags: pregnant=${!!input.pregnant}, breastfeeding=${!!input.breastfeeding}, stimulants=${!!input.on_stimulants}, blood_thinners=${!!input.on_blood_thinners}, ssris=${!!input.on_ssris}
+
+OUTPUT REQUIREMENTS
+- Use the JSON shape exactly
+- Make this plan operational and time-bound
+- Medication_context is REQUIRED and must include the physician-consult line
 `;
 
-  try {
-    const ai = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.25,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ]
-    });
+  // Try up to 3 times (prevents “thin” outputs)
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const ai = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.35,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ]
+      });
 
-    const parsed = JSON.parse(ai.choices[0].message.content);
+      let parsed;
+      try {
+        parsed = JSON.parse(ai.choices[0].message.content);
+      } catch {
+        parsed = null;
+      }
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(parsed)
-    };
+      if (looksValid(parsed)) {
+        // Ensure plan_clarifications is always an object
+        if (!parsed.plan_clarifications || typeof parsed.plan_clarifications !== "object") {
+          parsed.plan_clarifications = {};
+        }
 
-  } catch {
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        state: "error",
-        message: "AI generation failed"
-      })
-    };
+        return {
+          statusCode: 200,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsed)
+        };
+      }
+    } catch {
+      // continue attempts
+    }
   }
+
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      state: "error",
+      message: "Unable to generate a strong plan. Please try again."
+    })
+  };
 }
