@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
   <title>Your Guided Plan | Whole Body Reset</title>
 
   <link rel="stylesheet" href="/css/site.css">
@@ -14,6 +15,7 @@
       font-family: Georgia, "Times New Roman", serif;
       background: #efe4c9;
       color: #2f3b2f;
+      line-height: 1.6;
     }
 
     header {
@@ -21,7 +23,9 @@
       padding: 20px 40px;
     }
 
-    header img { height: 48px; }
+    header img {
+      height: 48px;
+    }
 
     main {
       max-width: 900px;
@@ -29,28 +33,60 @@
       padding: 0 20px;
     }
 
-    .card {
-      background: #d8d1b5;
-      padding: 30px;
+    h1, h2, h3 {
+      margin-top: 36px;
+    }
+
+    .callout {
+      background: #d6cfb2;
       border-radius: 12px;
+      padding: 24px;
+      margin: 35px 0;
     }
 
-    .error {
+    .gentle {
       font-style: italic;
-      color: #5a3b3b;
+      color: #4a5a4a;
     }
 
-    pre {
+    ul {
+      padding-left: 22px;
+    }
+
+    .supplement {
       background: #efe4c9;
-      padding: 15px;
-      border-radius: 6px;
-      overflow-x: auto;
-      font-size: 0.9rem;
+      border: 1px solid #b9b29a;
+      border-radius: 10px;
+      padding: 18px;
+      margin: 20px 0;
     }
 
-    h1 { font-size: 2.6rem; }
-    h2 { margin-top: 30px; }
-    ul { padding-left: 20px; }
+    .disclaimer {
+      font-size: 0.9rem;
+      color: #4f5a45;
+      margin-top: 60px;
+      border-top: 1px solid #b9b29a;
+      padding-top: 20px;
+    }
+
+    .actions {
+      margin-top: 40px;
+    }
+
+    button {
+      background: #2f3b2f;
+      color: #fff;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    @media print {
+      header, .actions {
+        display: none;
+      }
+    }
   </style>
 </head>
 
@@ -61,75 +97,99 @@
 </header>
 
 <main>
+
   <h1>Your Guided Plan</h1>
-  <div id="content" class="card"></div>
+
+  <div id="output" class="callout"></div>
+
+  <div class="actions">
+    <button onclick="window.print()">Print / Save as PDF</button>
+  </div>
+
 </main>
 
 <script>
-const container = document.getElementById("content");
+const data = JSON.parse(sessionStorage.getItem("ai_result") || "{}");
+const out = document.getElementById("output");
 
-let raw = sessionStorage.getItem("ai_result");
-
-if (!raw) {
-  container.innerHTML = `
-    <p class="error">No plan data was found.</p>
-    <p>This usually means the request did not finish before redirect.</p>
-  `;
-  throw new Error("ai_result missing");
+/* ==========================
+   BASIC SAFETY CHECK
+========================== */
+if (!data || !data.state) {
+  out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
+  throw new Error("Missing AI state");
 }
 
-let result;
-try {
-  result = JSON.parse(raw);
-} catch (e) {
-  container.innerHTML = `
-    <p class="error">Plan data could not be read.</p>
-    <pre>${raw}</pre>
-  `;
-  throw e;
-}
-
-/* =====================
+/* ==========================
    CLARIFICATION MODE
-===================== */
-if (result.state === "clarification_needed" && result.clarification) {
-  container.innerHTML = `
-    <h2>We Need a Little More Information</h2>
-    <p>${result.clarification.reason || ""}</p>
-    <ul>
-      ${result.clarification.questions.map(q => `<li>${q}</li>`).join("")}
-    </ul>
-    <p><em>Please return to the intake to continue.</em></p>
+========================== */
+if (data.state === "clarification_needed") {
+  const questions = (data.clarification?.questions || [])
+    .map(q => `<li>${q}</li>`)
+    .join("");
+
+  out.innerHTML = `
+    <h2>We need a little more information</h2>
+    <p class="gentle">${data.clarification?.reason || ""}</p>
+
+    <ul>${questions}</ul>
+
+    <p class="gentle">
+      Please return to the intake and add this information so the plan can be tailored correctly.
+    </p>
+
+    <div class="disclaimer">${data.disclaimer || ""}</div>
   `;
   return;
 }
 
-/* =====================
-   NORMAL PLAN MODE
-===================== */
-if (result.plan) {
-  container.innerHTML = `
-    <p><strong>Current State:</strong> ${result.state}</p>
-    <p>${result.reflection || ""}</p>
-
-    <h2>Today's Focus</h2>
-    <p>${result.plan.focus_today}</p>
-
-    <h2>Plan Overview</h2>
-    <p>${result.plan.plan_overview}</p>
-
-    <h2>Steps</h2>
-    <ul>${result.plan.steps.map(s => `<li>${s}</li>`).join("")}</ul>
-  `;
-  return;
+/* ==========================
+   PLAN MODE
+========================== */
+if (!data.plan) {
+  out.innerHTML = "<p>Plan data missing. Please restart the intake.</p>";
+  throw new Error("Missing plan");
 }
 
-/* =====================
-   FALLBACK DEBUG
-===================== */
-container.innerHTML = `
-  <p class="error">Unexpected response shape.</p>
-  <pre>${JSON.stringify(result, null, 2)}</pre>
+const plan = data.plan;
+
+out.innerHTML = `
+  <h2>Current State: ${data.state.replace(/_/g," ")}</h2>
+
+  <p class="gentle">${plan.plan_overview || ""}</p>
+
+  <h3>Today's Focus</h3>
+  <p>${plan.focus_today || ""}</p>
+
+  <h3>Step-by-Step Plan</h3>
+  <ul>
+    ${(plan.steps || []).map(s => `<li>${s}</li>`).join("")}
+  </ul>
+
+  ${
+    plan.supplements && plan.supplements.length
+      ? `
+        <h3>Supplement Support</h3>
+        ${plan.supplements.map(s => `
+          <div class="supplement">
+            <strong>${s.name}</strong><br>
+            ${s.how_to_take}
+          </div>
+        `).join("")}
+      `
+      : ""
+  }
+
+  <h3>Food Support</h3>
+  <ul>${(plan.food_support || []).map(f => `<li>${f}</li>`).join("")}</ul>
+
+  <h3>Hydration & Movement</h3>
+  <ul>${(plan.hydration_and_movement || []).map(h => `<li>${h}</li>`).join("")}</ul>
+
+  <h3>Stop & Reassess If</h3>
+  <ul>${(plan.red_flags_stop || []).map(r => `<li>${r}</li>`).join("")}</ul>
+
+  <div class="disclaimer">${data.disclaimer || ""}</div>
 `;
 </script>
 
