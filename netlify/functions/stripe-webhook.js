@@ -33,9 +33,20 @@ exports.handler = async function (event) {
 
   const session = stripeEvent.data.object;
 
-  const email =
+  // ✅ ORIGINAL email logic (unchanged)
+  let email =
     session.customer_details?.email ||
     session.customer_email;
+
+  // 🔧 ADDITIVE FIX — required for AI subscriptions
+  if (!email && session.customer) {
+    try {
+      const customer = await stripe.customers.retrieve(session.customer);
+      email = customer.email;
+    } catch (err) {
+      console.error("WEBHOOK: Failed to retrieve customer", err);
+    }
+  }
 
   if (!email) {
     console.error("WEBHOOK: Missing email in session", session.id);
@@ -45,7 +56,7 @@ exports.handler = async function (event) {
   console.log("WEBHOOK HIT checkout.session.completed:", email);
 
   try {
-    // SAME ENGINE AS GENERATOR
+    // SAME ENGINE AS BEFORE — untouched
     const result = await registerUser({ email });
 
     console.log("WEBHOOK DONE user_id:", result?.user_id);
