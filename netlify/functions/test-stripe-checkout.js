@@ -8,29 +8,36 @@ export async function handler(event) {
   let line_items;
   let mode = "payment";
 
+  // 📘 Foundations Book — one-time
   if (product === "book") {
     line_items = [
       {
-        price_data: {
-          currency: "usd",
-          product_data: { name: "Foundations Book" },
-          unit_amount: 999
-        },
-        quantity: 1
+        price: "price_1Ss9UdK1BEhnYxA8Oc8I40Kz"
       }
     ];
-  } else if (product === "guided") {
+  }
+
+  // 🌿 Guided Foundations — subscription
+  else if (product === "guided") {
+    mode = "subscription";
     line_items = [
       {
-        price_data: {
-          currency: "usd",
-          product_data: { name: "Guided Foundations" },
-          unit_amount: 2999
-        },
-        quantity: 1
+        price: "price_1SphwPK1BEhnYxA8i5GJHo25"
       }
     ];
-  } else {
+  }
+
+  // 🤖 AI-Guided Foundations — subscription
+  else if (product === "ai") {
+    mode = "subscription";
+    line_items = [
+      {
+        price: "price_1SphaYK1BEhnYxA8JUcpnN1R"
+      }
+    ];
+  }
+
+  else {
     return {
       statusCode: 400,
       body: JSON.stringify({ error: "Invalid product" })

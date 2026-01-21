@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Foundations | Whole Body Reset</title>
 
-  <!-- Root-absolute path for Netlify safety -->
   <link rel="stylesheet" href="/css/site.css">
 
   <style>
@@ -92,8 +91,8 @@
       border-radius: 30px;
       font-weight: bold;
       margin-top: 20px;
-      text-decoration: none;
       cursor: pointer;
+      border: none;
     }
 
     .note {
@@ -153,69 +152,40 @@
     and learning when <em>not</em> to move forward.
   </blockquote>
 
-  <!-- BOOK OPTION -->
+  <!-- BOOK -->
   <div class="option-box">
     <h2>📘 Foundations Book</h2>
 
-    <img
-      src="/images/WBDFEcover.png"
-      alt="Whole Body Reset Foundations Book Cover"
-      class="logo-img"
-    />
+    <img src="/images/WBDFEcover.png" class="logo-img">
 
     <p class="price">$9.99 one-time</p>
-
     <button class="button" id="buy-book">Get the Book</button>
 
-    <p class="note">
-      Educational framework only. No protocols. No medical advice.
-    </p>
+    <p class="note">Educational framework only. No protocols.</p>
   </div>
 
-  <!-- GUIDED FOUNDATIONS -->
+  <!-- GUIDED -->
   <div class="option-box highlight">
     <h2>🌿 Guided Foundations</h2>
 
-    <img
-      src="/images/GF.png"
-      alt="Guided Foundations Logo"
-      class="logo-img"
-    />
+    <img src="/images/GF.png" class="logo-img">
 
     <p class="price">$29.99/month</p>
+    <button class="button" id="buy-guided">Start Guided Foundations</button>
 
-    <a
-      class="button"
-      href="https://buy.stripe.com/test_eVq14o6HPd8A6578863sI01">
-      Start Guided Foundations
-    </a>
-
-    <p class="note">
-      Cancel anytime. No obligation to advance.
-    </p>
+    <p class="note">Cancel anytime.</p>
   </div>
 
-  <!-- AI GUIDED FOUNDATIONS -->
+  <!-- AI GUIDED -->
   <div class="ai-box">
     <h2>🤖 AI-Guided Foundations</h2>
 
-    <img
-      src="/images/AIGF.png"
-      alt="AI-Guided Foundations Logo"
-      class="logo-img"
-    />
+    <img src="/images/AIGF.png" class="logo-img">
 
     <p class="price">$49.95/month</p>
+    <button class="button" id="buy-ai">Start AI-Guided Foundations</button>
 
-    <a
-      class="button"
-      href="https://buy.stripe.com/test_dRmfZi6HP3y0aln5ZY3sI00">
-      Start AI-Guided Foundations
-    </a>
-
-    <p class="note">
-      Reflective, adaptive support layered on top of Foundations.
-    </p>
+    <p class="note">Adaptive support layered on Foundations.</p>
   </div>
 
 </main>
@@ -226,15 +196,18 @@
 </footer>
 
 <script>
-async function startCheckout(endpoint) {
-  const res = await fetch(endpoint);
-  const data = await res.json();
-  window.location.href = data.url;
+function startCheckout(product) {
+  fetch(`/.netlify/functions/test-stripe-checkout?product=${product}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.url) window.location.href = data.url;
+      else alert("Checkout failed");
+    });
 }
 
-document.getElementById("buy-book")?.addEventListener("click", () => {
-  startCheckout("/.netlify/functions/test-stripe-checkout?product=book");
-});
+document.getElementById("buy-book").onclick   = () => startCheckout("book");
+document.getElementById("buy-guided").onclick = () => startCheckout("guided");
+document.getElementById("buy-ai").onclick     = () => startCheckout("ai");
 </script>
 
 </body>
