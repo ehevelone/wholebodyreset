@@ -1,0 +1,131 @@
+{
+  "version": "1.1",
+  "purpose": "Define the only categories of user input the AI is allowed to receive within the Whole Body Reset system. This schema prevents diagnosis-seeking, protocol chasing, fear-based escalation, and incomplete personalization.",
+  "input_principles": [
+    "Inputs describe experience, not interpretation.",
+    "Symptoms are observations, not conclusions.",
+    "The system prioritizes patterns over labels.",
+    "Safety, pacing, and nervous system regulation require complete input.",
+    "If required input is missing, the system responds conservatively rather than escalating."
+  ],
+  "allowed_input_categories": {
+    "current_symptoms": {
+      "required": true,
+      "description": "User-described physical, emotional, or cognitive experiences.",
+      "examples": [
+        "fatigue",
+        "pain or discomfort",
+        "digestive changes",
+        "sleep disruption",
+        "anxiety or restlessness",
+        "brain fog",
+        "pressure or heaviness"
+      ],
+      "constraints": "Symptoms must be described in plain language without assumed cause."
+    },
+    "symptom_duration": {
+      "required": true,
+      "description": "How long symptoms have been present.",
+      "examples": [
+        "days",
+        "weeks",
+        "months",
+        "years",
+        "on and off"
+      ]
+    },
+    "symptom_intensity": {
+      "required": true,
+      "description": "Subjective severity as perceived by the user.",
+      "examples": [
+        "mild",
+        "moderate",
+        "intense",
+        "fluctuating",
+        "comes in waves"
+      ]
+    },
+    "pattern_observations": {
+      "required": false,
+      "description": "Noticing when symptoms improve, worsen, or cycle.",
+      "examples": [
+        "worse after meals",
+        "better with rest",
+        "worse during stress",
+        "improves slowly",
+        "changes throughout the day"
+      ]
+    },
+    "current_supports": {
+      "required": true,
+      "description": "Non-prescriptive supports currently in use.",
+      "examples": [
+        "hydration practices",
+        "minerals",
+        "binders",
+        "herbs",
+        "dietary patterns",
+        "rest practices"
+      ],
+      "constraints": "The system does not evaluate correctness, effectiveness, or dosage."
+    },
+    "medications_and_conditions": {
+      "required": true,
+      "description": "Declared medications or diagnosed conditions for safety awareness only.",
+      "examples": [
+        "thyroid medication",
+        "blood pressure medication",
+        "diagnosed autoimmune condition",
+        "chronic condition under care"
+      ],
+      "constraints": [
+        "The AI may not comment on medication changes or medical management.",
+        "Absence of this information limits system responsiveness for safety."
+      ]
+    },
+    "tolerance_and_capacity": {
+      "required": true,
+      "description": "How well the user tolerates current inputs or changes.",
+      "examples": [
+        "easily overwhelmed",
+        "generally stable",
+        "sensitive to changes",
+        "able to tolerate slow additions"
+      ]
+    },
+    "goals_and_intent": {
+      "required": false,
+      "description": "What the user hopes to understand or clarify.",
+      "examples": [
+        "want to understand what my body is doing",
+        "checking if slowing down makes sense",
+        "seeing if I’m ready for the next step",
+        "want reassurance, not change"
+      ]
+    }
+  },
+  "explicitly_disallowed_inputs": {
+    "diagnosis_requests": [
+      "What do I have?",
+      "Is this Lyme?",
+      "Is this parasites?",
+      "Do I have adrenal fatigue?"
+    ],
+    "protocol_requests": [
+      "What should I take?",
+      "How much should I use?",
+      "What kills this?",
+      "Give me a detox plan"
+    ],
+    "medical_decision_requests": [
+      "Should I stop my medication?",
+      "Can I replace my doctor?",
+      "Is this dangerous?"
+    ]
+  },
+  "ai_response_requirements": {
+    "when_disallowed_input_detected": "Redirect to observation, stabilization, and appropriate external support without answering directly.",
+    "when_required_input_missing": "Limit responses to reflection, safety framing, and encouragement to complete intake.",
+    "fallback_language": "This may be something to explore with a qualified practitioner while continuing foundational support."
+  }
+}

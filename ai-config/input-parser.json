@@ -1,0 +1,125 @@
+{
+  "version": "1.0",
+  "purpose": "Parse user-provided information into structured, non-diagnostic signals used by the AI decision engine. This file prevents symptom-chasing and directive responses.",
+  "input_categories": {
+    "symptoms": {
+      "description": "User-reported physical or emotional experiences.",
+      "accepted_formats": [
+        "free text",
+        "lists",
+        "time-based descriptions"
+      ],
+      "parsing_rules": {
+        "do_not_label": true,
+        "do_not_diagnose": true,
+        "extract_patterns_only": true
+      },
+      "signals_generated": [
+        "intensity_level",
+        "volatility",
+        "system_load"
+      ]
+    },
+    "duration": {
+      "description": "How long a symptom or pattern has been present.",
+      "units": [
+        "days",
+        "weeks",
+        "months",
+        "years"
+      ],
+      "parsing_rules": {
+        "short_term": "less_than_14_days",
+        "mid_term": "14_to_60_days",
+        "long_term": "more_than_60_days"
+      },
+      "signals_generated": [
+        "persistence",
+        "adaptation_window"
+      ]
+    },
+    "medications_and_supplements": {
+      "description": "Items the user reports currently taking.",
+      "parsing_rules": {
+        "no_interaction_analysis": true,
+        "no_recommendations": true,
+        "flag_nervous_system_active": true
+      },
+      "signals_generated": [
+        "stimulation_risk",
+        "buffering_capacity"
+      ]
+    },
+    "emotional_tone": {
+      "description": "Overall emotional quality of the user’s language.",
+      "detected_states": [
+        "calm",
+        "anxious",
+        "frustrated",
+        "overwhelmed",
+        "hopeful",
+        "neutral"
+      ],
+      "signals_generated": [
+        "nervous_system_state"
+      ]
+    },
+    "recent_changes": {
+      "description": "Any recent adjustments, additions, or removals mentioned by the user.",
+      "parsing_rules": {
+        "time_window_days": 14,
+        "do_not_assume_causation": true
+      },
+      "signals_generated": [
+        "change_density",
+        "system_instability"
+      ]
+    },
+    "user_questions": {
+      "description": "Direct or indirect questions asked by the user.",
+      "parsing_rules": {
+        "do_not_answer_directly": true,
+        "route_to_decision_engine": true
+      }
+    }
+  },
+  "signal_aggregation": {
+    "rules": [
+      "No single symptom generates a decision state.",
+      "At least two signal categories must align before escalation.",
+      "Emotional tone can override intensity signals when overload is detected."
+    ]
+  },
+  "safety_overrides": {
+    "high_overwhelm": {
+      "trigger_conditions": [
+        "emotional_tone = overwhelmed",
+        "intensity_level = high",
+        "recent_changes = true"
+      ],
+      "forced_decision_state": "slow_down"
+    },
+    "long_term_patterns": {
+      "trigger_conditions": [
+        "duration = long_term",
+        "volatility = low"
+      ],
+      "preferred_decision_state": "observe_more"
+    }
+  },
+  "output_to_decision_engine": {
+    "allowed_states": [
+      "slow_down",
+      "hold_steady",
+      "observe_more",
+      "ready_for_next_layer",
+      "external_support_recommended"
+    ],
+    "prohibited_states": [
+      "diagnose",
+      "treat",
+      "prescribe",
+      "optimize"
+    ]
+  }
+}

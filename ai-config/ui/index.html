@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <!-- PAGE TITLE -->
+  <title>Guided Support | Whole Body Reset</title>
+
+  <!-- GLOBAL SITE STYLES -->
+  <link rel="stylesheet" href="/css/site.css">
+  
+  <meta name="robots" content="noindex, nofollow">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: #efe4c9;
+      color: #2f3b2f;
+      line-height: 1.6;
+    }
+
+    header {
+      background: #e2d6b8;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+    }
+
+    header img {
+      height: 48px;
+      width: auto;
+      display: block;
+    }
+
+    main {
+      max-width: 640px;
+      margin: 80px auto;
+      padding: 0 20px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 16px;
+    }
+
+    p {
+      margin-bottom: 24px;
+      color: #4f5a45;
+    }
+
+    input[type="text"],
+    input[type="email"] {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #b9b29a;
+      margin-bottom: 16px;
+      font-family: inherit;
+    }
+
+    button {
+      background: #2f3b2f;
+      color: #fff;
+      border: none;
+      padding: 14px 26px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .gentle {
+      font-style: italic;
+      color: #4a5a4a;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- LEAFY BACKGROUND PLACEHOLDERS (DO NOT REMOVE) -->
+<div class="leafy-left"></div>
+<div class="leafy-right"></div>
+
+<header>
+  <img src="/images/et-naturals-logo.png" alt="ET Naturals Logo">
+</header>
+
+<main>
+
+  <h1>Welcome</h1>
+
+  <p class="gentle">
+    Enter your information below and you’ll be guided to the next
+    appropriate step.
+  </p>
+
+  <form id="entryForm">
+
+    <input
+      type="text"
+      name="first_name"
+      placeholder="First name"
+      required
+    >
+
+    <input
+      type="email"
+      name="email"
+      placeholder="you@example.com"
+      required
+    >
+
+    <button id="continueBtn" type="submit">
+      <span class="btn-text">Continue</span>
+      <span class="spinner" id="spinner"></span>
+    </button>
+
+  </form>
+
+</main>
+
+<footer>
+  <p>© ET Naturals. All rights reserved.</p>
+  <p>Educational content only. No medical claims.</p>
+</footer>
+
+<script>
+document.getElementById("entryForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const btn = document.getElementById("continueBtn");
+  const spinner = document.getElementById("spinner");
+  const text = btn.querySelector(".btn-text");
+
+  btn.disabled = true;
+  spinner.style.display = "inline-block";
+  text.textContent = "Checking…";
+
+  const payload = {
+    email: e.target.email.value.trim(),
+    first_name: e.target.first_name.value.trim()
+  };
+
+  try {
+    const res = await fetch("/.netlify/functions/intake-handler", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+
+    // 🔒 Traffic cop decides WHAT, UI decides WHERE
+    window.location.href =
+      result.route === "check-in"
+        ? "/ai-config/ui/check-in.html"
+        : "/ai-config/ui/intake.html";
+
+  } catch (err) {
+    console.error(err);
+    btn.disabled = false;
+    spinner.style.display = "none";
+    text.textContent = "Continue";
+    alert("Unable to continue right now. Please try again.");
+  }
+});
+</script>
+
+</body>
+</html>

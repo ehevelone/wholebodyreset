@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your Guided Plan | Whole Body Reset</title>
+
+  <link rel="stylesheet" href="/css/site.css">
+  <meta name="robots" content="noindex, nofollow">
+
+  <style>
+    body { margin:0; font-family: Georgia, serif; background:#efe4c9; color:#2f3b2f; }
+    header { background:#e2d6b8; padding:20px 40px; }
+    main { max-width:900px; margin:60px auto; padding:0 20px; }
+    .callout { background:#d6cfb2; padding:24px; border-radius:12px; }
+    h1 { margin-top:0; }
+    h2 { margin-top:28px; }
+    ul { padding-left:22px; }
+    .box { background:#efe4c9; border:1px solid #b9b29a; border-radius:10px; padding:16px; margin:14px 0; }
+    .muted { color:#4f5a45; font-size:0.95rem; }
+    .disclaimer { margin-top:26px; font-size:.9rem; color:#4f5a45; border-top:1px solid #b9b29a; padding-top:16px; }
+    .term { margin:8px 0; }
+    .term strong { display:inline-block; min-width:140px; }
+  </style>
+</head>
+
+<body>
+<header>
+  <img src="/images/et-naturals-logo.png" height="48" alt="ET Naturals Logo">
+</header>
+
+<main>
+  <h1>Your Guided Plan</h1>
+  <div id="output" class="callout">Loading…</div>
+</main>
+
+<script>
+(function () {
+  const out = document.getElementById("output");
+
+  // Prefer localStorage; fallback to sessionStorage
+  const raw = localStorage.getItem("ai_result") || sessionStorage.getItem("ai_result");
+
+  if (!raw) {
+    out.innerHTML = "<p>No plan data was received. Please restart the intake.</p>";
+    return;
+  }
+
+  let data = null;
+  try { data = JSON.parse(raw); } catch {}
+
+  if (!data || !data.state) {
+    out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
+    return;
+  }
+
+  if (data.state === "error") {
+    out.innerHTML = `
+      <h2>Something went wrong</h2>
+      <p>${data.message || "Please try again."}</p>
+    `;
+    return;
+  }
+
+  if (data.state === "clarification_needed") {
+    const qs = Array.isArray(data.clarification?.questions)
+      ? data.clarification.questions.map(q => `<li>${q}</li>`).join("")
+      : "";
+    out.innerHTML = `
+      <h2>We need more information</h2>
+      <p>${data.clarification?.reason || ""}</p>
+      <ul>${qs}</ul>
+      <div class="disclaimer">${data.disclaimer || ""}</div>
+    `;
+    return;
+  }
+
+  const p = data.plan || {};
+
+  const list = (arr) =>
+    Array.isArray(arr) && arr.length ? `<ul>${arr.map(x => `<li>${x}</li>`).join("")}</ul>` : "<p class='muted'>—</p>";
+
+  const phaseBox = (title, obj) => {
+    const goal = obj?.goal ? `<p><strong>Goal:</strong> ${obj.goal}</p>` : "";
+    const actions = Array.isArray(obj?.actions) && obj.actions.length
+      ? `<ul>${obj.actions.map(a => `<li>${a}</li>`).join("")}</ul>`
+      : "<p class='muted'>—</p>";
+    return `<div class="box"><h3>${title}</h3>${goal}${actions}</div>`;
+  };
+
+  const supplements = Array.isArray(p.supplements) && p.supplements.length
+    ? p.supplements.map(s => `
+        <div class="box">
+          <strong>${s.name || ""}</strong><br>
+          <span class="muted">${s.how_to_take || ""}</span>
+        </div>
+      `).join("")
+    : "<p class='muted'>None yet</p>";
+
+  const clarifications = data.plan_clarifications && typeof data.plan_clarifications === "object"
+    ? Object.entries(data.plan_clarifications)
+        .filter(([k,v]) => k && v)
+        .map(([k,v]) => `<div class="term"><strong>${k}:</strong> ${v}</div>`)
+        .join("")
+    : "";
+
+  out.innerHTML = `
+    <h2>Focus Today</h2>
+    <p>${p.focus_today || ""}</p>
+
+    <h2>What’s Going On</h2>
+    <p>${p.plan_overview || ""}</p>
+
+    <div class="box">
+      <p><strong>Dominant driver:</strong> ${p.dominant_driver || ""}</p>
+      <p><strong>Medication context:</strong> ${p.medication_context || ""}</p>
+    </div>
+
+    <h2>Day-by-Day Plan</h2>
+    ${phaseBox("Day 1–2", p.day_1_2)}
+    ${phaseBox("Day 3–4", p.day_3_4)}
+    ${phaseBox("After Day 4", p.after_day_4)}
+
+    <h2>Food Support</h2>
+    ${list(p.food_support)}
+
+    <h2>Hydration & Movement</h2>
+    ${list(p.hydration_and_movement)}
+
+    <h2>Mechanical Support</h2>
+    ${list(p.mechanical_support)}
+
+    <h2>Supplement Support</h2>
+    ${supplements}
+
+    <h2>What to Expect</h2>
+    ${list(p.what_to_expect)}
+
+    <h2>Pause & Reassess If</h2>
+    ${list(p.red_flags_stop)}
+
+    <h2>Next Check-In</h2>
+    <div class="box">
+      <p><strong>Timing:</strong> ${p.next_check_in?.timing || ""}</p>
+      <p><strong>What to watch:</strong></p>
+      ${list(p.next_check_in?.what_to_watch || [])}
+    </div>
+
+    ${clarifications ? `
+      <h2>Quick Clarifications</h2>
+      <div class="box">${clarifications}</div>
+    ` : ""}
+
+    <div class="disclaimer">${data.disclaimer || ""}</div>
+  `;
+})();
+</script>
+
+</body>
+</html>

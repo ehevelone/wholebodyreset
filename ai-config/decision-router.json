@@ -1,0 +1,76 @@
+{
+  "version": "1.0",
+  "purpose": "Determine the appropriate response state based on user input patterns, without issuing directives or urgency.",
+  "evaluation_order": [
+    "safety_override",
+    "external_support_check",
+    "slow_down_check",
+    "hold_steady_check",
+    "ready_for_next_layer_check",
+    "observe_more_default"
+  ],
+  "states": {
+    "safety_override": {
+      "description": "Used only when user reports medical emergency or explicit danger.",
+      "triggers": [
+        "chest pain",
+        "loss of consciousness",
+        "uncontrolled bleeding",
+        "suicidal ideation",
+        "severe shortness of breath"
+      ],
+      "response_state": "external_support_recommended"
+    },
+    "external_support_check": {
+      "description": "Used when symptoms persist or worsen despite repeated slowing and stabilization.",
+      "conditions": {
+        "symptom_duration_days": { "gte": 30 },
+        "trend": "worsening",
+        "prior_states": ["slow_down", "hold_steady"]
+      },
+      "response_state": "external_support_recommended"
+    },
+    "slow_down_check": {
+      "description": "Used when increased symptoms, anxiety, overload, or intolerance appear.",
+      "conditions": {
+        "signals": [
+          "increased anxiety",
+          "wired but tired",
+          "head pressure",
+          "sleep disruption",
+          "palpitations",
+          "intolerance to supplements",
+          "symptoms worsened after changes"
+        ]
+      },
+      "response_state": "slow_down"
+    },
+    "hold_steady_check": {
+      "description": "Used when symptoms are present but stable or improving slightly.",
+      "conditions": {
+        "trend": "stable_or_slightly_improving",
+        "distress_level": { "lte": 5 }
+      },
+      "response_state": "hold_steady"
+    },
+    "ready_for_next_layer_check": {
+      "description": "Used when stability has been maintained without escalation.",
+      "conditions": {
+        "trend": "improving",
+        "duration_stable_days": { "gte": 7 },
+        "distress_level": { "lte": 3 }
+      },
+      "response_state": "ready_for_next_layer"
+    },
+    "observe_more_default": {
+      "description": "Fallback when data is incomplete or mixed.",
+      "response_state": "observe_more"
+    }
+  },
+  "constraints": [
+    "Never escalate without stability",
+    "Never downgrade user autonomy",
+    "Never skip slow_down before external_support unless safety_override",
+    "Observation is always valid"
+  ]
+}

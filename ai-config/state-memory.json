@@ -1,0 +1,95 @@
+{
+  "version": "1.0",
+  "purpose": "Maintain continuity, pacing, and stability in AI guidance by preventing reactive decision changes. This file enforces time, consistency, and nervous-system-safe progression.",
+  "memory_scope": {
+    "session": "current_conversation",
+    "persistent": "user_profile_summary",
+    "non_persistent": [
+      "exact wording",
+      "emotional spikes",
+      "single-day fluctuations"
+    ]
+  },
+  "decision_state_rules": {
+    "minimum_duration_days": {
+      "slow_down": 7,
+      "hold_steady": 10,
+      "observe_more": 14,
+      "ready_for_next_layer": 21,
+      "external_support_recommended": 0
+    },
+    "change_thresholds": {
+      "required_confirmations": 2,
+      "confirmation_sources": [
+        "repeated patterns",
+        "time consistency",
+        "reduced volatility"
+      ]
+    }
+  },
+  "volatility_handling": {
+    "definition": "Conflicting or rapidly changing symptom reports within a short time window.",
+    "rules": {
+      "ignore_single_spikes": true,
+      "extend_current_state": true,
+      "block_forward_progress": true
+    }
+  },
+  "emotional_override_logic": {
+    "priority_order": [
+      "overwhelmed",
+      "anxious",
+      "frustrated",
+      "neutral",
+      "hopeful",
+      "calm"
+    ],
+    "rules": {
+      "overwhelmed": {
+        "force_state": "slow_down",
+        "lock_days": 7
+      },
+      "anxious": {
+        "prevent_escalation": true
+      }
+    }
+  },
+  "regression_prevention": {
+    "rules": [
+      "Improvement does not trigger escalation.",
+      "Feeling better must persist before advancing.",
+      "Stability is preferred over momentum."
+    ]
+  },
+  "forward_progress_gating": {
+    "ready_for_next_layer": {
+      "required_conditions": [
+        "low volatility",
+        "stable emotional tone",
+        "no recent increases in intensity",
+        "minimum duration met"
+      ],
+      "explicit_user_request_required": true
+    }
+  },
+  "fallback_states": {
+    "conflicting_signals": "observe_more",
+    "missing_data": "hold_steady",
+    "high_complexity": "external_support_recommended"
+  },
+  "prohibited_behaviors": [
+    "daily re-evaluation",
+    "symptom chasing",
+    "progress pressure",
+    "urgency framing"
+  ],
+  "audit_log": {
+    "store": true,
+    "log_fields": [
+      "previous_state",
+      "current_state",
+      "change_reason",
+      "lock_remaining_days"
+    ]
+  }
+}
