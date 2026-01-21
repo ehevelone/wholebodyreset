@@ -27,8 +27,6 @@
 
     header img {
       height: 48px;
-      width: auto;
-      display: block;
     }
 
     nav a {
@@ -51,7 +49,7 @@
 
     h2 {
       font-size: 1.8rem;
-      margin-top: 50px;
+      margin-top: 30px;
     }
 
     .subtitle {
@@ -92,16 +90,10 @@
       color: #fff;
       padding: 14px 28px;
       border-radius: 30px;
-      border: none;
       font-weight: bold;
       margin-top: 20px;
+      text-decoration: none;
       cursor: pointer;
-    }
-
-    .button.secondary {
-      background: #4a5a4a;
-      cursor: default;
-      opacity: 0.85;
     }
 
     .note {
@@ -126,12 +118,17 @@
       color: #4f5a45;
       text-align: center;
     }
+
+    .logo-img {
+      max-width: 200px;
+      margin: 20px 0;
+      display: block;
+    }
   </style>
 </head>
 
 <body>
 
-<!-- LEAFY BACKGROUND PLACEHOLDERS -->
 <div class="leafy-left"></div>
 <div class="leafy-right"></div>
 
@@ -163,42 +160,62 @@
     <img
       src="/images/WBDFEcover.png"
       alt="Whole Body Reset Foundations Book Cover"
-      style="max-width:180px; margin:20px 0; display:block;"
+      class="logo-img"
     />
 
     <p class="price">$9.99 one-time</p>
 
-    <button class="button" id="buy-book">
-      Get the Book
-    </button>
+    <button class="button" id="buy-book">Get the Book</button>
 
     <p class="note">
       Educational framework only. No protocols. No medical advice.
     </p>
   </div>
 
-  <!-- GUIDED OPTION -->
+  <!-- GUIDED FOUNDATIONS -->
   <div class="option-box highlight">
     <h2>🌿 Guided Foundations</h2>
 
+    <img
+      src="/images/GF.png"
+      alt="Guided Foundations Logo"
+      class="logo-img"
+    />
+
     <p class="price">$29.99/month</p>
 
-    <button class="button" id="buy-guided">
+    <a
+      class="button"
+      href="https://buy.stripe.com/test_eVq14o6HPd8A6578863sI01">
       Start Guided Foundations
-    </button>
+    </a>
 
     <p class="note">
       Cancel anytime. No obligation to advance.
     </p>
   </div>
 
-  <!-- AI OPTION -->
+  <!-- AI GUIDED FOUNDATIONS -->
   <div class="ai-box">
-    <h2>🤖 AI-Guided Foundations (Phase 2)</h2>
+    <h2>🤖 AI-Guided Foundations</h2>
 
-    <span class="button secondary">
-      AI-Guided Support (Coming Later)
-    </span>
+    <img
+      src="/images/AIGF.png"
+      alt="AI-Guided Foundations Logo"
+      class="logo-img"
+    />
+
+    <p class="price">$49.95/month</p>
+
+    <a
+      class="button"
+      href="https://buy.stripe.com/test_dRmfZi6HP3y0aln5ZY3sI00">
+      Start AI-Guided Foundations
+    </a>
+
+    <p class="note">
+      Reflective, adaptive support layered on top of Foundations.
+    </p>
   </div>
 
 </main>
@@ -208,7 +225,6 @@
   <p>Educational content only. No medical claims.</p>
 </footer>
 
-<!-- STRIPE CHECKOUT HANDLER -->
 <script>
 async function startCheckout(endpoint) {
   const res = await fetch(endpoint);
@@ -218,10 +234,6 @@ async function startCheckout(endpoint) {
 
 document.getElementById("buy-book")?.addEventListener("click", () => {
   startCheckout("/.netlify/functions/test-stripe-checkout?product=book");
-});
-
-document.getElementById("buy-guided")?.addEventListener("click", () => {
-  startCheckout("/.netlify/functions/test-stripe-checkout?product=guided");
 });
 </script>
 
