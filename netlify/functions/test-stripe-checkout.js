@@ -5,38 +5,21 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export async function handler(event) {
   const product = event.queryStringParameters?.product;
 
-  let line_items;
-  let mode = "payment";
+  let price;
+  let mode;
 
-  // 📘 Foundations Book — one-time
   if (product === "book") {
-    line_items = [
-      {
-        price: "price_1Ss9UdK1BEhnYxA8Oc8I40Kz"
-      }
-    ];
-  }
-
-  // 🌿 Guided Foundations — subscription
+    price = "price_1Ss9UdK1BEhnYxA8Oc8I40Kz";
+    mode = "payment";
+  } 
   else if (product === "guided") {
+    price = "price_1SphwPK1BEhnYxA8i5GJHo25";
     mode = "subscription";
-    line_items = [
-      {
-        price: "price_1SphwPK1BEhnYxA8i5GJHo25"
-      }
-    ];
-  }
-
-  // 🤖 AI-Guided Foundations — subscription
+  } 
   else if (product === "ai") {
+    price = "price_1SphaYK1BEhnYxA8JUcpnN1R";
     mode = "subscription";
-    line_items = [
-      {
-        price: "price_1SphaYK1BEhnYxA8JUcpnN1R"
-      }
-    ];
-  }
-
+  } 
   else {
     return {
       statusCode: 400,
@@ -47,7 +30,13 @@ export async function handler(event) {
   const session = await stripe.checkout.sessions.create({
     mode,
     customer_creation: "always",
-    line_items,
+
+    line_items: [
+      {
+        price,
+        quantity: 1
+      }
+    ],
 
     metadata: {
       product
