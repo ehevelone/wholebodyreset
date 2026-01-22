@@ -33,12 +33,11 @@ exports.handler = async function (event) {
 
   const session = stripeEvent.data.object;
 
-  // ✅ ORIGINAL email logic (unchanged)
+  // ✅ EMAIL (unchanged)
   let email =
     session.customer_details?.email ||
     session.customer_email;
 
-  // 🔧 ADDITIVE FIX — required for AI subscriptions
   if (!email && session.customer) {
     try {
       const customer = await stripe.customers.retrieve(session.customer);
@@ -48,18 +47,33 @@ exports.handler = async function (event) {
     }
   }
 
-  if (!email) {
-    console.error("WEBHOOK: Missing email in session", session.id);
-    return { statusCode: 400, body: "Missing email" };
+  // ✅ PRODUCT (THIS WAS MISSING)
+  const product = session.metadata?.product;
+
+  if (!email || !product) {
+    console.error("WEBHOOK: Missing email or product", {
+      email,
+      product,
+      metadata: session.metadata
+    });
+    return { statusCode: 400, body: "Missing email or product" };
   }
 
-  console.log("WEBHOOK HIT checkout.session.completed:", email);
+  console.log(
+    "WEBHOOK checkout.session.completed:",
+    email,
+    "product:",
+    product
+  );
 
   try {
-    // SAME ENGINE AS BEFORE — untouched
-    const result = await registerUser({ email });
+    // ✅ PASS PRODUCT THROUGH
+    const result = await registerUser({
+      email,
+      product
+    });
 
-    console.log("WEBHOOK DONE user_id:", result?.user_id);
+    console.log("WEBHOOK DONE user_id:", result?.user_id, "program:", result?.program);
 
     return {
       statusCode: 200,
