@@ -12,27 +12,41 @@ const supabase = createClient(
 
 const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
 
-exports.registerUser = async function ({ email }) {
+exports.registerUser = async function ({ email, product = "guided" }) {
   if (!email) throw new Error("registerUser: missing email");
 
-  console.log("registerUser START:", email);
+  console.log("registerUser START:", email, "product:", product);
 
-  // Load templates (fail loudly if missing)
-  const htmlPath = path.join(EMAIL_ROOT, "hd-01-welcome.html");
-  const subjectPath = path.join(EMAIL_ROOT, "hd-01-welcome.subject.txt");
+  // 🔀 Select email + program by product
+  let htmlFile;
+  let subjectFile;
+  let program;
+
+  if (product === "ai") {
+    htmlFile = "ai-01-welcome.html";
+    subjectFile = "ai-01-welcome.subject.txt";
+    program = "ai_guided_foundations";
+  } else {
+    htmlFile = "hd-01-welcome.html";
+    subjectFile = "hd-01-welcome.subject.txt";
+    program = "guided_foundations";
+  }
+
+  const htmlPath = path.join(EMAIL_ROOT, htmlFile);
+  const subjectPath = path.join(EMAIL_ROOT, subjectFile);
 
   const html = fs.readFileSync(htmlPath, "utf8");
   const subject = fs.readFileSync(subjectPath, "utf8").trim();
 
-  // Upsert user + initialize program state
+  // 🧠 Upsert user + initialize program state
   const { data: user, error } = await supabase
     .from("guided_users")
     .upsert(
       {
         email,
-        program: "guided_foundations",
+        program,
         status: "active",
-        current_email: "hd-01-welcome.html",
+        current_email: htmlFile,
         current_module: "hydration"
       },
       { onConflict: "email" }
@@ -43,10 +57,12 @@ exports.registerUser = async function ({ email }) {
   if (error) throw error;
 
   console.log("registerUser UPSERT OK user_id:", user.id);
-  console.log("registerUser SENDING EMAIL...");
+  console.log("registerUser SENDING EMAIL:", htmlFile);
 
   await resend.emails.send({
-    from: process.env.EMAIL_FROM || "Whole Body Reset <support@wholelifereset.life>",
+    from:
+      process.env.EMAIL_FROM ||
+      "Whole Body Reset <support@wholelifereset.life>",
     to: email,
     subject,
     html
