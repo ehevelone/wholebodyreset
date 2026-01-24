@@ -92,14 +92,6 @@
       margin-top: 15px;
     }
 
-    blockquote {
-      font-style: italic;
-      background: #dcd4bb;
-      padding: 20px;
-      border-left: 5px solid #2f5d3b;
-      margin: 40px 0;
-    }
-
     footer {
       margin-top: 80px;
       padding: 40px 20px;
@@ -137,18 +129,12 @@
     This is where everyone starts — not to do more, but to understand why less often works better.
   </p>
 
-  <blockquote>
-    Foundations is about stabilization, sequencing,
-    and learning when <em>not</em> to move forward.
-  </blockquote>
-
   <!-- BOOK -->
   <div class="option-box">
     <h2>📘 Foundations Book</h2>
     <img src="/images/WBDFEcover.png" class="logo-img">
     <p class="price">$9.99 one-time</p>
     <button class="button" id="buy-book">Get the Book</button>
-    <p class="note">Educational framework only. No protocols.</p>
   </div>
 
   <!-- GUIDED -->
@@ -157,7 +143,6 @@
     <img src="/images/GF.png" class="logo-img">
     <p class="price">$29.99/month</p>
     <button class="button" id="buy-guided">Start Guided Foundations</button>
-    <p class="note">Cancel anytime.</p>
   </div>
 
   <!-- AI GUIDED -->
@@ -166,7 +151,6 @@
     <img src="/images/AIGF.png" class="logo-img">
     <p class="price">$49.95/month</p>
     <button class="button" id="buy-ai">Start AI-Guided Foundations</button>
-    <p class="note">Adaptive support layered on Foundations.</p>
   </div>
 
 </main>
@@ -181,8 +165,11 @@ function startCheckout(product) {
   fetch(`/.netlify/functions/test-stripe-checkout?product=${product}`)
     .then(res => res.json())
     .then(data => {
-      if (!data.url) throw new Error("Checkout failed");
-      window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Checkout failed");
+      }
     })
     .catch(() => alert("Checkout failed"));
 }
