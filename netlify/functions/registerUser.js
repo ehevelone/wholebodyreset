@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const { Resend } = require("resend");
 const { createClient } = require("@supabase/supabase-js");
 
@@ -12,13 +13,20 @@ const supabase = createClient(
 
 const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
 
+function hashEmail(email) {
+  return crypto
+    .createHash("sha256")
+    .update(email.trim().toLowerCase())
+    .digest("hex");
+}
+
 exports.registerUser = async function ({ email, product = "guided" }) {
   if (!email) throw new Error("registerUser: missing email");
 
   console.log("registerUser START:", email, "product:", product);
 
   /* ===============================
-     AI FLOW (ai_journey table: email ONLY)
+     AI FLOW — ai_journey
      =============================== */
   if (product === "ai") {
     const htmlFile = "ai-01-welcome.html";
@@ -32,10 +40,16 @@ exports.registerUser = async function ({ email, product = "guided" }) {
       .readFileSync(path.join(EMAIL_ROOT, subjectFile), "utf8")
       .trim();
 
-    // ✅ INSERT ONLY (no conflict handling)
+    const email_hash = hashEmail(email);
+
     const { error } = await supabase
       .from("ai_journey")
-      .insert({ email });
+      .insert({
+        email,
+        email_hash,
+        current_state: "entry",     // SAFE DEFAULT
+        session_count: 1            // SAFE DEFAULT
+      });
 
     if (error) throw error;
 
