@@ -138,7 +138,8 @@
   </p>
 
   <blockquote>
-    Foundations is about stabilization, sequencing, and learning when <em>not</em> to move forward.
+    Foundations is about stabilization, sequencing,
+    and learning when <em>not</em> to move forward.
   </blockquote>
 
   <!-- BOOK -->
@@ -180,25 +181,15 @@ function startCheckout(product) {
   fetch(`/.netlify/functions/test-stripe-checkout?product=${product}`)
     .then(res => res.json())
     .then(data => {
-      if (!data.url) {
-        alert("Checkout failed");
-        return;
-      }
+      if (!data.url) throw new Error("Checkout failed");
       window.location.href = data.url;
-    });
+    })
+    .catch(() => alert("Checkout failed"));
 }
 
-document.getElementById("buy-book")?.addEventListener("click", () => {
-  startCheckout("book");
-});
-
-document.getElementById("buy-guided")?.addEventListener("click", () => {
-  startCheckout("guided");
-});
-
-document.getElementById("buy-ai")?.addEventListener("click", () => {
-  startCheckout("ai");
-});
+document.getElementById("buy-book").onclick   = () => startCheckout("book");
+document.getElementById("buy-guided").onclick = () => startCheckout("guided");
+document.getElementById("buy-ai").onclick     = () => startCheckout("ai");
 </script>
 
 </body>
