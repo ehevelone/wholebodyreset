@@ -4,30 +4,34 @@ const { registerUser } = require("./registerUser.js");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 exports.handler = async function (event) {
+  // 🔥 ABSOLUTE PROOF THIS FILE RAN
+  console.log("🔥 WEBHOOK HIT");
+
   const sig =
     event.headers["stripe-signature"] ||
     event.headers["Stripe-Signature"];
 
   if (!sig) {
-    console.error("WEBHOOK: Missing Stripe signature");
-    return { statusCode: 400, body: "Missing signature" };
+    console.error("❌ Missing Stripe signature");
+    return { statusCode: 200, body: "no signature" };
   }
 
   let stripeEvent;
   try {
-    // 🔴 THIS IS THE CRITICAL FIX
     stripeEvent = stripe.webhooks.constructEvent(
-      event.body, // MUST be raw body
+      event.body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("WEBHOOK: Invalid signature", err.message);
-    return { statusCode: 400, body: "Invalid signature" };
+    console.error("❌ Signature failed:", err.message);
+    return { statusCode: 200, body: "bad signature" };
   }
 
+  console.log("✅ EVENT TYPE:", stripeEvent.type);
+
   if (stripeEvent.type !== "checkout.session.completed") {
-    return { statusCode: 200, body: "Ignored" };
+    return { statusCode: 200, body: "ignored" };
   }
 
   const session = stripeEvent.data.object;
@@ -37,20 +41,31 @@ exports.handler = async function (event) {
     session.customer_email;
 
   if (!email && session.customer) {
-    const customer = await stripe.customers.retrieve(session.customer);
-    email = customer.email;
+    try {
+      const customer = await stripe.customers.retrieve(session.customer);
+      email = customer.email;
+    } catch (e) {
+      console.error("❌ Failed to load customer");
+    }
   }
 
   const product = session.metadata?.product;
 
+  console.log("📧 EMAIL:", email);
+  console.log("📦 PRODUCT:", product);
+
   if (!email || !product) {
-    console.error("WEBHOOK: Missing email or product", { email, product });
-    return { statusCode: 400, body: "Missing email or product" };
+    console.error("❌ Missing email or product");
+    return { statusCode: 200, body: "missing data" };
   }
 
-  console.log("WEBHOOK OK:", email, product);
-
-  await registerUser({ email, product });
+  try {
+    await registerUser({ email, product });
+    console.log("✅ registerUser completed");
+  } catch (err) {
+    console.error("❌ registerUser failed", err);
+    // DO NOT fail Stripe
+  }
 
   return {
     statusCode: 200,
