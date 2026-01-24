@@ -24,9 +24,7 @@
       align-items: center;
     }
 
-    header img {
-      height: 48px;
-    }
+    header img { height: 48px; }
 
     nav a {
       margin-left: 20px;
@@ -84,7 +82,6 @@
       border-radius: 30px;
       font-weight: bold;
       margin-top: 20px;
-      text-decoration: none;
       cursor: pointer;
       border: none;
     }
@@ -158,13 +155,7 @@
     <h2>🌿 Guided Foundations</h2>
     <img src="/images/GF.png" class="logo-img">
     <p class="price">$29.99/month</p>
-
-    <a
-      class="button"
-      href="https://buy.stripe.com/test_eVq14o6HPd8A6578863sI01">
-      Start Guided Foundations
-    </a>
-
+    <button class="button" id="buy-guided">Start Guided Foundations</button>
     <p class="note">Cancel anytime.</p>
   </div>
 
@@ -173,13 +164,7 @@
     <h2>🤖 AI-Guided Foundations</h2>
     <img src="/images/AIGF.png" class="logo-img">
     <p class="price">$49.95/month</p>
-
-    <a
-      class="button"
-      href="https://buy.stripe.com/test_dRmfZi6HP3y0aln5ZY3sI00">
-      Start AI-Guided Foundations
-    </a>
-
+    <button class="button" id="buy-ai">Start AI-Guided Foundations</button>
     <p class="note">Adaptive support layered on Foundations.</p>
   </div>
 
@@ -191,10 +176,28 @@
 </footer>
 
 <script>
-document.getElementById("buy-book")?.addEventListener("click", () => {
-  fetch("/.netlify/functions/test-stripe-checkout?product=book")
+function startCheckout(product) {
+  fetch(`/.netlify/functions/test-stripe-checkout?product=${product}`)
     .then(res => res.json())
-    .then(data => window.location.href = data.url);
+    .then(data => {
+      if (!data.url) {
+        alert("Checkout failed");
+        return;
+      }
+      window.location.href = data.url;
+    });
+}
+
+document.getElementById("buy-book")?.addEventListener("click", () => {
+  startCheckout("book");
+});
+
+document.getElementById("buy-guided")?.addEventListener("click", () => {
+  startCheckout("guided");
+});
+
+document.getElementById("buy-ai")?.addEventListener("click", () => {
+  startCheckout("ai");
 });
 </script>
 
