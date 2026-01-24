@@ -32,12 +32,10 @@ exports.registerUser = async function ({ email, product = "guided" }) {
       .readFileSync(path.join(EMAIL_ROOT, subjectFile), "utf8")
       .trim();
 
+    // ✅ INSERT ONLY (no conflict handling)
     const { error } = await supabase
       .from("ai_journey")
-      .upsert(
-        { email },
-        { onConflict: "email" }
-      );
+      .insert({ email });
 
     if (error) throw error;
 
