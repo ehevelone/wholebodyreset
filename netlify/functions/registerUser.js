@@ -18,7 +18,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
   console.log("registerUser START:", email, "product:", product);
 
   /* ===============================
-     AI-GUIDED FLOW
+     AI FLOW (ai_journey table: email ONLY)
      =============================== */
   if (product === "ai") {
     const htmlFile = "ai-01-welcome.html";
@@ -32,20 +32,12 @@ exports.registerUser = async function ({ email, product = "guided" }) {
       .readFileSync(path.join(EMAIL_ROOT, subjectFile), "utf8")
       .trim();
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("ai_journey")
       .upsert(
-        {
-          email,
-          status: "active",
-          current_step: "entry",
-          current_email: htmlFile,
-          updated_at: new Date().toISOString()
-        },
+        { email },
         { onConflict: "email" }
-      )
-      .select("id")
-      .single();
+      );
 
     if (error) throw error;
 
@@ -60,7 +52,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
 
     console.log("AI welcome email sent");
 
-    return { user_id: data.id, program: "ai" };
+    return { email, program: "ai" };
   }
 
   /* ===============================
