@@ -26,7 +26,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
   console.log("registerUser START:", email, "product:", product);
 
   /* ===============================
-     AI FLOW — ai_journey
+     AI FLOW — ai_journey (DO NOT TOUCH)
      =============================== */
   if (product === "ai") {
     const htmlFile = "ai-01-welcome.html";
@@ -47,8 +47,8 @@ exports.registerUser = async function ({ email, product = "guided" }) {
       .insert({
         email,
         email_hash,
-        current_state: "entry",     // SAFE DEFAULT
-        session_count: 1            // SAFE DEFAULT
+        current_state: "entry",
+        session_count: 1
       });
 
     if (error) throw error;
@@ -68,7 +68,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
   }
 
   /* ===============================
-     GUIDED FOUNDATIONS FLOW
+     GUIDED FOUNDATIONS FLOW — FIXED
      =============================== */
   const htmlFile = "hd-01-welcome.html";
   const subjectFile = "hd-01-welcome.subject.txt";
@@ -89,8 +89,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
         program: "guided_foundations",
         status: "active",
         current_email: htmlFile,
-        current_module: "hydration",
-        updated_at: new Date().toISOString()
+        current_module: "hydration"
       },
       { onConflict: "email" }
     )
