@@ -7,10 +7,14 @@ export async function handler(event) {
 
   let price;
   let mode;
+  let sessionConfig = {};
 
   if (product === "book") {
     price = "price_1Ss9UdK1BEhnYxA8Oc8I40Kz";
     mode = "payment";
+
+    // ✅ ALLOWED ONLY FOR PAYMENT
+    sessionConfig.customer_creation = "always";
   } 
   else if (product === "guided") {
     price = "price_1SphwPK1BEhnYxA8i5GJHo25";
@@ -29,7 +33,6 @@ export async function handler(event) {
 
   const session = await stripe.checkout.sessions.create({
     mode,
-    customer_creation: "always",
 
     line_items: [
       {
@@ -43,7 +46,9 @@ export async function handler(event) {
     },
 
     success_url: "https://wholebodyreset.life/?stripe=success",
-    cancel_url: "https://wholebodyreset.life/?stripe=cancel"
+    cancel_url: "https://wholebodyreset.life/?stripe=cancel",
+
+    ...sessionConfig
   });
 
   return {
