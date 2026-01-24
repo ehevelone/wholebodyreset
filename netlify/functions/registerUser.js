@@ -17,37 +17,76 @@ exports.registerUser = async function ({ email, product = "guided" }) {
 
   console.log("registerUser START:", email, "product:", product);
 
-  // 🔀 Select email + program by product
-  let htmlFile;
-  let subjectFile;
-  let program;
-
+  /* ===============================
+     AI-GUIDED FLOW
+     =============================== */
   if (product === "ai") {
-    htmlFile = "ai-01-welcome.html";
-    subjectFile = "ai-01-welcome.subject.txt";
-    program = "ai_guided_foundations";
-  } else {
-    htmlFile = "hd-01-welcome.html";
-    subjectFile = "hd-01-welcome.subject.txt";
-    program = "guided_foundations";
+    const htmlFile = "ai-01-welcome.html";
+    const subjectFile = "ai-01-welcome.subject.txt";
+
+    const html = fs.readFileSync(
+      path.join(EMAIL_ROOT, htmlFile),
+      "utf8"
+    );
+    const subject = fs
+      .readFileSync(path.join(EMAIL_ROOT, subjectFile), "utf8")
+      .trim();
+
+    const { data, error } = await supabase
+      .from("ai_journey")
+      .upsert(
+        {
+          email,
+          status: "active",
+          current_step: "entry",
+          current_email: htmlFile,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: "email" }
+      )
+      .select("id")
+      .single();
+
+    if (error) throw error;
+
+    await resend.emails.send({
+      from:
+        process.env.EMAIL_FROM ||
+        "Whole Body Reset <support@wholelifereset.life>",
+      to: email,
+      subject,
+      html
+    });
+
+    console.log("AI welcome email sent");
+
+    return { user_id: data.id, program: "ai" };
   }
 
-  const htmlPath = path.join(EMAIL_ROOT, htmlFile);
-  const subjectPath = path.join(EMAIL_ROOT, subjectFile);
+  /* ===============================
+     GUIDED FOUNDATIONS FLOW
+     =============================== */
+  const htmlFile = "hd-01-welcome.html";
+  const subjectFile = "hd-01-welcome.subject.txt";
 
-  const html = fs.readFileSync(htmlPath, "utf8");
-  const subject = fs.readFileSync(subjectPath, "utf8").trim();
+  const html = fs.readFileSync(
+    path.join(EMAIL_ROOT, htmlFile),
+    "utf8"
+  );
+  const subject = fs
+    .readFileSync(path.join(EMAIL_ROOT, subjectFile), "utf8")
+    .trim();
 
-  // 🧠 Upsert user + initialize program state
   const { data: user, error } = await supabase
     .from("guided_users")
     .upsert(
       {
         email,
-        program,
+        program: "guided_foundations",
         status: "active",
         current_email: htmlFile,
-        current_module: "hydration"
+        current_module: "hydration",
+        updated_at: new Date().toISOString()
       },
       { onConflict: "email" }
     )
@@ -55,9 +94,6 @@ exports.registerUser = async function ({ email, product = "guided" }) {
     .single();
 
   if (error) throw error;
-
-  console.log("registerUser UPSERT OK user_id:", user.id);
-  console.log("registerUser SENDING EMAIL:", htmlFile);
 
   await resend.emails.send({
     from:
@@ -68,14 +104,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
     html
   });
 
-  console.log("registerUser EMAIL SENT");
+  console.log("Guided welcome email sent");
 
-  await supabase
-    .from("guided_users")
-    .update({ last_sent_at: new Date().toISOString() })
-    .eq("id", user.id);
-
-  console.log("registerUser last_sent_at updated");
-
-  return { user_id: user.id };
+  return { user_id: user.id, program: "guided" };
 };
