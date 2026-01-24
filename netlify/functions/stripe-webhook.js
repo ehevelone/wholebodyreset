@@ -14,20 +14,15 @@ exports.handler = async function (event) {
   }
 
   let stripeEvent;
-
   try {
-    // 🔥 THIS IS THE CRITICAL FIX
-    const rawBody = event.isBase64Encoded
-      ? Buffer.from(event.body, "base64")
-      : Buffer.from(event.body, "utf8");
-
+    // 🔴 THIS IS THE CRITICAL FIX
     stripeEvent = stripe.webhooks.constructEvent(
-      rawBody,
+      event.body, // MUST be raw body
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("WEBHOOK: Signature verification failed", err.message);
+    console.error("WEBHOOK: Invalid signature", err.message);
     return { statusCode: 400, body: "Invalid signature" };
   }
 
@@ -37,39 +32,28 @@ exports.handler = async function (event) {
 
   const session = stripeEvent.data.object;
 
-  // Email
   let email =
     session.customer_details?.email ||
     session.customer_email;
 
   if (!email && session.customer) {
-    try {
-      const customer = await stripe.customers.retrieve(session.customer);
-      email = customer.email;
-    } catch (err) {
-      console.error("WEBHOOK: Failed to retrieve customer", err);
-    }
+    const customer = await stripe.customers.retrieve(session.customer);
+    email = customer.email;
   }
 
-  // Product
   const product = session.metadata?.product;
 
   if (!email || !product) {
-    console.error("WEBHOOK: Missing email or product", {
-      email,
-      product,
-      metadata: session.metadata
-    });
+    console.error("WEBHOOK: Missing email or product", { email, product });
     return { statusCode: 400, body: "Missing email or product" };
   }
 
   console.log("WEBHOOK OK:", email, product);
 
-  try {
-    await registerUser({ email, product });
-    return { statusCode: 200, body: "ok" };
-  } catch (err) {
-    console.error("WEBHOOK registerUser ERROR:", err);
-    return { statusCode: 500, body: "registerUser failed" };
-  }
+  await registerUser({ email, product });
+
+  return {
+    statusCode: 200,
+    body: "ok"
+  };
 };
