@@ -4,7 +4,6 @@ const { registerUser } = require("./registerUser.js");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 exports.handler = async function (event) {
-  // Stripe signature
   const sig =
     event.headers["stripe-signature"] ||
     event.headers["Stripe-Signature"];
@@ -15,25 +14,30 @@ exports.handler = async function (event) {
   }
 
   let stripeEvent;
+
   try {
+    // 🔥 THIS IS THE CRITICAL FIX
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body, "base64")
+      : Buffer.from(event.body, "utf8");
+
     stripeEvent = stripe.webhooks.constructEvent(
-      event.body,
+      rawBody,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("WEBHOOK: Invalid signature", err.message);
+    console.error("WEBHOOK: Signature verification failed", err.message);
     return { statusCode: 400, body: "Invalid signature" };
   }
 
-  // Only process completed checkouts
   if (stripeEvent.type !== "checkout.session.completed") {
     return { statusCode: 200, body: "Ignored" };
   }
 
   const session = stripeEvent.data.object;
 
-  // ✅ EMAIL (unchanged)
+  // Email
   let email =
     session.customer_details?.email ||
     session.customer_email;
@@ -47,7 +51,7 @@ exports.handler = async function (event) {
     }
   }
 
-  // ✅ PRODUCT (THIS WAS MISSING)
+  // Product
   const product = session.metadata?.product;
 
   if (!email || !product) {
@@ -59,31 +63,13 @@ exports.handler = async function (event) {
     return { statusCode: 400, body: "Missing email or product" };
   }
 
-  console.log(
-    "WEBHOOK checkout.session.completed:",
-    email,
-    "product:",
-    product
-  );
+  console.log("WEBHOOK OK:", email, product);
 
   try {
-    // ✅ PASS PRODUCT THROUGH
-    const result = await registerUser({
-      email,
-      product
-    });
-
-    console.log("WEBHOOK DONE user_id:", result?.user_id, "program:", result?.program);
-
-    return {
-      statusCode: 200,
-      body: "ok"
-    };
+    await registerUser({ email, product });
+    return { statusCode: 200, body: "ok" };
   } catch (err) {
     console.error("WEBHOOK registerUser ERROR:", err);
-    return {
-      statusCode: 500,
-      body: "registerUser failed"
-    };
+    return { statusCode: 500, body: "registerUser failed" };
   }
 };
