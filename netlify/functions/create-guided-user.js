@@ -3,7 +3,6 @@ const path = require("path");
 const { Resend } = require("resend");
 const { createClient } = require("@supabase/supabase-js");
 
-// 🔐 Services
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const supabase = createClient(
@@ -11,22 +10,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 📂 EMAIL TEMPLATE ROOT
 const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
 
-// 🔑 SINGLE SOURCE OF TRUTH
-exports.registerUser = async function ({
+async function registerUser({
   email,
   test_mode = false,
   test_interval_hours = null
 }) {
-  if (!email) {
-    throw new Error("registerUser: missing email");
-  }
+  if (!email) throw new Error("Missing email");
 
-  /* -------------------------------------------------
-     1️⃣ UPSERT USER ROW
-  ------------------------------------------------- */
   const insertPayload = {
     email,
     program: "guided_foundations",
@@ -46,55 +38,51 @@ exports.registerUser = async function ({
     .select("*")
     .single();
 
-  if (error) {
-    console.error("registerUser: supabase error", error);
-    throw error;
-  }
+  if (error) throw error;
 
-  /* -------------------------------------------------
-     2️⃣ LOAD EMAIL FILES
-  ------------------------------------------------- */
   const htmlPath = path.join(EMAIL_ROOT, "hd-01-welcome.html");
   const subjectPath = path.join(
     EMAIL_ROOT,
     "hd-01-welcome.subject.txt"
   );
 
-  if (!fs.existsSync(htmlPath)) {
-    throw new Error(`Missing email HTML: ${htmlPath}`);
-  }
-
-  if (!fs.existsSync(subjectPath)) {
-    throw new Error(`Missing email subject: ${subjectPath}`);
-  }
-
   const html = fs.readFileSync(htmlPath, "utf8");
   const subject = fs.readFileSync(subjectPath, "utf8").trim();
 
-  /* -------------------------------------------------
-     3️⃣ SEND EMAIL
-  ------------------------------------------------- */
   await resend.emails.send({
-    from:
-      process.env.EMAIL_FROM ||
-      "Whole Body Reset <support@wholelifereset.life>",
+    from: "onboarding@resend.dev", // SAFE SENDER
     to: email,
     subject,
     html
   });
 
-  /* -------------------------------------------------
-     4️⃣ RECORD SEND
-  ------------------------------------------------- */
   await supabase
     .from("guided_users")
-    .update({
-      last_sent_at: new Date().toISOString()
-    })
+    .update({ last_sent_at: new Date().toISOString() })
     .eq("id", user.id);
 
-  return {
-    ok: true,
-    user_id: user.id
-  };
+  return { ok: true };
+}
+
+// 🔑 NETLIFY ENTRY POINT (THIS WAS MISSING)
+exports.handler = async function (event) {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: "POST only" };
+  }
+
+  try {
+    const payload = JSON.parse(event.body || "{}");
+    const result = await registerUser(payload);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(result)
+    };
+  } catch (err) {
+    console.error("create-guided-user ERROR:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ ok: false, error: err.message })
+    };
+  }
 };
