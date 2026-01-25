@@ -11,30 +11,38 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 📂 EMAIL TEMPLATE ROOT (this is the path that WORKED)
+// 📂 EMAIL TEMPLATE ROOT
 const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
 
 // 🔑 SINGLE SOURCE OF TRUTH
-exports.registerUser = async function ({ email }) {
+exports.registerUser = async function ({
+  email,
+  test_mode = false,
+  test_interval_hours = null
+}) {
   if (!email) {
     throw new Error("registerUser: missing email");
   }
 
   /* -------------------------------------------------
-     1️⃣ UPSERT USER ROW (ALWAYS)
+     1️⃣ UPSERT USER ROW
   ------------------------------------------------- */
+  const insertPayload = {
+    email,
+    program: "guided_foundations",
+    status: "active",
+    current_email: "hd-01-welcome.html",
+    current_module: "hydration",
+    test_mode: !!test_mode
+  };
+
+  if (test_mode && test_interval_hours) {
+    insertPayload.test_interval_hours = test_interval_hours;
+  }
+
   const { data: user, error } = await supabase
     .from("guided_users")
-    .upsert(
-      {
-        email,
-        program: "guided_foundations",
-        status: "active",
-        current_email: "hd-01-welcome.html",
-        current_module: "hydration"
-      },
-      { onConflict: "email" }
-    )
+    .upsert(insertPayload, { onConflict: "email" })
     .select("*")
     .single();
 
@@ -44,7 +52,7 @@ exports.registerUser = async function ({ email }) {
   }
 
   /* -------------------------------------------------
-     2️⃣ LOAD EMAIL FILES (DIRECT)
+     2️⃣ LOAD EMAIL FILES
   ------------------------------------------------- */
   const htmlPath = path.join(EMAIL_ROOT, "hd-01-welcome.html");
   const subjectPath = path.join(
@@ -64,7 +72,7 @@ exports.registerUser = async function ({ email }) {
   const subject = fs.readFileSync(subjectPath, "utf8").trim();
 
   /* -------------------------------------------------
-     3️⃣ SEND EMAIL — ALWAYS
+     3️⃣ SEND EMAIL
   ------------------------------------------------- */
   await resend.emails.send({
     from:
