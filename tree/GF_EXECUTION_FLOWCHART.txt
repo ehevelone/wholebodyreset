@@ -54,7 +54,7 @@ hd-01-welcome.html
 
 Allowed links ONLY:
 → /wholebodyreset/wholebodyreset.html
-→ /orientation/or-9a4e2.html
+→ https://wholebodyreset.life/gf/or-9a4e2.html
 
 Cadence:
 Immediate
