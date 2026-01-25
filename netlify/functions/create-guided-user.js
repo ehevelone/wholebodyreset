@@ -19,7 +19,8 @@ async function registerUser({
 }) {
   if (!email) throw new Error("Missing email");
 
-  const insertPayload = {
+  // 1) UPSERT USER
+  const payload = {
     email,
     program: "guided_foundations",
     status: "active",
@@ -29,33 +30,40 @@ async function registerUser({
   };
 
   if (test_mode && test_interval_hours) {
-    insertPayload.test_interval_hours = test_interval_hours;
+    payload.test_interval_hours = test_interval_hours;
   }
 
   const { data: user, error } = await supabase
     .from("guided_users")
-    .upsert(insertPayload, { onConflict: "email" })
+    .upsert(payload, { onConflict: "email" })
     .select("*")
     .single();
 
   if (error) throw error;
 
+  // 2) LOAD EMAIL
   const htmlPath = path.join(EMAIL_ROOT, "hd-01-welcome.html");
-  const subjectPath = path.join(
-    EMAIL_ROOT,
-    "hd-01-welcome.subject.txt"
-  );
+  const subjectPath = path.join(EMAIL_ROOT, "hd-01-welcome.subject.txt");
 
   const html = fs.readFileSync(htmlPath, "utf8");
   const subject = fs.readFileSync(subjectPath, "utf8").trim();
 
-  await resend.emails.send({
-    from: "onboarding@resend.dev", // SAFE SENDER
-    to: email,
-    subject,
-    html
-  });
+  // 3) SEND EMAIL (FORCED LOGGING)
+  let sendResult;
+  try {
+    sendResult = await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: email,
+      subject,
+      html
+    });
+    console.log("RESEND RESULT:", sendResult);
+  } catch (err) {
+    console.error("RESEND FAILED:", err);
+    throw err;
+  }
 
+  // 4) RECORD SEND
   await supabase
     .from("guided_users")
     .update({ last_sent_at: new Date().toISOString() })
@@ -64,7 +72,6 @@ async function registerUser({
   return { ok: true };
 }
 
-// 🔑 NETLIFY ENTRY POINT (THIS WAS MISSING)
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "POST only" };
@@ -73,7 +80,6 @@ exports.handler = async function (event) {
   try {
     const payload = JSON.parse(event.body || "{}");
     const result = await registerUser(payload);
-
     return {
       statusCode: 200,
       body: JSON.stringify(result)
