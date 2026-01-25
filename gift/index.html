@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <title>Loading…</title>
+  <title>Backdoor – Guided Foundations</title>
 
   <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 
@@ -12,42 +12,34 @@
     body {
       margin: 0;
       font-family: system-ui, sans-serif;
-      background: #f2f2ef;
-      color: #777;
+      background: #111;
+      color: #eee;
     }
 
     main {
-      max-width: 520px;
-      margin: 140px auto;
-      padding: 0 20px;
-      text-align: center;
+      max-width: 420px;
+      margin: 120px auto;
+      padding: 20px;
     }
 
-    .panel {
-      border: 1px solid #ddd;
-      background: #fafafa;
-      padding: 28px;
-      border-radius: 6px;
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
     }
 
-    .spinner {
-      width: 30px;
-      height: 30px;
-      margin: 20px auto;
-      border: 3px solid #e0e0e0;
-      border-top: 3px solid #999;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .muted {
-      font-size: 0.9rem;
-      color: #999;
-      margin-top: 10px;
+    .status {
+      margin-top: 12px;
+      font-size: 14px;
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -55,48 +47,66 @@
 <body>
 
 <main>
-  <div class="panel">
-    <div class="spinner"></div>
-    <div class="muted">Verifying access…</div>
-  </div>
+
+  <h2>Guided Foundations – Backdoor</h2>
+
+  <input
+    id="email"
+    type="email"
+    placeholder="email@example.com"
+  />
+
+  <select id="interval">
+    <option value="4">Tester – every 4 hours</option>
+    <option value="6">Tester – every 6 hours</option>
+    <option value="12">Tester – every 12 hours</option>
+    <option value="24">Tester – daily</option>
+  </select>
+
+  <button id="go">
+    ENROLL TESTER
+  </button>
+
+  <div class="status" id="status"></div>
+
 </main>
 
 <script>
 (function () {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('k');
+  const btn = document.getElementById('go');
+  const emailInput = document.getElementById('email');
+  const intervalSelect = document.getElementById('interval');
+  const status = document.getElementById('status');
 
-  // No token = dead end
-  if (!token) {
-    setTimeout(() => { document.body.innerHTML = ''; }, 800);
-    return;
-  }
+  btn.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    const interval = parseInt(intervalSelect.value, 10);
 
-  fetch('/.netlify/functions/verify-invite', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (!data.ok) {
-      setTimeout(() => { document.body.innerHTML = ''; }, 800);
-      return;
-    }
+    if (!email) return;
 
-    // Mark invite context for intake
-    sessionStorage.setItem('invite_verified', 'true');
-    sessionStorage.setItem('invite_comped', 'true');
+    status.textContent = 'working…';
+    btn.disabled = true;
 
-    if (data.email) {
-      sessionStorage.setItem('invite_email', data.email);
-    }
+    fetch('/.netlify/functions/create-guided-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        test_mode: true,
+        test_interval_hours: interval
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) throw new Error();
 
-    // Hand off to normal intake
-    window.location.href = '/intake/intake-start.html';
-  })
-  .catch(() => {
-    setTimeout(() => { document.body.innerHTML = ''; }, 800);
+      status.textContent = 'tester enrolled';
+      window.location.href = '/gf/hydration/hd-01-welcome.html';
+    })
+    .catch(() => {
+      status.textContent = 'failed';
+      btn.disabled = false;
+    });
   });
 })();
 </script>

@@ -6,7 +6,7 @@ import path from "path";
 // NETLIFY CRON CONFIG
 // ============================
 export const config = {
-  schedule: "0 * * * *" // runs hourly (UTC)
+  schedule: "0 * * * *" // hourly
 };
 
 const PROGRAM = "guided_foundations";
@@ -18,6 +18,8 @@ const MIN_NEXT_DELAY_MINUTES = 5;
 const nowIso = () => new Date().toISOString();
 const addDaysISO = d => new Date(Date.now() + d * 86400000).toISOString();
 const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
+const hoursBetween = (a, b) =>
+  Math.abs(Date.parse(a) - Date.parse(b)) / 36e5;
 
 // ============================
 // MODULE DETECTION
@@ -25,32 +27,21 @@ const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
 function moduleFromEmailFilename(name = "") {
   const n = name.toLowerCase();
   if (n.startsWith("hd-")) return "hydration";
-  if (n.startsWith("mr-")) return "minerals";
-  if (n.startsWith("tr-")) return "terrain";
-  if (n.startsWith("gt-")) return "gut";
-  if (n.startsWith("lv-")) return "liver";
-  if (n.startsWith("kd-")) return "kidneys";
-  if (n.startsWith("ad-")) return "adrenals";
-  if (n.startsWith("bd-")) return "binders";
-  if (n.startsWith("th-")) return "thyroid";
+  if (n.startsWith("mn-")) return "minerals";
   if (n.startsWith("pr-")) return "parasites";
   if (n.startsWith("mt-")) return "metals";
-  if (n.startsWith("eb-")) return "ebv";
-  if (n.startsWith("ns-")) return "nervous-system";
   return "foundations";
 }
 
 // ============================
-// LOAD SEQUENCE (FINAL PATH)
+// LOAD SEQUENCE
 // ============================
 function loadSequence() {
   const filePath = path.join(
     __dirname,
     "foundations_email_sequence.json"
   );
-
-  const raw = fs.readFileSync(filePath, "utf8");
-  return JSON.parse(raw).sequence;
+  return JSON.parse(fs.readFileSync(filePath, "utf8")).sequence;
 }
 
 // ============================
@@ -67,7 +58,7 @@ function findNextEmail(sequence, current) {
 }
 
 // ============================
-// SEND EMAIL (CALLS send_email)
+// SEND EMAIL
 // ============================
 async function sendEmail(siteUrl, payload) {
   const res = await fetch(`${siteUrl}/.netlify/functions/send_email`, {
@@ -75,7 +66,6 @@ async function sendEmail(siteUrl, payload) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload)
   });
-
   return res.ok;
 }
 
@@ -103,16 +93,34 @@ export async function handler() {
     .eq("is_paused", false);
 
   if (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message })
-    };
+    return { statusCode: 500, body: error.message };
   }
 
   const now = Date.now();
 
   for (const user of users) {
-    if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
+
+    // ============================
+    // TEST MODE OVERRIDE
+    // ============================
+    if (user.test_mode) {
+      if (!user.last_sent_at) continue;
+
+      const interval =
+        user.test_interval_hours && user.test_interval_hours > 0
+          ? user.test_interval_hours
+          : 4;
+
+      const hrs = hoursBetween(
+        user.last_sent_at,
+        nowIso()
+      );
+
+      if (hrs < interval) continue;
+    } else {
+      // NORMAL CADENCE
+      if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
+    }
 
     const next = findNextEmail(sequence, user.current_email);
     if (!next) continue;
@@ -125,10 +133,11 @@ export async function handler() {
 
     if (!sent) continue;
 
-    const nextAt =
-      next.cadence_days === 0
-        ? addMinutesISO(MIN_NEXT_DELAY_MINUTES)
-        : addDaysISO(next.cadence_days);
+    const nextAt = user.test_mode
+      ? addMinutesISO(60)
+      : next.cadence_days === 0
+          ? addMinutesISO(MIN_NEXT_DELAY_MINUTES)
+          : addDaysISO(next.cadence_days);
 
     await supabase
       .from("guided_users")
