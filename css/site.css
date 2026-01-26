@@ -9,18 +9,18 @@
   background-size: contain;
   opacity: 0.60;
   pointer-events: none;
-  z-index: 0;              /* BEHIND CONTENT */
+  z-index: 0; /* BEHIND CONTENT */
 }
 
 .leafy-left {
   left: 0;
-  background-image: url("../images/leafy-left.png");
+  background-image: url("/images/leafy-left.png");
   background-position: left top;
 }
 
 .leafy-right {
   right: 0;
-  background-image: url("../images/leafy-right.png");
+  background-image: url("/images/leafy-right.png");
   background-position: right top;
 }
 
