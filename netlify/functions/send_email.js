@@ -10,41 +10,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 🔑 ORIGINAL WORKING PATH
 const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
 
-// 🔍 DEBUG — WHAT FILES DOES NETLIFY SEE?
-try {
-  console.log(
-    "send_email DEBUG files in EMAIL_ROOT:",
-    fs.readdirSync(EMAIL_ROOT)
-  );
-} catch (e) {
-  console.log("send_email DEBUG cannot read EMAIL_ROOT:", e.message);
-}
-
-function loadFile(filePath) {
-  return fs.readFileSync(filePath, "utf8");
-}
-
-function loadEmailAssets(relativeEmailPath) {
-  const htmlPath = path.join(EMAIL_ROOT, relativeEmailPath);
-  const subjectPath = htmlPath.replace(".html", ".subject.txt");
-
-  if (!fs.existsSync(htmlPath)) {
-    console.log("send_email: missing HTML", htmlPath);
-    return null;
-  }
-
-  if (!fs.existsSync(subjectPath)) {
-    console.log("send_email: missing subject", subjectPath);
-    return null;
-  }
-
-  return {
-    html: loadFile(htmlPath),
-    subject: loadFile(subjectPath).trim()
-  };
+function loadFile(p) {
+  return fs.readFileSync(p, "utf8");
 }
 
 exports.handler = async function (event) {
@@ -53,56 +22,38 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { user_id } = JSON.parse(event.body || "{}");
-    if (!user_id) {
-      return { statusCode: 400, body: "Missing user_id" };
+    const { email, email_file } = JSON.parse(event.body || "{}");
+
+    if (!email || !email_file) {
+      return { statusCode: 400, body: "Missing email or email_file" };
     }
 
-    const { data: user, error } = await supabase
-      .from("guided_users")
-      .select("*")
-      .eq("id", user_id)
-      .single();
+    const htmlPath = path.join(EMAIL_ROOT, email_file);
+    const subjectPath = htmlPath.replace(".html", ".subject.txt");
 
-    if (error || !user) {
-      console.log("send_email: user not found", user_id);
-      return { statusCode: 200, body: "User not found" };
+    if (!fs.existsSync(htmlPath) || !fs.existsSync(subjectPath)) {
+      console.log("send_email missing assets:", email_file);
+      return { statusCode: 200, body: "Missing email assets" };
     }
 
-    const emailPath = user.bt_queue?.[0];
-    if (!emailPath) {
-      console.log("send_email: no email queued");
-      return { statusCode: 200, body: "No email queued" };
-    }
-
-    const assets = loadEmailAssets(emailPath);
-    if (!assets) {
-      console.log("send_email: assets missing for", emailPath);
-      return { statusCode: 200, body: "Email assets missing" };
-    }
+    const html = loadFile(htmlPath);
+    const subject = loadFile(subjectPath).trim();
 
     await resend.emails.send({
       from:
         process.env.EMAIL_FROM ||
-        "Whole Body Reset <support@wholelifereset.life>",
-      to: user.email,
-      subject: assets.subject,
-      html: assets.html
+        "Whole Body Reset <support@wholebodyreset.life>",
+      to: email,
+      subject,
+      html
     });
 
-    await supabase
-      .from("guided_users")
-      .update({
-        last_sent_at: new Date().toISOString(),
-        bt_queue: user.bt_queue.slice(1)
-      })
-      .eq("id", user_id);
+    console.log("send_email: sent", email_file, "to", email);
 
-    console.log("send_email: sent to", user.email);
     return { statusCode: 200, body: "Email sent" };
 
   } catch (err) {
-    console.error("send_email fatal", err);
-    return { statusCode: 200, body: "Email failed (logged)" };
+    console.error("send_email fatal:", err);
+    return { statusCode: 500, body: "Send failed" };
   }
 };

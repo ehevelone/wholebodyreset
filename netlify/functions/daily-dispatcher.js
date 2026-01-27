@@ -117,8 +117,11 @@ export async function handler() {
       );
 
       if (hrs < interval) continue;
+
     } else {
+      // ============================
       // NORMAL CADENCE
+      // ============================
       if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
     }
 
@@ -126,8 +129,7 @@ export async function handler() {
     if (!next) continue;
 
     const sent = await sendEmail(siteUrl, {
-      to: user.email,
-      program: PROGRAM,
+      email: user.email,
       email_file: next.email
     });
 
