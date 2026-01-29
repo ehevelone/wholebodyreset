@@ -12,17 +12,19 @@ export async function handler() {
 
     const stripe = new Stripe(key);
 
-    // ✅ put the exact price ID you copied from Stripe RIGHT HERE
+    // ✅ Verified TEST price ID
     const PRICE_ID = "price_1Ss9UdK1BEhnYxA8Oc8I40Kz";
 
-    // 🔎 sanity-check that Stripe can see this price (this is the proof step)
+    // 🔎 Sanity check (confirms Stripe can see this price)
     const price = await stripe.prices.retrieve(PRICE_ID);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_creation: "always",
       line_items: [{ price: PRICE_ID, quantity: 1 }],
-      success_url: "https://wholebodyreset.life/book/bd-book-9f2a.html?purchase=success",
+
+      // ✅ DIRECT PDF DELIVERY (NO LOOP)
+      success_url: "https://wholebodyreset.life/book/Whole-Body-Reset-Foundations.pdf",
       cancel_url: "https://wholebodyreset.life/?purchase=cancel"
     });
 
