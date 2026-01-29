@@ -24,11 +24,9 @@ export async function handler(event) {
       };
     }
 
-    // 📄 Load PDF from private function directory
+    // 📄 Load PDF from function bundle (Netlify runtime-safe)
     const filePath = path.join(
       process.cwd(),
-      "netlify",
-      "functions",
       "assets",
       "Whole-Body-Reset-Foundations.pdf"
     );
@@ -47,6 +45,7 @@ export async function handler(event) {
     };
 
   } catch (err) {
+    console.error("❌ download-book error:", err);
     return {
       statusCode: 500,
       body: err.message || "Server error"
