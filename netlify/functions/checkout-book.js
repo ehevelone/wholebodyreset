@@ -9,7 +9,7 @@ export async function handler() {
 
     line_items: [
       {
-        price: "price_1Ss9UdK1BEhnYxA80c8I40Kz",
+        price: "price_1Sn6ZL2dn43JKZxOx6sCyxjp",
         quantity: 1
       }
     ],
