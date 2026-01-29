@@ -277,7 +277,7 @@
       If this story resonates, the Foundations book is where that understanding begins.
     </p>
 
-    <a class="button" href="/book/bd-book-9f2a.html">
+    <a class="button" href="#" id="buy-foundations">
       Read the Foundations Book
     </a>
 
@@ -650,3 +650,27 @@
   </p>
 </div>
 
+</main>
+
+<script>
+  document.getElementById("buy-foundations").addEventListener("click", async function (e) {
+    e.preventDefault();
+
+    try {
+      const res = await fetch("/.netlify/functions/checkout-book");
+      const data = await res.json();
+
+      if (data && data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Unable to start checkout. Please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Checkout failed. Please try again.");
+    }
+  });
+</script>
+
+</body>
+</html>

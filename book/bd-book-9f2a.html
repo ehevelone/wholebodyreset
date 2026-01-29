@@ -7,6 +7,7 @@
 
   <title>Foundations Ebook Access | Whole Body Reset</title>
 
+  <!-- GLOBAL SITE STYLES -->
   <link rel="stylesheet" href="css/site.css">
 
   <style>
@@ -56,7 +57,7 @@
       border-radius: 4px;
       font-size: 1rem;
       cursor: pointer;
-      margin-top: 14px;
+      margin-top: 12px;
     }
 
     button:hover {
@@ -76,63 +77,61 @@
 
 <body>
 
-  <div class="leafy-left"></div>
-  <div class="leafy-right"></div>
+<!-- LEAFY BACKGROUND PLACEHOLDERS (DO NOT REMOVE) -->
+<div class="leafy-left"></div>
+<div class="leafy-right"></div>
 
-  <header>
-    <img src="images/et-naturals-logo.png" alt="ET Naturals Logo">
-  </header>
+<header>
+  <img src="images/et-naturals-logo.png" alt="ET Naturals Logo">
+</header>
 
-  <main>
+<main>
 
-    <h1>Accessing Your Ebook…</h1>
-    <h2>Foundations Edition</h2>
+  <h1>Whole Body Reset</h1>
+  <h2>Foundations Edition</h2>
 
-    <p>One moment — we’re verifying your checkout and starting your download.</p>
+  <p>
+    Verifying your purchase and preparing your download.
+  </p>
 
-    <div class="status-box">
-      <p id="status" class="small">Preparing your download…</p>
-      <button id="try-again" style="display:none;">Try Again</button>
-    </div>
+  <div class="status-box">
+    <p id="status" class="small">Starting download…</p>
+    <button id="retry" style="display:none;">Try Again</button>
+  </div>
 
-    <p class="small" style="margin-top:18px;">
-      If the download doesn’t start automatically, click <strong>Try Again</strong>.
-    </p>
+</main>
 
-  </main>
+<footer>
+  <p>© ET Naturals. All rights reserved.</p>
+  <p>Educational content only. No medical claims.</p>
+</footer>
 
-  <footer>
-    <p>© ET Naturals. All rights reserved.</p>
-    <p>Educational content only. No medical claims.</p>
-  </footer>
+<script>
+  function startDownload() {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
 
-  <script>
-    function startDownload() {
-      const params = new URLSearchParams(window.location.search);
-      const sessionId = params.get("session_id");
+    const status = document.getElementById("status");
+    const retry = document.getElementById("retry");
 
-      const statusEl = document.getElementById("status");
-      const btn = document.getElementById("try-again");
-
-      if (!sessionId) {
-        statusEl.textContent =
-          "Missing session_id. Please return to checkout and complete your purchase.";
-        btn.style.display = "inline-block";
-        btn.onclick = () => (window.location.href = "/");
-        return;
-      }
-
-      statusEl.textContent = "Starting download…";
-      btn.style.display = "none";
-
-      window.location.href =
-        "/.netlify/functions/download-book?session_id=" +
-        encodeURIComponent(sessionId);
+    if (!sessionId) {
+      status.textContent = "Missing purchase verification. Please return to the site.";
+      retry.style.display = "inline-block";
+      retry.onclick = () => window.location.href = "/";
+      return;
     }
 
-    document.getElementById("try-again").onclick = startDownload;
-    startDownload();
-  </script>
+    status.textContent = "Starting secure download…";
+
+    window.location.href =
+      "/.netlify/functions/download-book?session_id=" +
+      encodeURIComponent(sessionId);
+  }
+
+  document.getElementById("retry").addEventListener("click", startDownload);
+
+  startDownload();
+</script>
 
 </body>
 </html>

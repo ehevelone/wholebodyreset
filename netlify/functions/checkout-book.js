@@ -12,30 +12,28 @@ export async function handler() {
 
     const stripe = new Stripe(key);
 
-    // ✅ Verified TEST price ID
+    // ✅ VERIFIED TEST PRICE ID
     const PRICE_ID = "price_1Ss9UdK1BEhnYxA8Oc8I40Kz";
 
-    // 🔎 Sanity check (confirms Stripe can see this price)
-    const price = await stripe.prices.retrieve(PRICE_ID);
+    // 🔎 Sanity check
+    await stripe.prices.retrieve(PRICE_ID);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_creation: "always",
       line_items: [{ price: PRICE_ID, quantity: 1 }],
 
-      // ✅ DIRECT PDF DELIVERY (NO LOOP)
-      success_url: "https://wholebodyreset.life/book/Whole-Body-Reset-Foundations.pdf",
-      cancel_url: "https://wholebodyreset.life/?purchase=cancel"
+      // ✅ CORRECT REDIRECT (CODED FILE, TEMPLATE-COMPLIANT)
+      success_url:
+        "https://wholebodyreset.life/book/bd-book-9f2a-dl.html?session_id={CHECKOUT_SESSION_ID}",
+
+      cancel_url:
+        "https://wholebodyreset.life/?purchase=cancel"
     });
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        ok: true,
-        used_price_id: PRICE_ID,
-        found_price: price?.id,
-        url: session.url
-      })
+      body: JSON.stringify({ url: session.url })
     };
   } catch (err) {
     return {
@@ -43,9 +41,7 @@ export async function handler() {
       body: JSON.stringify({
         ok: false,
         message: err?.message || "unknown error",
-        type: err?.type,
-        code: err?.code,
-        param: err?.param
+        code: err?.code
       })
     };
   }

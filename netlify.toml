@@ -3,4 +3,13 @@
 
 [functions]
   directory = "netlify/functions"
-  included_files = ["emails/**"]
+  included_files = [
+    "netlify/functions/assets/**"
+  ]
+
+# 🔒 BLOCK PUBLIC ACCESS TO PRIVATE ASSETS
+[[redirects]]
+  from = "/netlify/functions/assets/*"
+  to = "/404.html"
+  status = 404
+  force = true
