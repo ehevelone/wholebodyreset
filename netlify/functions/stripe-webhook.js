@@ -67,6 +67,29 @@ exports.handler = async function (event) {
     // DO NOT fail Stripe
   }
 
+  // 🔽 🔽 🔽 ADDITION: trigger book delivery (NON-BLOCKING)
+  try {
+    fetch(
+      `${process.env.URL || "https://wholebodyreset.life"}/.netlify/functions/download-book`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: session.id,
+          email,
+          product
+        })
+      }
+    )
+      .then(() => console.log("📘 download-book triggered"))
+      .catch((e) =>
+        console.error("❌ download-book call failed", e)
+      );
+  } catch (e) {
+    console.error("❌ download-book trigger error", e);
+  }
+  // 🔼 🔼 🔼 END ADDITION
+
   return {
     statusCode: 200,
     body: "ok"
