@@ -1,8 +1,8 @@
-import Stripe from "stripe";
-import fs from "fs";
-import path from "path";
+const Stripe = require("stripe");
+const fs = require("fs");
+const path = require("path");
 
-export async function handler(event) {
+exports.handler = async function (event) {
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -24,9 +24,9 @@ export async function handler(event) {
       };
     }
 
-    // 📄 Load PDF from function bundle (Netlify runtime-safe)
+    // 📄 Load PDF from bundled assets
     const filePath = path.join(
-      process.cwd(),
+      __dirname,
       "assets",
       "Whole-Body-Reset-Foundations.pdf"
     );
@@ -37,13 +37,13 @@ export async function handler(event) {
       statusCode: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": "inline; filename=\"Whole-Body-Reset-Foundations.pdf\"",
+        "Content-Disposition":
+          "inline; filename=\"Whole-Body-Reset-Foundations.pdf\"",
         "Cache-Control": "no-store"
       },
       body: fileBuffer.toString("base64"),
       isBase64Encoded: true
     };
-
   } catch (err) {
     console.error("❌ download-book error:", err);
     return {
@@ -51,4 +51,4 @@ export async function handler(event) {
       body: err.message || "Server error"
     };
   }
-}
+};
