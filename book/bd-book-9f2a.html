@@ -7,7 +7,6 @@
 
   <title>Foundations Ebook Access | Whole Body Reset</title>
 
-  <!-- GLOBAL SITE STYLES -->
   <link rel="stylesheet" href="css/site.css">
 
   <style>
@@ -38,7 +37,7 @@
 
     .status-box {
       margin-top: 30px;
-      padding: 18px 18px;
+      padding: 18px;
       background: rgba(255,255,255,0.35);
       border: 1px solid rgba(47,59,47,0.25);
       border-radius: 8px;
@@ -77,7 +76,6 @@
 
 <body>
 
-  <!-- LEAFY BACKGROUND PLACEHOLDERS (DO NOT REMOVE) -->
   <div class="leafy-left"></div>
   <div class="leafy-right"></div>
 
@@ -90,11 +88,9 @@
     <h1>Accessing Your Ebook…</h1>
     <h2>Foundations Edition</h2>
 
-    <p>
-      One moment — we’re verifying your checkout and starting your download.
-    </p>
+    <p>One moment — we’re verifying your checkout and starting your download.</p>
 
-    <div class="status-box" id="status-box">
+    <div class="status-box">
       <p id="status" class="small">Preparing your download…</p>
       <button id="try-again" style="display:none;">Try Again</button>
     </div>
@@ -119,20 +115,22 @@
       const btn = document.getElementById("try-again");
 
       if (!sessionId) {
-        statusEl.textContent = "Missing session_id. Please return to checkout and complete your purchase.";
+        statusEl.textContent =
+          "Missing session_id. Please return to checkout and complete your purchase.";
         btn.style.display = "inline-block";
-        btn.onclick = () => window.location.href = "/";
+        btn.onclick = () => (window.location.href = "/");
         return;
       }
 
       statusEl.textContent = "Starting download…";
-      // ✅ This MUST hit the Netlify Function that verifies payment and streams the PDF
-      window.location.href = "/.netlify/functions/download-book?session_id=" + encodeURIComponent(sessionId);
+      btn.style.display = "none";
+
+      window.location.href =
+        "/.netlify/functions/download-book?session_id=" +
+        encodeURIComponent(sessionId);
     }
 
-    document.getElementById("try-again").addEventListener("click", startDownload);
-
-    // auto-run on load
+    document.getElementById("try-again").onclick = startDownload;
     startDownload();
   </script>
 
