@@ -1,25 +1,50 @@
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 export async function handler() {
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    customer_creation: "always",
+  try {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ ok: false, error: "Missing STRIPE_SECRET_KEY" })
+      };
+    }
 
-    line_items: [
-      {
-        price: "price_1Sn6ZL2dn43JKZxOx6sCyxjp",
-        quantity: 1
-      }
-    ],
+    const stripe = new Stripe(key);
 
-    success_url: "https://wholebodyreset.life/book/bd-book-9f2a.html?purchase=success",
-    cancel_url: "https://wholebodyreset.life/?purchase=cancel"
-  });
+    // ✅ put the exact price ID you copied from Stripe RIGHT HERE
+    const PRICE_ID = "price_1Ss9UdK1BEhnYxA8Oc8I40Kz";
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ url: session.url })
-  };
+    // 🔎 sanity-check that Stripe can see this price (this is the proof step)
+    const price = await stripe.prices.retrieve(PRICE_ID);
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer_creation: "always",
+      line_items: [{ price: PRICE_ID, quantity: 1 }],
+      success_url: "https://wholebodyreset.life/book/bd-book-9f2a.html?purchase=success",
+      cancel_url: "https://wholebodyreset.life/?purchase=cancel"
+    });
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        ok: true,
+        used_price_id: PRICE_ID,
+        found_price: price?.id,
+        url: session.url
+      })
+    };
+  } catch (err) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        ok: false,
+        message: err?.message || "unknown error",
+        type: err?.type,
+        code: err?.code,
+        param: err?.param
+      })
+    };
+  }
 }
