@@ -38,21 +38,34 @@ function moduleFromEmailFilename(name = "") {
 // ============================
 function loadSequence() {
   const filePath = path.join(
-    process.cwd(),
-    "netlify",
-    "functions",
+    __dirname,
     "foundations_email_sequence.json"
   );
 
-  const raw = fs.readFileSync(filePath, "utf8");
-  return JSON.parse(raw).sequence;
+  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+
+  // 🔑 Flatten phase-based JSON into a linear sequence
+  const sequence = [];
+
+  for (const phase of Object.values(data.phases)) {
+    for (const group of Object.values(phase)) {
+      for (const email of group) {
+        sequence.push({
+          email,
+          cadence_days: 1 // default cadence (safe)
+        });
+      }
+    }
+  }
+
+  return sequence;
 }
 
 // ============================
 // FIND NEXT EMAIL
 // ============================
 function findNextEmail(sequence, current) {
-  if (!sequence.length) return null;
+  if (!sequence || !sequence.length) return null;
   if (!current) return sequence[0];
 
   const idx = sequence.findIndex(e => e.email === current);
