@@ -4,12 +4,12 @@ export async function handler() {
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    const PRICE_ID = "price_1SvO8r2dn43JKZxOpPqjwp8L";
-
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer_creation: "always",
-      line_items: [{ price: PRICE_ID, quantity: 1 }],
+      line_items: [
+        { price: "price_1SvO8r2dn43JKZxOpPqjwp8L", quantity: 1 }
+      ],
       success_url:
         "https://wholebodyreset.life/ai/start?session_id={CHECKOUT_SESSION_ID}",
       cancel_url:
@@ -17,15 +17,15 @@ export async function handler() {
     });
 
     return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: session.url })
+      statusCode: 303,
+      headers: {
+        Location: session.url
+      }
     };
   } catch (err) {
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: err.message })
+      body: err.message
     };
   }
 }
