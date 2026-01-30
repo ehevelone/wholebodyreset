@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
+import path from "path";
 
 // ============================
 // NETLIFY CRON CONFIG
@@ -33,11 +34,17 @@ function moduleFromEmailFilename(name = "") {
 }
 
 // ============================
-// LOAD SEQUENCE (ESM SAFE)
+// LOAD SEQUENCE (NETLIFY SAFE)
 // ============================
 function loadSequence() {
-  const url = new URL("./foundations_email_sequence.json", import.meta.url);
-  const raw = fs.readFileSync(url, "utf8");
+  const filePath = path.join(
+    process.cwd(),
+    "netlify",
+    "functions",
+    "foundations_email_sequence.json"
+  );
+
+  const raw = fs.readFileSync(filePath, "utf8");
   return JSON.parse(raw).sequence;
 }
 
@@ -98,7 +105,7 @@ export async function handler() {
   for (const user of users) {
 
     // ============================
-    // TEST MODE OVERRIDE
+    // TEST MODE
     // ============================
     if (user.test_mode) {
       if (!user.last_sent_at) continue;
@@ -108,11 +115,7 @@ export async function handler() {
           ? user.test_interval_hours
           : 4;
 
-      const hrs = hoursBetween(
-        user.last_sent_at,
-        nowIso()
-      );
-
+      const hrs = hoursBetween(user.last_sent_at, nowIso());
       if (hrs < interval) continue;
 
     } else {
