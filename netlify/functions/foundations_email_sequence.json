@@ -1,13 +1,13 @@
 {
   "program": "guided_foundations",
-  "version": "2.2",
-  "note": "EMAIL SEQUENCE ONLY — program gated; bt/nc/os locked until later",
+  "version": "2.3",
+  "note": "EMAIL SEQUENCE ONLY — intro gated; paths unlocked later",
 
   "phases": {
     "hydration": {
       "intro": [
-        "hd-00-start-here.html",
-        "hd-01-welcome.html"
+        "hd-01-welcome.html",
+        "hd-00-start-here.html"
       ]
     },
 
