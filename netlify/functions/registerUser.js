@@ -89,7 +89,8 @@ exports.registerUser = async function ({ email, product = "guided" }) {
         program: "guided_foundations",
         status: "active",
         current_email: htmlFile,
-        current_module: "hydration"
+        current_module: "hydration",
+        welcome_sent: false // explicitly false until email succeeds
       },
       { onConflict: "email" }
     )
@@ -98,6 +99,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
 
   if (error) throw error;
 
+  // 🔔 SEND WELCOME EMAIL
   await resend.emails.send({
     from:
       process.env.EMAIL_FROM ||
@@ -108,6 +110,18 @@ exports.registerUser = async function ({ email, product = "guided" }) {
   });
 
   console.log("Guided welcome email sent");
+
+  // ✅ UNLOCK THE SEQUENCE
+  await supabase
+    .from("guided_users")
+    .update({
+      welcome_sent: true,
+      last_sent_at: new Date().toISOString(),
+      next_email_at: new Date(Date.now() + 5 * 60000).toISOString() // 5 min safety gap
+    })
+    .eq("id", user.id);
+
+  console.log("welcome_sent flipped true for", email);
 
   return { user_id: user.id, program: "guided" };
 };
