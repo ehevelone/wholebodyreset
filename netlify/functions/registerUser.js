@@ -11,7 +11,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
+/**
+ * 🔒 NETLIFY-SAFE TEMPLATE ROOT
+ * Templates MUST live inside the function bundle:
+ * netlify/functions/emails/templates/
+ */
+const EMAIL_ROOT = path.join(__dirname, "emails", "templates");
 
 function hashEmail(email) {
   return crypto
@@ -110,13 +115,13 @@ exports.registerUser = async function ({ email, product = "guided" }) {
 
   console.log("Guided welcome email sent");
 
-  // ✅ CRITICAL: UNLOCK SEQUENCE AFTER SUCCESSFUL SEND
+  // ✅ UNLOCK SEQUENCE AFTER SUCCESSFUL SEND
   await supabase
     .from("guided_users")
     .update({
       welcome_sent: true,
       last_sent_at: new Date().toISOString(),
-      next_email_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 min buffer
+      next_email_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
     })
     .eq("id", user.id);
 
