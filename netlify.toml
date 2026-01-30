@@ -4,7 +4,8 @@
 [functions]
   directory = "netlify/functions"
   included_files = [
-    "netlify/functions/assets/**"
+    "netlify/functions/assets/**",
+    "netlify/functions/emails/**"
   ]
 
 # 🔒 BLOCK PUBLIC ACCESS TO PRIVATE ASSETS
