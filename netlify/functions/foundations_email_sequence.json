@@ -1,14 +1,14 @@
 {
   "program": "guided_foundations",
-  "version": "2.0",
-  "note": "REFERENCE ONLY. send-email.js is the authoritative controller.",
+  "version": "2.1",
+  "note": "EMAIL SEQUENCE ONLY — link-only content removed",
+
   "phases": {
     "hydration": {
       "intro": [
-        "hd-01-welcome.html",
-        "hd-9f3a2-e02-expectations.html",
-        "hd-9f3a2-e03-observation.html"
+        "hd-01-welcome.html"
       ],
+
       "bt": [
         "hd-bt-4k2m-e01.html",
         "hd-bt-4k2m-e02.html",
@@ -25,6 +25,7 @@
         "hd-bt-6q8v-e05.html",
         "hd-bt-6q8v-e06.html"
       ],
+
       "nc": [
         "hd-nc-1a7c-e01.html",
         "hd-nc-1a7c-e02.html",
@@ -36,6 +37,7 @@
         "hd-nc-4f2a-e04.html",
         "hd-nc-p0z9-e01.html"
       ],
+
       "os": [
         "hd-os-7m2p-e01.html",
         "hd-os-7m2p-e02.html",
