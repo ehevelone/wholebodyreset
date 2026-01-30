@@ -661,24 +661,37 @@
 </main>
 
 <script>
-  document.getElementById("buy-foundations").addEventListener("click", async function (e) {
+  async function startCheckout(e, endpoint, errorMessage) {
     e.preventDefault();
 
     try {
-      const res = await fetch("/.netlify/functions/checkout-book");
+      const res = await fetch(endpoint);
       const data = await res.json();
 
       if (data && data.url) {
         window.location.href = data.url;
       } else {
-        alert("Unable to start checkout. Please try again.");
+        alert(errorMessage);
       }
     } catch (err) {
       console.error(err);
-      alert("Checkout failed. Please try again.");
+      alert(errorMessage);
     }
+  }
+
+  document.getElementById("buy-foundations")?.addEventListener("click", function (e) {
+    startCheckout(e, "/.netlify/functions/checkout-book", "Unable to start book checkout.");
+  });
+
+  document.getElementById("buy-guided")?.addEventListener("click", function (e) {
+    startCheckout(e, "/.netlify/functions/checkout-guided", "Unable to start Guided checkout.");
+  });
+
+  document.getElementById("buy-ai")?.addEventListener("click", function (e) {
+    startCheckout(e, "/.netlify/functions/checkout-ai", "Unable to start AI checkout.");
   });
 </script>
+
 
 </body>
 </html>
