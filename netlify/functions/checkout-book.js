@@ -8,7 +8,7 @@ export async function handler() {
       mode: "payment",
       customer_creation: "always",
       line_items: [
-        { price: "price_BOOK_ID", quantity: 1 }
+        { price: "price_1Sn6ZL2dn43JKZxOx6sCyxjp", quantity: 1 }
       ],
       success_url:
         "https://wholebodyreset.life/gf/start?session_id={CHECKOUT_SESSION_ID}",
