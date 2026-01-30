@@ -1,14 +1,17 @@
 {
   "program": "guided_foundations",
-  "version": "2.1",
-  "note": "EMAIL SEQUENCE ONLY — link-only content removed",
+  "version": "2.2",
+  "note": "EMAIL SEQUENCE ONLY — program gated; bt/nc/os locked until later",
 
   "phases": {
     "hydration": {
       "intro": [
+        "hd-00-start-here.html",
         "hd-01-welcome.html"
-      ],
+      ]
+    },
 
+    "hydration_paths": {
       "bt": [
         "hd-bt-4k2m-e01.html",
         "hd-bt-4k2m-e02.html",
