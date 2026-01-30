@@ -10,21 +10,21 @@ export async function handler() {
       mode: "subscription",
       customer_creation: "always",
       line_items: [{ price: PRICE_ID, quantity: 1 }],
-
       success_url:
         "https://wholebodyreset.life/gf/start?session_id={CHECKOUT_SESSION_ID}",
-
       cancel_url:
         "https://wholebodyreset.life/?guided=cancel"
     });
 
     return {
       statusCode: 200,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url: session.url })
     };
   } catch (err) {
     return {
       statusCode: 500,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ error: err.message })
     };
   }
