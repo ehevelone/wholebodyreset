@@ -94,44 +94,4 @@
     Verifying your purchase and preparing your download.
   </p>
 
-  <div class="status-box">
-    <p id="status" class="small">Starting download…</p>
-    <button id="retry" style="display:none;">Try Again</button>
-  </div>
-
-</main>
-
-<footer>
-  <p>© ET Naturals. All rights reserved.</p>
-  <p>Educational content only. No medical claims.</p>
-</footer>
-
-<script>
-  function startDownload() {
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get("session_id");
-
-    const status = document.getElementById("status");
-    const retry = document.getElementById("retry");
-
-    if (!sessionId) {
-      status.textContent = "Missing purchase verification. Please return to the site.";
-      retry.style.display = "inline-block";
-      retry.onclick = () => window.location.href = "/";
-      return;
-    }
-
-    status.textContent = "Starting secure download…";
-
-    window.location.href =
-      "/.netlify/functions/download-book?session_id=" +
-      encodeURIComponent(sessionId);
-  }
-
-  document.getElementById("retry").addEventListener("click", startDownload);
-
-  startDownload();
-</script>
-
-</body>
-</html>
+  <div class="stat

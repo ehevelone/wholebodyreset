@@ -26,8 +26,9 @@ export async function handler(event) {
       customer_creation: "always",
       line_items: [{ price: PRICE_ID, quantity: 1 }],
 
+      // ✅ FIXED: redirect to EXISTING page
       success_url:
-        "https://wholebodyreset.life/book/bd-book-9f2a-dl.html?session_id={CHECKOUT_SESSION_ID}",
+        "https://wholebodyreset.life/book/bd-book-9f2a.html?session_id={CHECKOUT_SESSION_ID}",
 
       cancel_url:
         "https://wholebodyreset.life/?purchase=cancel"
