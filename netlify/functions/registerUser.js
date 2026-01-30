@@ -68,7 +68,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
   }
 
   /* ===============================
-     GUIDED FOUNDATIONS FLOW — FIXED
+     GUIDED FOUNDATIONS FLOW
      =============================== */
   const htmlFile = "hd-01-welcome.html";
   const subjectFile = "hd-01-welcome.subject.txt";
@@ -89,8 +89,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
         program: "guided_foundations",
         status: "active",
         current_email: htmlFile,
-        current_module: "hydration",
-        welcome_sent: false // explicitly false until email succeeds
+        current_module: "hydration"
       },
       { onConflict: "email" }
     )
@@ -111,17 +110,17 @@ exports.registerUser = async function ({ email, product = "guided" }) {
 
   console.log("Guided welcome email sent");
 
-  // ✅ UNLOCK THE SEQUENCE
+  // ✅ CRITICAL: UNLOCK SEQUENCE AFTER SUCCESSFUL SEND
   await supabase
     .from("guided_users")
     .update({
       welcome_sent: true,
       last_sent_at: new Date().toISOString(),
-      next_email_at: new Date(Date.now() + 5 * 60000).toISOString() // 5 min safety gap
+      next_email_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 min buffer
     })
     .eq("id", user.id);
 
-  console.log("welcome_sent flipped true for", email);
+  console.log("welcome_sent + timing fields set for", email);
 
   return { user_id: user.id, program: "guided" };
 };
