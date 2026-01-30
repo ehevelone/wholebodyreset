@@ -5,12 +5,18 @@ const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Supabase is not strictly required here, but keeping it avoids breaking imports
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const EMAIL_ROOT = path.join(process.cwd(), "emails", "templates");
+/**
+ * 🔒 NETLIFY-SAFE EMAIL TEMPLATE ROOT
+ * Templates MUST live in:
+ * netlify/functions/emails/templates/
+ */
+const EMAIL_ROOT = path.join(__dirname, "emails", "templates");
 
 function loadFile(p) {
   return fs.readFileSync(p, "utf8");
@@ -32,8 +38,11 @@ exports.handler = async function (event) {
     const subjectPath = htmlPath.replace(".html", ".subject.txt");
 
     if (!fs.existsSync(htmlPath) || !fs.existsSync(subjectPath)) {
-      console.log("send_email missing assets:", email_file);
-      return { statusCode: 200, body: "Missing email assets" };
+      console.error("send_email missing assets", {
+        htmlPath,
+        subjectPath
+      });
+      return { statusCode: 500, body: "Email assets missing" };
     }
 
     const html = loadFile(htmlPath);
