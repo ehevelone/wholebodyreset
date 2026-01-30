@@ -94,4 +94,56 @@
     Verifying your purchase and preparing your download.
   </p>
 
-  <div class="stat
+  <div class="status-box">
+    <p id="status" class="small">Preparing secure download…</p>
+    <button id="downloadBtn" style="display:none;">Download Book</button>
+  </div>
+
+</main>
+
+<footer>
+  <p>© ET Naturals. All rights reserved.</p>
+  <p>Educational content only. No medical claims.</p>
+</footer>
+
+<script>
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const sessionId = params.get("session_id");
+
+  const status = document.getElementById("status");
+  const btn = document.getElementById("downloadBtn");
+
+  if (!sessionId) {
+    status.textContent = "Missing purchase verification. Please return to the site.";
+    btn.style.display = "inline-block";
+    btn.textContent = "Return Home";
+    btn.onclick = () => window.location.href = "/";
+    return;
+  }
+
+  const downloadUrl =
+    "/.netlify/functions/download-book?session_id=" +
+    encodeURIComponent(sessionId);
+
+  // Create a real anchor (browser-trusted)
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.style.display = "none";
+  document.body.appendChild(link);
+
+  // Try automatic download
+  link.click();
+
+  // Always show manual button as fallback (guaranteed user gesture)
+  setTimeout(() => {
+    status.textContent = "If your download did not start, click below.";
+    btn.style.display = "inline-block";
+    btn.textContent = "Download Book";
+    btn.onclick = () => link.click();
+  }, 1000);
+})();
+</script>
+
+</body>
+</html>
