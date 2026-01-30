@@ -2,55 +2,44 @@ import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
 
-// ============================
-// NETLIFY CRON CONFIG
-// ============================
 export const config = {
   schedule: "0 * * * *" // hourly
 };
 
 const PROGRAM = "guided_foundations";
+const INTRO_PHASE = ["hd-00-start-here.html", "hd-01-welcome.html"];
 const MIN_NEXT_DELAY_MINUTES = 5;
 
-// ============================
-// TIME HELPERS
-// ============================
 const nowIso = () => new Date().toISOString();
 const addDaysISO = d => new Date(Date.now() + d * 86400000).toISOString();
 const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
 
-// ============================
-// MODULE DETECTION
-// ============================
 function moduleFromEmailFilename(name = "") {
-  const n = name.toLowerCase();
-  if (n.startsWith("hd-")) return "hydration";
-  if (n.startsWith("mn-")) return "minerals";
-  if (n.startsWith("pr-")) return "parasites";
-  if (n.startsWith("mt-")) return "metals";
+  if (name.startsWith("hd-")) return "hydration";
+  if (name.startsWith("mn-")) return "minerals";
+  if (name.startsWith("pr-")) return "parasites";
+  if (name.startsWith("mt-")) return "metals";
   return "foundations";
 }
 
-// ============================
-// LOAD SEQUENCE (NETLIFY SAFE)
-// ============================
 function loadSequence() {
-  const filePath = path.join(
-    __dirname,
-    "foundations_email_sequence.json"
-  );
-
+  const filePath = path.join(__dirname, "foundations_email_sequence.json");
   const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
   const sequence = [];
 
-  for (const phase of Object.values(data.phases || {})) {
-    for (const group of Object.values(phase || {})) {
-      for (const email of group || []) {
-        sequence.push({
-          email,
-          cadence_days: 1
-        });
+  // 🔒 INTRO ONLY FIRST
+  for (const email of data.phases.hydration.intro) {
+    sequence.push({ email, cadence_days: 0 });
+  }
+
+  // 🔒 EVERYTHING ELSE AFTER
+  for (const phaseKey of Object.keys(data.phases)) {
+    if (phaseKey === "hydration") continue;
+    const phase = data.phases[phaseKey];
+    for (const group of Object.values(phase)) {
+      for (const email of group) {
+        sequence.push({ email, cadence_days: 1 });
       }
     }
   }
@@ -58,22 +47,14 @@ function loadSequence() {
   return sequence;
 }
 
-// ============================
-// FIND NEXT EMAIL
-// ============================
 function findNextEmail(sequence, current) {
-  if (!Array.isArray(sequence) || sequence.length === 0) return null;
   if (!current) return sequence[0];
-
   const idx = sequence.findIndex(e => e.email === current);
   return idx === -1 || idx + 1 >= sequence.length
     ? null
     : sequence[idx + 1];
 }
 
-// ============================
-// SEND EMAIL
-// ============================
 async function sendEmail(payload) {
   const res = await fetch(
     "https://wholebodyreset.life/.netlify/functions/send_email",
@@ -83,13 +64,9 @@ async function sendEmail(payload) {
       body: JSON.stringify(payload)
     }
   );
-
   return res.ok;
 }
 
-// ============================
-// HANDLER
-// ============================
 export async function handler() {
   const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -111,11 +88,8 @@ export async function handler() {
 
   const now = Date.now();
 
-  for (const user of users || []) {
-
-    if (user.next_email_at && Date.parse(user.next_email_at) > now) {
-      continue;
-    }
+  for (const user of users) {
+    if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
     const next = findNextEmail(sequence, user.current_email);
     if (!next) continue;
