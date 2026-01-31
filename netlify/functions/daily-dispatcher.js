@@ -12,8 +12,7 @@ const addDaysISO = d => new Date(Date.now() + d * 86400000).toISOString();
 const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
 
 /**
- * JSON PHASE → ACTUAL FOLDER MAP
- * This is the missing link
+ * JSON PHASE → ACTUAL TEMPLATE FOLDER
  */
 const PHASE_FOLDER_MAP = {
   hydration: "hydration",
@@ -24,37 +23,30 @@ const PHASE_FOLDER_MAP = {
   maintenance: "maintenance"
 };
 
-function moduleFromEmailFilename(name = "") {
-  if (name.startsWith("hd-")) return "hydration";
-  if (name.startsWith("mn-")) return "minerals";
-  if (name.startsWith("pr-")) return "parasites";
-  if (name.startsWith("mt-")) return "metals";
+function moduleFromEmailPath(p = "") {
+  if (p.startsWith("hydration/")) return "hydration";
+  if (p.startsWith("minerals/")) return "minerals";
+  if (p.startsWith("parasites/")) return "parasites";
+  if (p.startsWith("metals/")) return "metals";
   return "foundations";
 }
 
 /**
- * Build FULL RELATIVE PATHS
+ * 🔒 BUILD FULL, REAL TEMPLATE PATHS
  */
 function loadSequence() {
-  const filePath = path.join(__dirname, "foundations_email_sequence.json");
-  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const jsonPath = path.join(__dirname, "foundations_email_sequence.json");
+  const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 
   const sequence = [];
 
-  // 🔒 INTRO ORDER (hard enforced)
-  const INTRO_ORDER = [
-    "hd-01-welcome.html",
-    "hd-00-start-here.html"
-  ];
+  // 🔐 HARD-ENFORCED INTRO ORDER
+  sequence.push(
+    { email: "hydration/intro/hd-01-welcome.html", cadence_days: 0 },
+    { email: "hydration/intro/hd-00-start-here.html", cadence_days: 0 }
+  );
 
-  for (const email of INTRO_ORDER) {
-    sequence.push({
-      email: `hydration/intro/${email}`,
-      cadence_days: 0
-    });
-  }
-
-  // 🔁 ALL OTHER PHASES
+  // 🔁 ALL OTHER PHASES (DAILY CADENCE)
   for (const phaseKey of Object.keys(data.phases)) {
     if (phaseKey === "hydration") continue;
 
@@ -64,9 +56,9 @@ function loadSequence() {
     const phase = data.phases[phaseKey];
 
     for (const groupKey of Object.keys(phase)) {
-      for (const email of phase[groupKey]) {
+      for (const file of phase[groupKey]) {
         sequence.push({
-          email: `${folder}/${groupKey}/${email}`,
+          email: `${folder}/${groupKey}/${file}`,
           cadence_days: 1
         });
       }
@@ -77,7 +69,7 @@ function loadSequence() {
 }
 
 /**
- * "__START__" or null = user has received nothing yet
+ * null or "__START__" → first email
  */
 function findNextEmail(sequence, current) {
   if (!current || current === "__START__") {
@@ -120,7 +112,7 @@ exports.handler = async function () {
     .eq("is_paused", false);
 
   if (error) {
-    console.error("Supabase error:", error);
+    console.error("SUPABASE ERROR", error);
     return { statusCode: 500, body: error.message };
   }
 
@@ -153,7 +145,7 @@ exports.handler = async function () {
       .from("guided_users")
       .update({
         current_email: next.email,
-        current_module: moduleFromEmailFilename(next.email),
+        current_module: moduleFromEmailPath(next.email),
         last_sent_at: nowIso(),
         next_email_at: nextAt
       })
