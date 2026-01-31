@@ -5,7 +5,8 @@
   directory = "netlify/functions"
   included_files = [
     "netlify/functions/assets/**",
-    "netlify/functions/emails/**"
+    "netlify/functions/emails/**",
+    "netlify/functions/foundations_email_sequence.json"
   ]
 
 # 🔁 SCHEDULED FUNCTIONS
