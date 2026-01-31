@@ -3,10 +3,6 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-export const config = {
-  schedule: "*/2 * * * *" // every 2 minutes (testing)
-};
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

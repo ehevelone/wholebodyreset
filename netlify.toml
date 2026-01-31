@@ -8,6 +8,10 @@
     "netlify/functions/emails/**"
   ]
 
+# 🔁 SCHEDULED FUNCTIONS
+[functions."daily-dispatcher"]
+  schedule = "*/2 * * * *"
+
 # 🔒 BLOCK PUBLIC ACCESS TO PRIVATE ASSETS
 [[redirects]]
   from = "/netlify/functions/assets/*"
