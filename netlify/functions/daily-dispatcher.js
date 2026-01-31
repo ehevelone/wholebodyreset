@@ -4,12 +4,25 @@ const path = require("path");
 
 const PROGRAM = "guided_foundations";
 
-// ⏱️ DELAY BETWEEN WELCOME → START HERE
+// ⏱️ Delay between Welcome → Start Here
 const MIN_NEXT_DELAY_MINUTES = 5;
 
 const nowIso = () => new Date().toISOString();
 const addDaysISO = d => new Date(Date.now() + d * 86400000).toISOString();
 const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
+
+/**
+ * JSON PHASE → ACTUAL FOLDER MAP
+ * This is the missing link
+ */
+const PHASE_FOLDER_MAP = {
+  hydration: "hydration",
+  hydration_paths: "hydration",
+  minerals: "minerals",
+  parasites: "parasites",
+  metals: "metals",
+  maintenance: "maintenance"
+};
 
 function moduleFromEmailFilename(name = "") {
   if (name.startsWith("hd-")) return "hydration";
@@ -20,8 +33,7 @@ function moduleFromEmailFilename(name = "") {
 }
 
 /**
- * 🔒 HARD-CODED INTRO ORDER
- * Welcome → Start Here → rest of program
+ * Build FULL RELATIVE PATHS
  */
 function loadSequence() {
   const filePath = path.join(__dirname, "foundations_email_sequence.json");
@@ -29,24 +41,34 @@ function loadSequence() {
 
   const sequence = [];
 
-  // ✅ INTRO ORDER (DO NOT TRUST JSON ORDER)
+  // 🔒 INTRO ORDER (hard enforced)
   const INTRO_ORDER = [
     "hd-01-welcome.html",
     "hd-00-start-here.html"
   ];
 
   for (const email of INTRO_ORDER) {
-    sequence.push({ email, cadence_days: 0 });
+    sequence.push({
+      email: `hydration/intro/${email}`,
+      cadence_days: 0
+    });
   }
 
-  // ✅ ALL OTHER PHASES (DAILY CADENCE)
+  // 🔁 ALL OTHER PHASES
   for (const phaseKey of Object.keys(data.phases)) {
     if (phaseKey === "hydration") continue;
 
+    const folder = PHASE_FOLDER_MAP[phaseKey];
+    if (!folder) continue;
+
     const phase = data.phases[phaseKey];
-    for (const group of Object.values(phase)) {
-      for (const email of group) {
-        sequence.push({ email, cadence_days: 1 });
+
+    for (const groupKey of Object.keys(phase)) {
+      for (const email of phase[groupKey]) {
+        sequence.push({
+          email: `${folder}/${groupKey}/${email}`,
+          cadence_days: 1
+        });
       }
     }
   }
@@ -55,11 +77,11 @@ function loadSequence() {
 }
 
 /**
- * "__START__" or null = user has received NOTHING yet
+ * "__START__" or null = user has received nothing yet
  */
 function findNextEmail(sequence, current) {
   if (!current || current === "__START__") {
-    return sequence[0]; // WELCOME
+    return sequence[0];
   }
 
   const idx = sequence.findIndex(e => e.email === current);
@@ -105,7 +127,6 @@ exports.handler = async function () {
   const now = Date.now();
 
   for (const user of users) {
-    // ⛔ Too early to send next email
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
     const next = findNextEmail(sequence, user.current_email);
