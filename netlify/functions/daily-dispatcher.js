@@ -1,10 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { createClient } = require("@supabase/supabase-js");
+const fs = require("fs");
+const path = require("path");
 
 const PROGRAM = "guided_foundations";
 const MIN_NEXT_DELAY_MINUTES = 5;
@@ -66,7 +62,7 @@ async function sendEmail(payload) {
   return res.ok;
 }
 
-export async function handler() {
+exports.handler = async function () {
   console.log("DAILY DISPATCH RUN", new Date().toISOString());
 
   const supabase = createClient(
@@ -84,6 +80,7 @@ export async function handler() {
     .eq("is_paused", false);
 
   if (error) {
+    console.error("Supabase error:", error);
     return { statusCode: 500, body: error.message };
   }
 
@@ -122,4 +119,4 @@ export async function handler() {
     statusCode: 200,
     body: JSON.stringify({ ok: true })
   };
-}
+};
