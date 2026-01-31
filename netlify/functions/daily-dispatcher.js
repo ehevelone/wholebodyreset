@@ -23,7 +23,7 @@ function loadSequence() {
 
   const sequence = [];
 
-  // INTRO emails (immediate, short delay)
+  // INTRO emails (send immediately, short delay)
   for (const email of data.phases.hydration.intro) {
     sequence.push({ email, cadence_days: 0 });
   }
@@ -42,8 +42,15 @@ function loadSequence() {
   return sequence;
 }
 
+/**
+ * 🔑 START SENTINEL LOGIC
+ * "__START__" means user has NOT received any email yet
+ */
 function findNextEmail(sequence, current) {
-  if (!current) return sequence[0];
+  if (!current || current === "__START__") {
+    return sequence[0]; // SEND "Start Here"
+  }
+
   const idx = sequence.findIndex(e => e.email === current);
   return idx === -1 || idx + 1 >= sequence.length
     ? null
