@@ -1,20 +1,15 @@
 const fs = require("fs");
 const path = require("path");
-const { createClient } = require("@supabase/supabase-js");
 const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Supabase is not strictly required here, but keeping it avoids breaking imports
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 /**
  * 🔒 NETLIFY-SAFE EMAIL TEMPLATE ROOT
- * Templates MUST live in:
- * netlify/functions/emails/templates/
+ * All email paths are resolved RELATIVE to this directory
+ *
+ * Example email_file:
+ *   hydration/intro/hd-00-start-here.html
  */
 const EMAIL_ROOT = path.join(__dirname, "emails", "templates");
 
@@ -34,11 +29,14 @@ exports.handler = async function (event) {
       return { statusCode: 400, body: "Missing email or email_file" };
     }
 
-    const htmlPath = path.join(EMAIL_ROOT, email_file);
-    const subjectPath = htmlPath.replace(".html", ".subject.txt");
+    // 🔐 Prevent directory traversal
+    const safePath = path.normalize(email_file).replace(/^(\.\.(\/|\\|$))+/, "");
+
+    const htmlPath = path.join(EMAIL_ROOT, safePath);
+    const subjectPath = htmlPath.replace(/\.html$/, ".subject.txt");
 
     if (!fs.existsSync(htmlPath) || !fs.existsSync(subjectPath)) {
-      console.error("send_email missing assets", {
+      console.error("EMAIL ASSETS MISSING", {
         htmlPath,
         subjectPath
       });
@@ -57,12 +55,11 @@ exports.handler = async function (event) {
       html
     });
 
-    console.log("send_email: sent", email_file, "to", email);
-
+    console.log("EMAIL SENT", safePath, "→", email);
     return { statusCode: 200, body: "Email sent" };
 
   } catch (err) {
-    console.error("send_email fatal:", err);
+    console.error("SEND EMAIL ERROR", err);
     return { statusCode: 500, body: "Send failed" };
   }
 };
