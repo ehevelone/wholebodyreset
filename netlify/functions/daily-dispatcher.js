@@ -4,7 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 export const config = {
-  schedule: "0 * * * *" // hourly
+  schedule: "*/5 * * * *" // every 5 minutes (testing)
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,10 +31,12 @@ function loadSequence() {
 
   const sequence = [];
 
+  // INTRO (send immediately, then short delay)
   for (const email of data.phases.hydration.intro) {
     sequence.push({ email, cadence_days: 0 });
   }
 
+  // EVERYTHING ELSE (daily cadence)
   for (const phaseKey of Object.keys(data.phases)) {
     if (phaseKey === "hydration") continue;
     const phase = data.phases[phaseKey];
