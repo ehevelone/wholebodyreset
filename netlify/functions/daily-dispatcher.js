@@ -1,13 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
 export const config = {
   schedule: "0 * * * *" // hourly
 };
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const PROGRAM = "guided_foundations";
-const INTRO_PHASE = ["hd-00-start-here.html", "hd-01-welcome.html"];
 const MIN_NEXT_DELAY_MINUTES = 5;
 
 const nowIso = () => new Date().toISOString();
@@ -28,12 +31,10 @@ function loadSequence() {
 
   const sequence = [];
 
-  // 🔒 INTRO ONLY FIRST
   for (const email of data.phases.hydration.intro) {
     sequence.push({ email, cadence_days: 0 });
   }
 
-  // 🔒 EVERYTHING ELSE AFTER
   for (const phaseKey of Object.keys(data.phases)) {
     if (phaseKey === "hydration") continue;
     const phase = data.phases[phaseKey];
