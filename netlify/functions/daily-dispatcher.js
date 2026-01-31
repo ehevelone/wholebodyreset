@@ -4,7 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 export const config = {
-  schedule: "*/5 * * * *" // every 5 minutes (testing)
+  schedule: "*/2 * * * *" // every 2 minutes (testing)
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,12 +31,12 @@ function loadSequence() {
 
   const sequence = [];
 
-  // INTRO (send immediately, then short delay)
+  // INTRO emails (immediate, short delay)
   for (const email of data.phases.hydration.intro) {
     sequence.push({ email, cadence_days: 0 });
   }
 
-  // EVERYTHING ELSE (daily cadence)
+  // ALL OTHER PHASES (daily cadence)
   for (const phaseKey of Object.keys(data.phases)) {
     if (phaseKey === "hydration") continue;
     const phase = data.phases[phaseKey];
@@ -71,6 +71,8 @@ async function sendEmail(payload) {
 }
 
 export async function handler() {
+  console.log("DAILY DISPATCH RUN", new Date().toISOString());
+
   const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
