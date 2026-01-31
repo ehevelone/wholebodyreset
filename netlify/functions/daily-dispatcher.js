@@ -5,14 +5,17 @@ const path = require("path");
 const PROGRAM = "guided_foundations";
 
 // ⏱️ Delay between Welcome → Start Here
-const MIN_NEXT_DELAY_MINUTES = 5;
+const WELCOME_TO_START_MINUTES = 5;
+
+// If a tester has no test_interval_hours set, default to 2 minutes for testing.
+const DEFAULT_TEST_INTERVAL_MINUTES = 2;
 
 const nowIso = () => new Date().toISOString();
-const addDaysISO = d => new Date(Date.now() + d * 86400000).toISOString();
-const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
+const addDaysISO = (d) => new Date(Date.now() + d * 86400000).toISOString();
+const addMinutesISO = (m) => new Date(Date.now() + m * 60000).toISOString();
 
 /**
- * JSON PHASE → ACTUAL TEMPLATE FOLDER
+ * JSON PHASE → ACTUAL FOLDER MAP
  */
 const PHASE_FOLDER_MAP = {
   hydration: "hydration",
@@ -28,25 +31,36 @@ function moduleFromEmailPath(p = "") {
   if (p.startsWith("minerals/")) return "minerals";
   if (p.startsWith("parasites/")) return "parasites";
   if (p.startsWith("metals/")) return "metals";
+  if (p.startsWith("maintenance/")) return "maintenance";
   return "foundations";
 }
 
 /**
- * 🔒 BUILD FULL, REAL TEMPLATE PATHS
+ * Build FULL RELATIVE PATHS that match your repo:
+ * netlify/functions/emails/templates/<phase>/<group>/<file>
+ * NOTE: hydration intro files are directly in /hydration (no /intro folder)
  */
 function loadSequence() {
-  const jsonPath = path.join(__dirname, "foundations_email_sequence.json");
-  const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+  const filePath = path.join(__dirname, "foundations_email_sequence.json");
+  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
   const sequence = [];
 
-  // 🔐 HARD-ENFORCED INTRO ORDER
-  sequence.push(
-    { email: "hydration/intro/hd-01-welcome.html", cadence_days: 0 },
-    { email: "hydration/intro/hd-00-start-here.html", cadence_days: 0 }
-  );
+  // ✅ INTRO ORDER (hard enforced)
+  const INTRO_ORDER = [
+    "hd-01-welcome.html",
+    "hd-00-start-here.html"
+  ];
 
-  // 🔁 ALL OTHER PHASES (DAILY CADENCE)
+  // Intro lives directly in hydration/
+  for (const email of INTRO_ORDER) {
+    sequence.push({
+      email: `hydration/${email}`,
+      cadence_days: 0
+    });
+  }
+
+  // 🔁 ALL OTHER PHASES
   for (const phaseKey of Object.keys(data.phases)) {
     if (phaseKey === "hydration") continue;
 
@@ -56,11 +70,19 @@ function loadSequence() {
     const phase = data.phases[phaseKey];
 
     for (const groupKey of Object.keys(phase)) {
-      for (const file of phase[groupKey]) {
-        sequence.push({
-          email: `${folder}/${groupKey}/${file}`,
-          cadence_days: 1
-        });
+      for (const filename of phase[groupKey]) {
+        // hydration_paths go to hydration/<bt|nc|os>/
+        if (phaseKey === "hydration_paths") {
+          sequence.push({
+            email: `hydration/${groupKey}/${filename}`,
+            cadence_days: 1
+          });
+        } else {
+          sequence.push({
+            email: `${folder}/${groupKey}/${filename}`,
+            cadence_days: 1
+          });
+        }
       }
     }
   }
@@ -69,29 +91,29 @@ function loadSequence() {
 }
 
 /**
- * null or "__START__" → first email
+ * "__START__" or null = user has received nothing yet
  */
 function findNextEmail(sequence, current) {
-  if (!current || current === "__START__") {
-    return sequence[0];
-  }
+  if (!current || current === "__START__") return sequence[0];
 
-  const idx = sequence.findIndex(e => e.email === current);
-  return idx === -1 || idx + 1 >= sequence.length
-    ? null
-    : sequence[idx + 1];
+  const idx = sequence.findIndex((e) => e.email === current);
+  return idx === -1 || idx + 1 >= sequence.length ? null : sequence[idx + 1];
 }
 
 async function sendEmail(payload) {
-  const res = await fetch(
-    "https://wholebodyreset.life/.netlify/functions/send_email",
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload)
-    }
-  );
+  const res = await fetch("https://wholebodyreset.life/.netlify/functions/send_email", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload)
+  });
   return res.ok;
+}
+
+function getTestIntervalMinutes(user) {
+  // user.test_interval_hours is int4 per your screenshot
+  const hours = Number(user.test_interval_hours);
+  if (!Number.isFinite(hours) || hours <= 0) return DEFAULT_TEST_INTERVAL_MINUTES;
+  return Math.max(1, Math.round(hours * 60));
 }
 
 exports.handler = async function () {
@@ -112,13 +134,14 @@ exports.handler = async function () {
     .eq("is_paused", false);
 
   if (error) {
-    console.error("SUPABASE ERROR", error);
+    console.error("Supabase error:", error);
     return { statusCode: 500, body: error.message };
   }
 
   const now = Date.now();
 
   for (const user of users) {
+    // Too early
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
     const next = findNextEmail(sequence, user.current_email);
@@ -136,10 +159,24 @@ exports.handler = async function () {
       continue;
     }
 
-    const nextAt =
-      next.cadence_days === 0
-        ? addMinutesISO(MIN_NEXT_DELAY_MINUTES)
-        : addDaysISO(next.cadence_days);
+    // ✅ Scheduling rules
+    const isTester = user.test_mode === true;
+    const testMinutes = isTester ? getTestIntervalMinutes(user) : null;
+
+    let nextAt;
+
+    // If we just sent Welcome, ALWAYS wait 5 minutes for Start Here (tester or not)
+    if (next.email === "hydration/hd-01-welcome.html") {
+      nextAt = addMinutesISO(WELCOME_TO_START_MINUTES);
+    } else {
+      // After that: testers run fast, real users run daily
+      if (isTester) {
+        nextAt = addMinutesISO(testMinutes);
+      } else {
+        // cadence_days 0 or 1 both become daily for real users after welcome
+        nextAt = addDaysISO(1);
+      }
+    }
 
     await supabase
       .from("guided_users")
