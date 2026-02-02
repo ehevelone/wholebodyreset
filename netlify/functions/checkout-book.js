@@ -11,7 +11,7 @@ export async function handler() {
         { price: "price_1Sn6ZL2dn43JKZxOx6sCyxjp", quantity: 1 }
       ],
       success_url:
-        "https://wholebodyreset.life/gf/start?session_id={CHECKOUT_SESSION_ID}",
+        "https://wholebodyreset.life/book/bd-book-9f2a.html?session_id={CHECKOUT_SESSION_ID}&src=book",
       cancel_url:
         "https://wholebodyreset.life/?book=cancel"
     });
