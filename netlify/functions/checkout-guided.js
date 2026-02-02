@@ -9,6 +9,9 @@ export async function handler() {
       line_items: [
         { price: "price_1SvO8Q2dn43JKZxOEnxjL2b1", quantity: 1 }
       ],
+      metadata: {
+        product: "guided"
+      },
       success_url:
         "https://wholebodyreset.life/book/bd-book-9f2a.html?session_id={CHECKOUT_SESSION_ID}&src=guided",
       cancel_url:
