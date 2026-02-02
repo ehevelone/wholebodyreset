@@ -9,6 +9,9 @@ export async function handler() {
       line_items: [
         { price: "price_1SvO8r2dn43JKZxOpPqjwp8L", quantity: 1 }
       ],
+      metadata: {
+        product: "ai"
+      },
       success_url:
         "https://wholebodyreset.life/ai/start?session_id={CHECKOUT_SESSION_ID}",
       cancel_url:
