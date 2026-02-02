@@ -6,6 +6,7 @@ export async function handler() {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
+      customer_creation: "always",
       line_items: [
         { price: "price_1SvO8Q2dn43JKZxOEnxjL2b1", quantity: 1 }
       ],
