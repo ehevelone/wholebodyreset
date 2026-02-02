@@ -13,7 +13,7 @@ const supabase = createClient(
 
 /**
  * 🔒 NETLIFY-SAFE TEMPLATE ROOT
- * Templates MUST live inside the function bundle:
+ * Templates live in:
  * netlify/functions/emails/templates/
  */
 const EMAIL_ROOT = path.join(__dirname, "emails", "templates");
@@ -75,6 +75,8 @@ exports.registerUser = async function ({ email, product = "guided" }) {
   /* ===============================
      GUIDED FOUNDATIONS FLOW
      =============================== */
+
+  // 🔔 Welcome email (sent immediately)
   const htmlFile = "hd-01-welcome.html";
   const subjectFile = "hd-01-welcome.subject.txt";
 
@@ -86,6 +88,8 @@ exports.registerUser = async function ({ email, product = "guided" }) {
     .readFileSync(path.join(EMAIL_ROOT, subjectFile), "utf8")
     .trim();
 
+  // ✅ CREATE / UPDATE USER
+  // IMPORTANT: current_email MUST be '__START__'
   const { data: user, error } = await supabase
     .from("guided_users")
     .upsert(
@@ -93,7 +97,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
         email,
         program: "guided_foundations",
         status: "active",
-        current_email: htmlFile,
+        current_email: "__START__",   // 🔑 DO NOT CHANGE
         current_module: "hydration"
       },
       { onConflict: "email" }
@@ -103,7 +107,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
 
   if (error) throw error;
 
-  // 🔔 SEND WELCOME EMAIL
+  // 📧 SEND WELCOME EMAIL
   await resend.emails.send({
     from:
       process.env.EMAIL_FROM ||
@@ -115,7 +119,7 @@ exports.registerUser = async function ({ email, product = "guided" }) {
 
   console.log("Guided welcome email sent");
 
-  // ✅ UNLOCK SEQUENCE AFTER SUCCESSFUL SEND
+  // ⏱️ ALLOW DD TO SEND START EMAIL AFTER 5 MINUTES
   await supabase
     .from("guided_users")
     .update({
