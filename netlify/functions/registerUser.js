@@ -25,6 +25,9 @@ function hashEmail(email) {
     .digest("hex");
 }
 
+/* ======================================================
+   CORE LOGIC — used internally AND by HTTP handler
+   ====================================================== */
 exports.registerUser = async function ({ email, product = "guided" }) {
   if (!email) throw new Error("registerUser: missing email");
 
@@ -76,7 +79,6 @@ exports.registerUser = async function ({ email, product = "guided" }) {
      GUIDED FOUNDATIONS FLOW
      =============================== */
 
-  // 🔔 Welcome email (sent immediately)
   const htmlFile = "hd-01-welcome.html";
   const subjectFile = "hd-01-welcome.subject.txt";
 
@@ -88,8 +90,6 @@ exports.registerUser = async function ({ email, product = "guided" }) {
     .readFileSync(path.join(EMAIL_ROOT, subjectFile), "utf8")
     .trim();
 
-  // ✅ CREATE / UPDATE USER
-  // IMPORTANT: current_email MUST be '__START__'
   const { data: user, error } = await supabase
     .from("guided_users")
     .upsert(
@@ -107,7 +107,6 @@ exports.registerUser = async function ({ email, product = "guided" }) {
 
   if (error) throw error;
 
-  // 📧 SEND WELCOME EMAIL
   await resend.emails.send({
     from:
       process.env.EMAIL_FROM ||
@@ -119,7 +118,6 @@ exports.registerUser = async function ({ email, product = "guided" }) {
 
   console.log("Guided welcome email sent");
 
-  // ⏱️ ALLOW DD TO SEND START EMAIL AFTER 5 MINUTES
   await supabase
     .from("guided_users")
     .update({
@@ -132,4 +130,42 @@ exports.registerUser = async function ({ email, product = "guided" }) {
   console.log("welcome_sent + timing fields set for", email);
 
   return { user_id: user.id, program: "guided" };
+};
+
+/* ======================================================
+   NETLIFY HTTP HANDLER — REQUIRED
+   ====================================================== */
+exports.handler = async function (event) {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: "Method Not Allowed"
+    };
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(event.body);
+  } catch {
+    return {
+      statusCode: 400,
+      body: "Invalid JSON"
+    };
+  }
+
+  const { email, product } = payload;
+
+  try {
+    await exports.registerUser({ email, product });
+    return {
+      statusCode: 200,
+      body: "ok"
+    };
+  } catch (err) {
+    console.error("registerUser failed", err);
+    return {
+      statusCode: 500,
+      body: "error"
+    };
+  }
 };
