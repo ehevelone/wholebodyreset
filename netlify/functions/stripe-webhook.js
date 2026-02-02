@@ -1,3 +1,7 @@
+exports.config = {
+  bodyParser: false
+};
+
 const Stripe = require("stripe");
 const { registerUser } = require("./registerUser.js");
 
@@ -71,7 +75,7 @@ exports.handler = async function (event) {
     // DO NOT fail Stripe
   }
 
-  // 🔽 🔽 🔽 FIXED: trigger download-book using GET + query string
+  // 🔽 🔽 🔽 trigger download-book using GET + query string
   try {
     fetch(
       `https://wholebodyreset.life/.netlify/functions/download-book?session_id=${session.id}`
