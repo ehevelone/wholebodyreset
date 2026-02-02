@@ -4,6 +4,9 @@ const crypto = require("crypto");
 const { Resend } = require("resend");
 const { createClient } = require("@supabase/supabase-js");
 
+// 🔥 HARD LOAD PROOF — this CANNOT break anything
+console.log("🔥🔥🔥 registerUser FILE LOADED");
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const supabase = createClient(
