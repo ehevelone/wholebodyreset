@@ -1,3 +1,5 @@
+// force redeploy — no logic change
+
 import Stripe from "stripe";
 
 export async function handler() {
@@ -6,13 +8,12 @@ export async function handler() {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      customer_creation: "always",
 
       line_items: [
         { price: "price_1SvO8r2dn43JKZxOpPqjwp8L", quantity: 1 }
       ],
 
-      // 🔑 THIS IS THE FIX
+      // REQUIRED so backend knows this is AI
       subscription_data: {
         metadata: {
           product: "ai"
