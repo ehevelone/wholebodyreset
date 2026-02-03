@@ -1,4 +1,4 @@
-// force redeploy — no logic change
+// force redeploy — path fix
 
 import Stripe from "stripe";
 
@@ -13,7 +13,6 @@ export async function handler() {
         { price: "price_1SvO8r2dn43JKZxOpPqjwp8L", quantity: 1 }
       ],
 
-      // REQUIRED so backend knows this is AI
       subscription_data: {
         metadata: {
           product: "ai"
@@ -21,7 +20,7 @@ export async function handler() {
       },
 
       success_url:
-        "https://wholebodyreset.life/ai/ui/index.html?session_id={CHECKOUT_SESSION_ID}&src=ai",
+        "https://wholebodyreset.life/ai-config/ui/index.html?session_id={CHECKOUT_SESSION_ID}&src=ai",
       cancel_url:
         "https://wholebodyreset.life/?ai=cancel"
     });
