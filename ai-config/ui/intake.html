@@ -5,12 +5,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <!-- PAGE TITLE -->
   <title>Guided Foundations Intake | Whole Body Reset</title>
 
-  <!-- GLOBAL SITE STYLES -->
   <link rel="stylesheet" href="css/site.css">
-  
   <meta name="robots" content="noindex, nofollow">
 
   <style>
@@ -41,19 +38,10 @@
       padding: 0 20px;
     }
 
-    h1 {
-      font-size: 2.4rem;
-      margin-bottom: 10px;
-    }
+    h1 { font-size: 2.4rem; margin-bottom: 10px; }
+    h2 { font-size: 1.4rem; margin-top: 45px; }
 
-    h2 {
-      font-size: 1.4rem;
-      margin-top: 45px;
-    }
-
-    p {
-      margin-bottom: 18px;
-    }
+    p { margin-bottom: 18px; }
 
     label {
       display: block;
@@ -62,8 +50,7 @@
     }
 
     textarea,
-    select,
-    input[type="text"] {
+    select {
       width: 100%;
       padding: 10px;
       margin-top: 8px;
@@ -114,20 +101,14 @@
 
 <body>
 
-<!-- LEAFY BACKGROUND PLACEHOLDERS (DO NOT REMOVE) -->
 <div class="leafy-left"></div>
 <div class="leafy-right"></div>
 
 <header>
-  <base href="/" />
   <img src="images/et-naturals-logo.png" alt="ET Naturals Logo">
 </header>
 
 <main>
-
-  <!-- ======================
-       PAGE CONTENT START
-       ====================== -->
 
   <h1>Guided Foundations Intake</h1>
 
@@ -144,21 +125,14 @@
 
   <form id="intakeForm">
 
-    <!-- SECTION 1 -->
+    <!-- 1 -->
     <h2>1. What are you currently experiencing?</h2>
-
-    <label for="current_symptoms">
-      Describe any physical, emotional, or cognitive experiences you’re noticing.
-    </label>
-    <textarea id="current_symptoms" name="current_symptoms" rows="4"
-      required
+    <textarea name="current_symptoms" rows="4" required
       placeholder="Examples: fatigue, digestive discomfort, anxiety, brain fog, pressure, pain..."></textarea>
 
-    <!-- SECTION 2 -->
+    <!-- 2 -->
     <h2>2. How long have these experiences been present?</h2>
-
-    <label for="symptom_duration">Duration</label>
-    <select id="symptom_duration" name="symptom_duration">
+    <select name="symptom_duration">
       <option value="">Select one</option>
       <option>Days</option>
       <option>Weeks</option>
@@ -167,11 +141,9 @@
       <option>On and off</option>
     </select>
 
-    <!-- SECTION 3 -->
+    <!-- 3 -->
     <h2>3. How intense do these experiences feel?</h2>
-
-    <label for="symptom_intensity">Intensity</label>
-    <select id="symptom_intensity" name="symptom_intensity" required>
+    <select name="symptom_intensity" required>
       <option value="">Select one</option>
       <option>Mild</option>
       <option>Moderate</option>
@@ -180,57 +152,105 @@
       <option>Comes in waves</option>
     </select>
 
-    <!-- SECTION 4 -->
+    <!-- 4 -->
     <h2>4. Have you noticed any patterns?</h2>
-
-    <label for="pattern_observations">
-      When do symptoms improve, worsen, or change?
-    </label>
-    <textarea id="pattern_observations" name="pattern_observations" rows="3"
+    <textarea name="pattern_observations" rows="3"
       placeholder="Examples: worse after meals, better with rest, worse during stress..."></textarea>
 
-    <!-- SECTION 5 -->
-    <h2>5. What supports are you currently using?</h2>
+    <!-- 5 -->
+    <h2>5. What are you currently doing to support your body?</h2>
 
     <label for="current_supports">
-      Include hydration, supplements, herbs, diet patterns, or rest practices.
+       This includes anything you’re intentionally doing to feel better or stay stable.
     </label>
-    <textarea id="current_supports" name="current_supports" rows="3"
-      placeholder="List anything you’re currently using, even if it feels minor."></textarea>
+
+    <textarea
+       id="current_supports"
+       name="current_supports"
+       rows="3"
+       placeholder="Examples: drinking more water, changing foods, supplements, herbs, resting more, avoiding certain activities..."
+    ></textarea>
 
     <p class="section-note">
-      The system does not evaluate correctness or dosage.
+       There are no right or wrong answers here. This helps the system understand what your body is already used to.
     </p>
 
-    <!-- SECTION 6 -->
-    <h2>6. Medications or ongoing conditions</h2>
 
-    <label for="medications_and_conditions">
-      List any medications or diagnosed conditions relevant to safety.
-    </label>
-    <textarea id="medications_and_conditions"
-      name="medications_and_conditions"
-      rows="3"
-      placeholder="Examples: thyroid medication, blood pressure medication, autoimmune condition..."></textarea>
+    <!-- 6 -->
+<h2>6. Are you currently taking any medications?</h2>
 
-    <!-- SECTION 7 -->
+<label for="current_medications">
+  Include prescriptions or regular over-the-counter medications.
+</label>
+
+<textarea
+  id="current_medications"
+  name="current_medications"
+  rows="3"
+  placeholder="Examples: thyroid medication, blood pressure medication, antidepressants, pain medication..."
+></textarea>
+
+<p class="section-note">
+  This helps the system avoid suggestions that may conflict with medications.
+</p>
+
+<h2>7. Do you have any diagnosed conditions we should be aware of?</h2>
+
+<label for="diagnosed_conditions">
+  Include anything relevant to safety or pacing.
+</label>
+
+<textarea
+  id="diagnosed_conditions"
+  name="diagnosed_conditions"
+  rows="3"
+  placeholder="Examples: autoimmune conditions, gut conditions, heart conditions, neurological conditions..."
+></textarea>
+
+
+    <!-- 7 -->
     <h2>7. How would you describe your tolerance right now?</h2>
-
-    <label for="tolerance_and_capacity">Tolerance & Capacity</label>
-    <select id="tolerance_and_capacity" name="tolerance_and_capacity" required>
+   <select name="tolerance_and_capacity" required>
       <option value="">Select one</option>
+      <option>I have never detoxed / not sure how my body responds</option>
       <option>Easily overwhelmed</option>
       <option>Sensitive to changes</option>
       <option>Generally stable</option>
       <option>Able to tolerate slow additions</option>
     </select>
 
-    <!-- SECTION 8 -->
-    <h2>8. What are you hoping to understand right now?</h2>
 
-    <label for="goals_and_intent">Intent (optional)</label>
-    <textarea id="goals_and_intent" name="goals_and_intent" rows="3"
-      placeholder="Examples: understanding what my body is doing, checking if slowing down makes sense, reassurance..."></textarea>
+    <!-- 8 -->
+    <h2>8. How is your sleep and recovery?</h2>
+    <select name="sleep_quality">
+      <option value="">Select one</option>
+      <option>Poor / fragmented</option>
+      <option>Light but consistent</option>
+      <option>Generally restorative</option>
+      <option>Highly variable</option>
+    </select>
+
+    <!-- 9 -->
+   <h2>9. How does stress usually affect you?</h2>
+
+   <label for="stress_response">
+      When you are under stress, what do you notice most often?
+   </label>
+
+   <select id="stress_response" name="stress_response" required>
+      <option value="">Select one</option>
+      <option>I feel wired, anxious, or overstimulated</option>
+      <option>I crash, shut down, or feel exhausted</option>
+      <option>My digestion, sleep, or pain symptoms worsen</option>
+      <option>It varies — sometimes wired, sometimes exhausted</option>
+      <option>I’m not sure / I haven’t noticed a clear pattern</option>
+   </select>
+
+
+    <!-- 10 -->
+    <h2>10. What are you hoping to understand right now?</h2>
+    <textarea name="goals_and_intent" rows="3"
+      placeholder="Examples: reassurance, pacing, understanding symptoms, next steps..."></textarea>
 
     <p class="gentle">
       You’ll be able to review and reflect on this information.
@@ -240,10 +260,6 @@
     <button type="submit" id="submitBtn">Generate My Plan</button>
 
   </form>
-
-  <!-- ======================
-       PAGE CONTENT END
-       ====================== -->
 
 </main>
 
@@ -266,17 +282,14 @@ document.getElementById("intakeForm").addEventListener("submit", async (e) => {
     const res = await fetch("/.netlify/functions/ai-eval", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "intake",
-        payload
-      })
+      body: JSON.stringify({ type: "intake", payload })
     });
 
     const json = await res.json();
     localStorage.setItem("ai_result", JSON.stringify(json));
     window.location.href = "/ai-config/ui/results.html";
 
-  } catch (err) {
+  } catch {
     localStorage.setItem("ai_result", JSON.stringify({
       state: "error",
       message: "Unable to generate plan."
