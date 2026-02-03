@@ -6,14 +6,21 @@ export async function handler() {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
+      customer_creation: "always",
+
       line_items: [
         { price: "price_1SvO8r2dn43JKZxOpPqjwp8L", quantity: 1 }
       ],
-      metadata: {
-        product: "ai"
+
+      // 🔑 THIS IS THE FIX
+      subscription_data: {
+        metadata: {
+          product: "ai"
+        }
       },
+
       success_url:
-        "https://wholebodyreset.life/ai/start?session_id={CHECKOUT_SESSION_ID}",
+        "https://wholebodyreset.life/ai/ui/index.html?session_id={CHECKOUT_SESSION_ID}&src=ai",
       cancel_url:
         "https://wholebodyreset.life/?ai=cancel"
     });
