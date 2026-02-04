@@ -20,7 +20,7 @@ export async function handler() {
       },
 
       success_url:
-        "https://wholebodyreset.life/ai-config/ui/index.html?session_id={CHECKOUT_SESSION_ID}&src=ai",
+        "https://wholebodyreset.life/ai-config/ui/check-in.html?session_id={CHECKOUT_SESSION_ID}&src=ai",
       cancel_url:
         "https://wholebodyreset.life/?ai=cancel"
     });
