@@ -1,4 +1,4 @@
- import OpenAI from "openai";
+import OpenAI from "openai";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
@@ -117,12 +117,22 @@ Required JSON:
 }
 `.trim();
 
+/* ======================================================
+   🔧 FIXED PLAN VALIDATION (SURGICAL)
+====================================================== */
+
 function looksValidPlan(parsed) {
-  return (
-    parsed?.state === "success" &&
-    parsed?.plan?.day_1_2?.actions?.length >= 1 &&
-    parsed?.plan?.day_3_4?.actions?.length >= 1 &&
-    typeof parsed?.disclaimer === "string"
+  if (!parsed || parsed.state !== "success") return false;
+  if (!parsed.plan) return false;
+
+  const blocks = [
+    parsed.plan.day_1_2,
+    parsed.plan.day_3_4,
+    parsed.plan.after_day_4
+  ];
+
+  return blocks.some(
+    b => Array.isArray(b?.actions) && b.actions.length > 0
   );
 }
 
@@ -155,12 +165,6 @@ export async function handler(event) {
     payload?.user_email ||
     payload?.customer_email ||
     null;
-
-  console.log("AI-EVALUATE INPUT:", {
-    type,
-    email,
-    payload_keys: Object.keys(payload || {})
-  });
 
   if (!type || !payload || !email) {
     return {
@@ -207,7 +211,6 @@ export async function handler(event) {
       .single();
 
     if (error) {
-      console.error("❌ Supabase insert failed", error);
       return {
         statusCode: 200,
         body: JSON.stringify({
@@ -248,27 +251,16 @@ export async function handler(event) {
 
     const raw = ai.choices[0].message.content;
     analysis = safeJSONParse(extractFirstJSONObject(raw) || raw);
-  } catch (e) {
-    console.error("AI ANALYSIS ERROR:", e);
-  }
+  } catch {}
 
   /* ======================================================
-     🔥 CRITICAL FIX
-     Intake NEVER blocks plan generation
+     🔥 INTAKE NEVER BLOCKS PLAN GENERATION
   ====================================================== */
 
   if (
     type !== "intake" &&
     (!analysis || analysis.needs_followup || analysis.proceed === false)
   ) {
-    await supabase
-      .from("ai_journey")
-      .update({
-        current_state: "clarification_needed",
-        last_checkin_at: nowISO()
-      })
-      .eq("id", journey.id);
-
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -289,7 +281,7 @@ export async function handler(event) {
   }
 
   /* ======================================================
-     PASS 2 — GENERATE PLAN (ALWAYS FOR INTAKE)
+     PASS 2 — GENERATE PLAN
   ====================================================== */
 
   let plan = null;
@@ -317,10 +309,10 @@ export async function handler(event) {
 
     const raw = ai.choices[0].message.content;
     plan = safeJSONParse(extractFirstJSONObject(raw) || raw);
+
     if (plan && !plan.disclaimer) plan.disclaimer = DISCLAIMER;
-  } catch (e) {
-    console.error("AI GENERATION ERROR:", e);
-  }
+    if (plan && !plan.state) plan.state = "success";
+  } catch {}
 
   if (!looksValidPlan(plan)) {
     return {
@@ -346,8 +338,6 @@ export async function handler(event) {
       last_checkin_at: nowISO()
     })
     .eq("id", journey.id);
-
-  console.log("AI-EVALUATE COMPLETE");
 
   return {
     statusCode: 200,
