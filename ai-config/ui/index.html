@@ -97,7 +97,6 @@
       color: #4a5a4a;
     }
 
-    /* ✅ TEMPLATE FOOTER FIX */
     footer {
       margin-top: 80px;
       padding: 40px 20px;
@@ -158,10 +157,14 @@ document.getElementById("entryForm").addEventListener("submit", async (e) => {
   spinner.style.display = "inline-block";
   text.textContent = "Checking…";
 
-  const payload = {
-    email: e.target.email.value.trim(),
-    first_name: e.target.first_name.value.trim()
-  };
+  const email = e.target.email.value.trim();
+  const firstName = e.target.first_name.value.trim();
+
+  // ✅ PERSIST EMAIL FOR INTAKE + AI
+  localStorage.setItem("wbr_email", email);
+  localStorage.setItem("wbr_first_name", firstName);
+
+  const payload = { email, first_name: firstName };
 
   try {
     const res = await fetch("/.netlify/functions/intake-handler", {
