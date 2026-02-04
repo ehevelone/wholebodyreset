@@ -1,4 +1,3 @@
-
 <!-- FORCE DEPLOY: intake update -->
 <!DOCTYPE html>
 <html lang="en">
@@ -42,7 +41,6 @@
 
     h1 { font-size: 2.4rem; margin-bottom: 10px; }
     h2 { font-size: 1.4rem; margin-top: 45px; }
-
     p { margin-bottom: 18px; }
 
     label {
@@ -163,56 +161,55 @@
     <h2>5. What are you currently doing to support your body?</h2>
 
     <label for="current_supports">
-       This includes anything you’re intentionally doing to feel better or stay stable.
+      This includes anything you’re intentionally doing to feel better or stay stable.
     </label>
 
     <textarea
-       id="current_supports"
-       name="current_supports"
-       rows="3"
-       placeholder="Examples: drinking more water, changing foods, supplements, herbs, resting more, avoiding certain activities..."
+      id="current_supports"
+      name="current_supports"
+      rows="3"
+      placeholder="Examples: drinking more water, changing foods, supplements, herbs, resting more, avoiding certain activities..."
     ></textarea>
 
     <p class="section-note">
-       There are no right or wrong answers here. This helps the system understand what your body is already used to.
+      There are no right or wrong answers here. This helps the system understand what your body is already used to.
     </p>
 
-
     <!-- 6 -->
-<h2>6. Are you currently taking any medications?</h2>
+    <h2>6. Are you currently taking any medications?</h2>
 
-<label for="current_medications">
-  Include prescriptions or regular over-the-counter medications.
-</label>
+    <label for="current_medications">
+      Include prescriptions or regular over-the-counter medications.
+    </label>
 
-<textarea
-  id="current_medications"
-  name="current_medications"
-  rows="3"
-  placeholder="Examples: thyroid medication, blood pressure medication, antidepressants, pain medication..."
-></textarea>
+    <textarea
+      id="current_medications"
+      name="current_medications"
+      rows="3"
+      placeholder="Examples: thyroid medication, blood pressure medication, antidepressants, pain medication..."
+    ></textarea>
 
-<p class="section-note">
-  This helps the system avoid suggestions that may conflict with medications.
-</p>
-
-<h2>7. Do you have any diagnosed conditions we should be aware of?</h2>
-
-<label for="diagnosed_conditions">
-  Include anything relevant to safety or pacing.
-</label>
-
-<textarea
-  id="diagnosed_conditions"
-  name="diagnosed_conditions"
-  rows="3"
-  placeholder="Examples: autoimmune conditions, gut conditions, heart conditions, neurological conditions..."
-></textarea>
-
+    <p class="section-note">
+      This helps the system avoid suggestions that may conflict with medications.
+    </p>
 
     <!-- 7 -->
-    <h2>7. How would you describe your tolerance right now?</h2>
-   <select name="tolerance_and_capacity" required>
+    <h2>7. Do you have any diagnosed conditions we should be aware of?</h2>
+
+    <label for="diagnosed_conditions">
+      Include anything relevant to safety or pacing.
+    </label>
+
+    <textarea
+      id="diagnosed_conditions"
+      name="diagnosed_conditions"
+      rows="3"
+      placeholder="Examples: autoimmune conditions, gut conditions, heart conditions, neurological conditions..."
+    ></textarea>
+
+    <!-- 8 -->
+    <h2>8. How would you describe your tolerance right now?</h2>
+    <select name="tolerance_and_capacity" required>
       <option value="">Select one</option>
       <option>I have never detoxed / not sure how my body responds</option>
       <option>Easily overwhelmed</option>
@@ -221,9 +218,8 @@
       <option>Able to tolerate slow additions</option>
     </select>
 
-
-    <!-- 8 -->
-    <h2>8. How is your sleep and recovery?</h2>
+    <!-- 9 -->
+    <h2>9. How is your sleep and recovery?</h2>
     <select name="sleep_quality">
       <option value="">Select one</option>
       <option>Poor / fragmented</option>
@@ -232,25 +228,24 @@
       <option>Highly variable</option>
     </select>
 
-    <!-- 9 -->
-   <h2>9. How does stress usually affect you?</h2>
+    <!-- 10 -->
+    <h2>10. How does stress usually affect you?</h2>
 
-   <label for="stress_response">
+    <label for="stress_response">
       When you are under stress, what do you notice most often?
-   </label>
+    </label>
 
-   <select id="stress_response" name="stress_response" required>
+    <select id="stress_response" name="stress_response" required>
       <option value="">Select one</option>
       <option>I feel wired, anxious, or overstimulated</option>
       <option>I crash, shut down, or feel exhausted</option>
       <option>My digestion, sleep, or pain symptoms worsen</option>
       <option>It varies — sometimes wired, sometimes exhausted</option>
       <option>I’m not sure / I haven’t noticed a clear pattern</option>
-   </select>
+    </select>
 
-
-    <!-- 10 -->
-    <h2>10. What are you hoping to understand right now?</h2>
+    <!-- 11 -->
+    <h2>11. What are you hoping to understand right now?</h2>
     <textarea name="goals_and_intent" rows="3"
       placeholder="Examples: reassurance, pacing, understanding symptoms, next steps..."></textarea>
 
@@ -281,7 +276,7 @@ document.getElementById("intakeForm").addEventListener("submit", async (e) => {
   const payload = Object.fromEntries(new FormData(e.target).entries());
 
   try {
-    const res = await fetch("/.netlify/functions/ai-eval", {
+    const res = await fetch("/.netlify/functions/ai-evaluate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "intake", payload })
