@@ -1,3 +1,4 @@
+<!-- FORCE DEPLOY: intake update -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <title>Guided Support | Whole Body Reset</title>
+  <title>Guided Foundations Intake | Whole Body Reset</title>
 
   <link rel="stylesheet" href="css/site.css">
   <meta name="robots" content="noindex, nofollow">
@@ -33,34 +34,35 @@
     }
 
     main {
-      max-width: 640px;
-      margin: 80px auto;
+      max-width: 900px;
+      margin: 60px auto;
       padding: 0 20px;
-      text-align: center;
     }
 
-    h1 {
-      font-size: 2.2rem;
-      margin-bottom: 16px;
+    h1 { font-size: 2.4rem; margin-bottom: 10px; }
+    h2 { font-size: 1.4rem; margin-top: 45px; }
+    p { margin-bottom: 18px; }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
     }
 
-    p {
-      margin-bottom: 24px;
-      color: #4f5a45;
-    }
-
-    input[type="text"],
-    input[type="email"] {
+    textarea,
+    select {
       width: 100%;
-      padding: 14px;
+      padding: 10px;
+      margin-top: 8px;
+      font-family: inherit;
       font-size: 1rem;
       border-radius: 6px;
       border: 1px solid #b9b29a;
-      margin-bottom: 16px;
-      font-family: inherit;
+      background: #fff;
     }
 
     button {
+      margin-top: 40px;
       background: #2f3b2f;
       color: #fff;
       border: none;
@@ -68,9 +70,6 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 1rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
     }
 
     button:disabled {
@@ -78,23 +77,15 @@
       cursor: not-allowed;
     }
 
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,0.4);
-      border-top: 2px solid #fff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      display: none;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
     .gentle {
       font-style: italic;
       color: #4a5a4a;
+    }
+
+    .section-note {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: #4f5a45;
     }
 
     footer {
@@ -119,22 +110,151 @@
 
 <main>
 
-  <h1>Welcome</h1>
+  <h1>Guided Foundations Intake</h1>
 
   <p class="gentle">
-    Enter your information below and you’ll be guided to the next
-    appropriate step.
+    This intake helps the system understand your body’s current state.
+    There are no right or wrong answers.
+    Nothing here commits you to action.
   </p>
 
-  <form id="entryForm">
+  <p class="gentle">
+    The more complete your responses, the more accurately the system
+    can support pacing, safety, and stability.
+  </p>
 
-    <input type="text" name="first_name" placeholder="First name" required>
-    <input type="email" name="email" placeholder="you@example.com" required>
+  <form id="intakeForm">
 
-    <button id="continueBtn" type="submit">
-      <span class="btn-text">Continue</span>
-      <span class="spinner" id="spinner"></span>
-    </button>
+    <!-- 1 -->
+    <h2>1. What are you currently experiencing?</h2>
+    <textarea name="current_symptoms" rows="4" required
+      placeholder="Examples: fatigue, digestive discomfort, anxiety, brain fog, pressure, pain..."></textarea>
+
+    <!-- 2 -->
+    <h2>2. How long have these experiences been present?</h2>
+    <select name="symptom_duration">
+      <option value="">Select one</option>
+      <option>Days</option>
+      <option>Weeks</option>
+      <option>Months</option>
+      <option>Years</option>
+      <option>On and off</option>
+    </select>
+
+    <!-- 3 -->
+    <h2>3. How intense do these experiences feel?</h2>
+    <select name="symptom_intensity" required>
+      <option value="">Select one</option>
+      <option>Mild</option>
+      <option>Moderate</option>
+      <option>Intense</option>
+      <option>Fluctuating</option>
+      <option>Comes in waves</option>
+    </select>
+
+    <!-- 4 -->
+    <h2>4. Have you noticed any patterns?</h2>
+    <textarea name="pattern_observations" rows="3"
+      placeholder="Examples: worse after meals, better with rest, worse during stress..."></textarea>
+
+    <!-- 5 -->
+    <h2>5. What are you currently doing to support your body?</h2>
+
+    <label for="current_supports">
+      This includes anything you’re intentionally doing to feel better or stay stable.
+    </label>
+
+    <textarea
+      id="current_supports"
+      name="current_supports"
+      rows="3"
+      placeholder="Examples: drinking more water, changing foods, supplements, herbs, resting more, avoiding certain activities..."
+    ></textarea>
+
+    <p class="section-note">
+      There are no right or wrong answers here. This helps the system understand what your body is already used to.
+    </p>
+
+    <!-- 6 -->
+    <h2>6. Are you currently taking any medications?</h2>
+
+    <label for="current_medications">
+      Include prescriptions or regular over-the-counter medications.
+    </label>
+
+    <textarea
+      id="current_medications"
+      name="current_medications"
+      rows="3"
+      placeholder="Examples: thyroid medication, blood pressure medication, antidepressants, pain medication..."
+    ></textarea>
+
+    <p class="section-note">
+      This helps the system avoid suggestions that may conflict with medications.
+    </p>
+
+    <!-- 7 -->
+    <h2>7. Do you have any diagnosed conditions we should be aware of?</h2>
+
+    <label for="diagnosed_conditions">
+      Include anything relevant to safety or pacing.
+    </label>
+
+    <textarea
+      id="diagnosed_conditions"
+      name="diagnosed_conditions"
+      rows="3"
+      placeholder="Examples: autoimmune conditions, gut conditions, heart conditions, neurological conditions..."
+    ></textarea>
+
+    <!-- 8 -->
+    <h2>8. How would you describe your tolerance right now?</h2>
+    <select name="tolerance_and_capacity" required>
+      <option value="">Select one</option>
+      <option>I have never detoxed / not sure how my body responds</option>
+      <option>Easily overwhelmed</option>
+      <option>Sensitive to changes</option>
+      <option>Generally stable</option>
+      <option>Able to tolerate slow additions</option>
+    </select>
+
+    <!-- 9 -->
+    <h2>9. How is your sleep and recovery?</h2>
+    <select name="sleep_quality">
+      <option value="">Select one</option>
+      <option>Poor / fragmented</option>
+      <option>Light but consistent</option>
+      <option>Generally restorative</option>
+      <option>Highly variable</option>
+    </select>
+
+    <!-- 10 -->
+    <h2>10. How does stress usually affect you?</h2>
+
+    <label for="stress_response">
+      When you are under stress, what do you notice most often?
+    </label>
+
+    <select id="stress_response" name="stress_response" required>
+      <option value="">Select one</option>
+      <option>I feel wired, anxious, or overstimulated</option>
+      <option>I crash, shut down, or feel exhausted</option>
+      <option>My digestion, sleep, or pain symptoms worsen</option>
+      <option>It varies — sometimes wired, sometimes exhausted</option>
+      <option>I’m not sure / I haven’t noticed a clear pattern</option>
+    </select>
+
+    <!-- 11 -->
+    <h2>11. What are you hoping to understand right now?</h2>
+    <textarea name="goals_and_intent" rows="3"
+      placeholder="Examples: reassurance, pacing, understanding symptoms, next steps..."></textarea>
+
+    <p class="gentle">
+      You’ll be able to review and reflect on this information.
+      Nothing here triggers automatic changes.
+    </p>
+
+    <button type="submit" id="submitBtn">Generate My Plan</button>
 
   </form>
 
@@ -146,45 +266,36 @@
 </footer>
 
 <script>
-document.getElementById("entryForm").addEventListener("submit", async (e) => {
+document.getElementById("intakeForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const btn = document.getElementById("continueBtn");
-  const spinner = document.getElementById("spinner");
-  const text = btn.querySelector(".btn-text");
-
+  const btn = document.getElementById("submitBtn");
   btn.disabled = true;
-  spinner.style.display = "inline-block";
-  text.textContent = "Checking…";
+  btn.textContent = "Generating…";
 
-  const email = e.target.email.value.trim();
-  const firstName = e.target.first_name.value.trim();
+  const payload = Object.fromEntries(new FormData(e.target).entries());
 
-  // ✅ PERSIST EMAIL FOR INTAKE + AI
-  localStorage.setItem("wbr_email", email);
-  localStorage.setItem("wbr_first_name", firstName);
-
-  const payload = { email, first_name: firstName };
+  // ✅ inject persisted email
+  const email = localStorage.getItem("wbr_email");
+  if (email) payload.email = email;
 
   try {
-    const res = await fetch("/.netlify/functions/intake-handler", {
+    const res = await fetch("/.netlify/functions/ai-evaluate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ type: "intake", payload })
     });
 
-    const result = await res.json();
+    const json = await res.json();
+    localStorage.setItem("ai_result", JSON.stringify(json));
+    window.location.href = "/ai-config/ui/results.html";
 
-    window.location.href =
-      result.route === "check-in"
-        ? "/ai-config/ui/check-in.html"
-        : "/ai-config/ui/intake.html";
-
-  } catch (err) {
-    btn.disabled = false;
-    spinner.style.display = "none";
-    text.textContent = "Continue";
-    alert("Unable to continue right now. Please try again.");
+  } catch {
+    localStorage.setItem("ai_result", JSON.stringify({
+      state: "error",
+      message: "Unable to generate plan."
+    }));
+    window.location.href = "/ai-config/ui/results.html";
   }
 });
 </script>
