@@ -1,4 +1,4 @@
-<!-- FORCE DEPLOY: intake email attach fix -->
+<!-- FORCE DEPLOY: intake update -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -125,11 +125,12 @@
 
   <form id="intakeForm">
 
-    <!-- QUESTIONS UNCHANGED -->
-
+    <!-- 1 -->
     <h2>1. What are you currently experiencing?</h2>
-    <textarea name="current_symptoms" rows="4" required></textarea>
+    <textarea name="current_symptoms" rows="4" required
+      placeholder="Examples: fatigue, digestive discomfort, anxiety, brain fog, pressure, pain..."></textarea>
 
+    <!-- 2 -->
     <h2>2. How long have these experiences been present?</h2>
     <select name="symptom_duration">
       <option value="">Select one</option>
@@ -140,6 +141,7 @@
       <option>On and off</option>
     </select>
 
+    <!-- 3 -->
     <h2>3. How intense do these experiences feel?</h2>
     <select name="symptom_intensity" required>
       <option value="">Select one</option>
@@ -150,46 +152,107 @@
       <option>Comes in waves</option>
     </select>
 
+    <!-- 4 -->
     <h2>4. Have you noticed any patterns?</h2>
-    <textarea name="pattern_observations" rows="3"></textarea>
+    <textarea name="pattern_observations" rows="3"
+      placeholder="Examples: worse after meals, better with rest, worse during stress..."></textarea>
 
+    <!-- 5 -->
     <h2>5. What are you currently doing to support your body?</h2>
-    <textarea name="current_supports" rows="3"></textarea>
 
+    <label for="current_supports">
+      This includes anything you’re intentionally doing to feel better or stay stable.
+    </label>
+
+    <textarea
+      id="current_supports"
+      name="current_supports"
+      rows="3"
+      placeholder="Examples: drinking more water, changing foods, supplements, herbs, resting more, avoiding certain activities..."
+    ></textarea>
+
+    <p class="section-note">
+      There are no right or wrong answers here. This helps the system understand what your body is already used to.
+    </p>
+
+    <!-- 6 -->
     <h2>6. Are you currently taking any medications?</h2>
-    <textarea name="current_medications" rows="3"></textarea>
 
+    <label for="current_medications">
+      Include prescriptions or regular over-the-counter medications.
+    </label>
+
+    <textarea
+      id="current_medications"
+      name="current_medications"
+      rows="3"
+      placeholder="Examples: thyroid medication, blood pressure medication, antidepressants, pain medication..."
+    ></textarea>
+
+    <p class="section-note">
+      This helps the system avoid suggestions that may conflict with medications.
+    </p>
+
+    <!-- 7 -->
     <h2>7. Do you have any diagnosed conditions we should be aware of?</h2>
-    <textarea name="diagnosed_conditions" rows="3"></textarea>
 
+    <label for="diagnosed_conditions">
+      Include anything relevant to safety or pacing.
+    </label>
+
+    <textarea
+      id="diagnosed_conditions"
+      name="diagnosed_conditions"
+      rows="3"
+      placeholder="Examples: autoimmune conditions, gut conditions, heart conditions, neurological conditions..."
+    ></textarea>
+
+    <!-- 8 -->
     <h2>8. How would you describe your tolerance right now?</h2>
     <select name="tolerance_and_capacity" required>
       <option value="">Select one</option>
-      <option>Sensitive</option>
-      <option>Stable</option>
-      <option>Not sure</option>
+      <option>I have never detoxed / not sure how my body responds</option>
+      <option>Easily overwhelmed</option>
+      <option>Sensitive to changes</option>
+      <option>Generally stable</option>
+      <option>Able to tolerate slow additions</option>
     </select>
 
+    <!-- 9 -->
     <h2>9. How is your sleep and recovery?</h2>
     <select name="sleep_quality">
       <option value="">Select one</option>
-      <option>Poor</option>
-      <option>Light</option>
-      <option>Restorative</option>
-      <option>Variable</option>
+      <option>Poor / fragmented</option>
+      <option>Light but consistent</option>
+      <option>Generally restorative</option>
+      <option>Highly variable</option>
     </select>
 
+    <!-- 10 -->
     <h2>10. How does stress usually affect you?</h2>
-    <select name="stress_response" required>
+
+    <label for="stress_response">
+      When you are under stress, what do you notice most often?
+    </label>
+
+    <select id="stress_response" name="stress_response" required>
       <option value="">Select one</option>
-      <option>Wired</option>
-      <option>Crash</option>
-      <option>Symptoms worsen</option>
-      <option>Variable</option>
+      <option>I feel wired, anxious, or overstimulated</option>
+      <option>I crash, shut down, or feel exhausted</option>
+      <option>My digestion, sleep, or pain symptoms worsen</option>
+      <option>It varies — sometimes wired, sometimes exhausted</option>
+      <option>I’m not sure / I haven’t noticed a clear pattern</option>
     </select>
 
+    <!-- 11 -->
     <h2>11. What are you hoping to understand right now?</h2>
-    <textarea name="goals_and_intent" rows="3"></textarea>
+    <textarea name="goals_and_intent" rows="3"
+      placeholder="Examples: reassurance, pacing, understanding symptoms, next steps..."></textarea>
+
+    <p class="gentle">
+      You’ll be able to review and reflect on this information.
+      Nothing here triggers automatic changes.
+    </p>
 
     <button type="submit" id="submitBtn">Generate My Plan</button>
 
@@ -212,7 +275,7 @@ document.getElementById("intakeForm").addEventListener("submit", async (e) => {
 
   const payload = Object.fromEntries(new FormData(e.target).entries());
 
-  // 🔑 THIS IS THE FIX
+  // 🔧 SURGICAL FIX — identity bridge ONLY
   const email = localStorage.getItem("wbr_email");
   if (email) payload.email = email;
 
@@ -228,9 +291,11 @@ document.getElementById("intakeForm").addEventListener("submit", async (e) => {
     window.location.href = "/ai-config/ui/results.html";
 
   } catch {
-    alert("Unable to generate plan. Please try again.");
-    btn.disabled = false;
-    btn.textContent = "Generate My Plan";
+    localStorage.setItem("ai_result", JSON.stringify({
+      state: "error",
+      message: "Unable to generate plan."
+    }));
+    window.location.href = "/ai-config/ui/results.html";
   }
 });
 </script>
