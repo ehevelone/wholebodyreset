@@ -28,12 +28,10 @@ const DISCLAIMER =
    Helpers
 ------------------------------ */
 function extractFirstJSONObject(text = "") {
-  // Attempts to pull the first JSON object from the model output
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) return null;
-  const slice = text.slice(start, end + 1);
-  return slice;
+  return text.slice(start, end + 1);
 }
 
 function safeJSONParse(text) {
@@ -131,8 +129,10 @@ function looksValidPlan(parsed) {
   return (
     parsed?.plan &&
     parsed?.state &&
-    parsed?.plan?.day_1_2?.actions?.length >= 1 &&
-    parsed?.plan?.day_3_4?.actions?.length >= 1 &&
+    Array.isArray(parsed?.plan?.day_1_2?.actions) &&
+    parsed.plan.day_1_2.actions.length >= 1 &&
+    Array.isArray(parsed?.plan?.day_3_4?.actions) &&
+    parsed.plan.day_3_4.actions.length >= 1 &&
     typeof parsed?.disclaimer === "string" &&
     parsed.disclaimer.length > 0
   );
@@ -167,8 +167,6 @@ export async function handler(event) {
     };
   }
 
-  // Email can be missing on intake/check-in pages depending on how UI is wired.
-  // We try a few places. If still missing, we return a helpful clarification.
   const email =
     payload.email ||
     input.email ||
@@ -197,18 +195,64 @@ export async function handler(event) {
   const email_hash = hashEmail(email);
 
   // Load journey if present
-  const { data: journey } = await supabase
+  const { data: journey, error: journeyErr } = await supabase
     .from("ai_journey")
     .select("*")
     .eq("email_hash", email_hash)
     .maybeSingle();
 
-  // Build a single “context packet” for the AI passes
+  if (journeyErr) {
+    console.error("❌ Supabase read ai_journey failed:", journeyErr);
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        state: "error",
+        message: "Unable to load your session right now.",
+        disclaimer: DISCLAIMER
+      })
+    };
+  }
+
+  // ✅ Ensure a journey row exists BEFORE calling OpenAI
+  let journeyRow = journey;
+
+  if (!journeyRow) {
+    const { data: inserted, error: insErr } = await supabase
+      .from("ai_journey")
+      .insert({
+        email,
+        email_hash,
+        current_state: "started",
+        last_plan: null,
+        session_count: 0,
+        last_checkin_at: nowISO()
+      })
+      .select()
+      .single();
+
+    if (insErr) {
+      console.error("❌ Supabase insert ai_journey failed:", insErr);
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          state: "error",
+          message: "Unable to start your session right now.",
+          disclaimer: DISCLAIMER
+        })
+      };
+    }
+
+    journeyRow = inserted;
+  }
+
+  // Build context for AI passes
   const contextPacket = {
-    user_type: journey ? "returning" : "new",
-    session_count: journey?.session_count || 0,
-    current_state: journey?.current_state || "none",
-    last_plan: journey?.last_plan || null,
+    user_type: journeyRow.session_count > 0 ? "returning" : "new",
+    session_count: journeyRow.session_count,
+    current_state: journeyRow.current_state,
+    last_plan: journeyRow.last_plan,
     input_type: type,
     current_input: payload
   };
@@ -220,17 +264,16 @@ export async function handler(event) {
 
   for (let i = 0; i < 2; i++) {
     try {
+      console.log("AI ANALYSIS → sending to OpenAI");
       const ai = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         temperature: 0.2,
         messages: [
           { role: "system", content: analysisSystemPrompt },
-          {
-            role: "user",
-            content: JSON.stringify(contextPacket, null, 2)
-          }
+          { role: "user", content: JSON.stringify(contextPacket, null, 2) }
         ]
       });
+      console.log("AI ANALYSIS ← received response");
 
       const raw = ai?.choices?.[0]?.message?.content || "";
       const jsonSlice = extractFirstJSONObject(raw) || raw;
@@ -247,12 +290,22 @@ export async function handler(event) {
 
       analysis = null;
     } catch (e) {
+      console.error("AI ANALYSIS ERROR:", e?.message || e);
       analysis = null;
     }
   }
 
-  // If analysis failed, do a safe fallback (ask a small followup)
+  // If analysis failed, do safe fallback (ask followup)
   if (!analysis) {
+    // Save state (NO session_count increment here)
+    await supabase
+      .from("ai_journey")
+      .update({
+        current_state: "clarification_needed",
+        last_checkin_at: nowISO()
+      })
+      .eq("id", journeyRow.id);
+
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
@@ -273,28 +326,14 @@ export async function handler(event) {
 
   // If AI says we need more info, return followups (NO plan yet)
   if (analysis.needs_followup || analysis.proceed === false) {
-    // Update / insert journey so returning logic stays consistent
-    if (journey) {
-      await supabase
-        .from("ai_journey")
-        .update({
-          current_state: "clarification_needed",
-          session_count: (journey.session_count || 0) + 1,
-          last_checkin_at: nowISO(),
-          // Optional: store last analysis notes
-          last_plan: journey.last_plan || null
-        })
-        .eq("id", journey.id);
-    } else {
-      await supabase.from("ai_journey").insert({
-        email,
-        email_hash,
+    await supabase
+      .from("ai_journey")
+      .update({
         current_state: "clarification_needed",
-        last_plan: null,
-        session_count: 1,
         last_checkin_at: nowISO()
-      });
-    }
+        // ✅ do NOT increment session_count here
+      })
+      .eq("id", journeyRow.id);
 
     const questions =
       analysis.followup_questions && analysis.followup_questions.length
@@ -336,6 +375,7 @@ export async function handler(event) {
 
   for (let i = 0; i < 3; i++) {
     try {
+      console.log("AI GENERATION → sending to OpenAI");
       const ai = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         temperature: 0.35,
@@ -344,23 +384,32 @@ export async function handler(event) {
           { role: "user", content: JSON.stringify(generatorPacket, null, 2) }
         ]
       });
+      console.log("AI GENERATION ← received response");
 
       const raw = ai?.choices?.[0]?.message?.content || "";
       const jsonSlice = extractFirstJSONObject(raw) || raw;
 
       parsed = safeJSONParse(jsonSlice);
 
-      // Force disclaimer if missing
       if (parsed && !parsed.disclaimer) parsed.disclaimer = DISCLAIMER;
 
       if (looksValidPlan(parsed)) break;
       parsed = null;
-    } catch {
+    } catch (e) {
+      console.error("AI GENERATION ERROR:", e?.message || e);
       parsed = null;
     }
   }
 
   if (!parsed) {
+    await supabase
+      .from("ai_journey")
+      .update({
+        current_state: "error",
+        last_checkin_at: nowISO()
+      })
+      .eq("id", journeyRow.id);
+
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
@@ -373,28 +422,17 @@ export async function handler(event) {
   }
 
   /* -----------------------------
-     SAVE JOURNEY
+     SAVE JOURNEY (final)
   ------------------------------ */
-  if (journey) {
-    await supabase
-      .from("ai_journey")
-      .update({
-        current_state: parsed.state,
-        last_plan: parsed.plan,
-        session_count: (journey.session_count || 0) + 1,
-        last_checkin_at: nowISO()
-      })
-      .eq("id", journey.id);
-  } else {
-    await supabase.from("ai_journey").insert({
-      email,
-      email_hash,
+  await supabase
+    .from("ai_journey")
+    .update({
       current_state: parsed.state,
       last_plan: parsed.plan,
-      session_count: 1,
+      session_count: (journeyRow.session_count || 0) + 1,
       last_checkin_at: nowISO()
-    });
-  }
+    })
+    .eq("id", journeyRow.id);
 
   return {
     statusCode: 200,
