@@ -1,3 +1,4 @@
+<!-- FORCE DEPLOY: intake email attach fix -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -123,10 +124,75 @@
   </p>
 
   <form id="intakeForm">
-    <!-- form fields unchanged -->
-    <!-- (your existing questions remain exactly as-is) -->
+
+    <!-- QUESTIONS UNCHANGED -->
+
+    <h2>1. What are you currently experiencing?</h2>
+    <textarea name="current_symptoms" rows="4" required></textarea>
+
+    <h2>2. How long have these experiences been present?</h2>
+    <select name="symptom_duration">
+      <option value="">Select one</option>
+      <option>Days</option>
+      <option>Weeks</option>
+      <option>Months</option>
+      <option>Years</option>
+      <option>On and off</option>
+    </select>
+
+    <h2>3. How intense do these experiences feel?</h2>
+    <select name="symptom_intensity" required>
+      <option value="">Select one</option>
+      <option>Mild</option>
+      <option>Moderate</option>
+      <option>Intense</option>
+      <option>Fluctuating</option>
+      <option>Comes in waves</option>
+    </select>
+
+    <h2>4. Have you noticed any patterns?</h2>
+    <textarea name="pattern_observations" rows="3"></textarea>
+
+    <h2>5. What are you currently doing to support your body?</h2>
+    <textarea name="current_supports" rows="3"></textarea>
+
+    <h2>6. Are you currently taking any medications?</h2>
+    <textarea name="current_medications" rows="3"></textarea>
+
+    <h2>7. Do you have any diagnosed conditions we should be aware of?</h2>
+    <textarea name="diagnosed_conditions" rows="3"></textarea>
+
+    <h2>8. How would you describe your tolerance right now?</h2>
+    <select name="tolerance_and_capacity" required>
+      <option value="">Select one</option>
+      <option>Sensitive</option>
+      <option>Stable</option>
+      <option>Not sure</option>
+    </select>
+
+    <h2>9. How is your sleep and recovery?</h2>
+    <select name="sleep_quality">
+      <option value="">Select one</option>
+      <option>Poor</option>
+      <option>Light</option>
+      <option>Restorative</option>
+      <option>Variable</option>
+    </select>
+
+    <h2>10. How does stress usually affect you?</h2>
+    <select name="stress_response" required>
+      <option value="">Select one</option>
+      <option>Wired</option>
+      <option>Crash</option>
+      <option>Symptoms worsen</option>
+      <option>Variable</option>
+    </select>
+
+    <h2>11. What are you hoping to understand right now?</h2>
+    <textarea name="goals_and_intent" rows="3"></textarea>
 
     <button type="submit" id="submitBtn">Generate My Plan</button>
+
   </form>
 
 </main>
@@ -146,16 +212,9 @@ document.getElementById("intakeForm").addEventListener("submit", async (e) => {
 
   const payload = Object.fromEntries(new FormData(e.target).entries());
 
-  // 🔑 PULL EMAIL FROM LOCAL STORAGE
-  const storedEmail = localStorage.getItem("wbr_email");
-
-  if (!storedEmail) {
-    alert("Session expired. Please return to the start page.");
-    window.location.href = "/";
-    return;
-  }
-
-  payload.email = storedEmail;
+  // 🔑 THIS IS THE FIX
+  const email = localStorage.getItem("wbr_email");
+  if (email) payload.email = email;
 
   try {
     const res = await fetch("/.netlify/functions/ai-evaluate", {
@@ -169,11 +228,9 @@ document.getElementById("intakeForm").addEventListener("submit", async (e) => {
     window.location.href = "/ai-config/ui/results.html";
 
   } catch {
-    localStorage.setItem("ai_result", JSON.stringify({
-      state: "error",
-      message: "Unable to generate plan."
-    }));
-    window.location.href = "/ai-config/ui/results.html";
+    alert("Unable to generate plan. Please try again.");
+    btn.disabled = false;
+    btn.textContent = "Generate My Plan";
   }
 });
 </script>
