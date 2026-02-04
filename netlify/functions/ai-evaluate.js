@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+ import OpenAI from "openai";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
@@ -181,7 +181,7 @@ export async function handler(event) {
   const email_hash = hashEmail(email);
 
   /* ======================================================
-     ENSURE SUPABASE ROW EXISTS FIRST
+     ENSURE JOURNEY EXISTS
   ====================================================== */
 
   const { data: existing } = await supabase
@@ -234,8 +234,6 @@ export async function handler(event) {
      PASS 1 — ANALYSIS
   ====================================================== */
 
-  console.log("AI ANALYSIS → sending to OpenAI");
-
   let analysis = null;
 
   try {
@@ -254,7 +252,15 @@ export async function handler(event) {
     console.error("AI ANALYSIS ERROR:", e);
   }
 
-  if (!analysis || analysis.needs_followup || analysis.proceed === false) {
+  /* ======================================================
+     🔥 CRITICAL FIX
+     Intake NEVER blocks plan generation
+  ====================================================== */
+
+  if (
+    type !== "intake" &&
+    (!analysis || analysis.needs_followup || analysis.proceed === false)
+  ) {
     await supabase
       .from("ai_journey")
       .update({
@@ -283,10 +289,8 @@ export async function handler(event) {
   }
 
   /* ======================================================
-     PASS 2 — GENERATE PLAN
+     PASS 2 — GENERATE PLAN (ALWAYS FOR INTAKE)
   ====================================================== */
-
-  console.log("AI GENERATION → sending to OpenAI");
 
   let plan = null;
 
@@ -330,7 +334,7 @@ export async function handler(event) {
   }
 
   /* ======================================================
-     SAVE FINAL RESULT
+     SAVE RESULT
   ====================================================== */
 
   await supabase
