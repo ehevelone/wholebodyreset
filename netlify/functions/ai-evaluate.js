@@ -118,7 +118,7 @@ Required JSON:
 `.trim();
 
 /* ======================================================
-   🔧 FIXED PLAN VALIDATION (SURGICAL)
+   PLAN VALIDATION
 ====================================================== */
 
 function looksValidPlan(parsed) {
@@ -197,7 +197,7 @@ export async function handler(event) {
   let journey = existing;
 
   if (!journey) {
-    const { data: inserted, error } = await supabase
+    const { data: inserted } = await supabase
       .from("ai_journey")
       .insert({
         email,
@@ -209,17 +209,6 @@ export async function handler(event) {
       })
       .select()
       .single();
-
-    if (error) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          state: "error",
-          message: "Unable to start session.",
-          disclaimer: DISCLAIMER
-        })
-      };
-    }
 
     journey = inserted;
   }
@@ -241,7 +230,7 @@ export async function handler(event) {
 
   try {
     const ai = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4.1-mini", // ✅ FIX
       temperature: 0.2,
       messages: [
         { role: "system", content: analysisSystemPrompt },
@@ -254,33 +243,6 @@ export async function handler(event) {
   } catch {}
 
   /* ======================================================
-     🔥 INTAKE NEVER BLOCKS PLAN GENERATION
-  ====================================================== */
-
-  if (
-    type !== "intake" &&
-    (!analysis || analysis.needs_followup || analysis.proceed === false)
-  ) {
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        state: "clarification_needed",
-        clarification: {
-          reason:
-            analysis?.followup_reason ||
-            "We need a bit more information before continuing.",
-          questions:
-            analysis?.followup_questions || [
-              "How intense do your symptoms feel right now?",
-              "How sensitive do you feel to changes?"
-            ]
-        },
-        disclaimer: DISCLAIMER
-      })
-    };
-  }
-
-  /* ======================================================
      PASS 2 — GENERATE PLAN
   ====================================================== */
 
@@ -288,7 +250,7 @@ export async function handler(event) {
 
   try {
     const ai = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4.1-mini", // ✅ FIX
       temperature: 0.35,
       messages: [
         { role: "system", content: planSystemPrompt },
@@ -324,10 +286,6 @@ export async function handler(event) {
       })
     };
   }
-
-  /* ======================================================
-     SAVE RESULT
-  ====================================================== */
 
   await supabase
     .from("ai_journey")
