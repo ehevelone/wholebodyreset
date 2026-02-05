@@ -82,6 +82,7 @@ CONTEXT
 • The user has already tried basic advice (hydration, gentle movement, journaling).
 • Generic wellness guidance is NOT helpful.
 • The user is seeking insight, direction, and next-step clarity.
+• If refinement context is provided, it represents factual prior evaluation or outcomes and MUST be treated as settled information that changes risk assessment and planning.
 
 YOUR ROLE
 • Use clinical reasoning to identify likely underlying drivers.
@@ -110,7 +111,6 @@ Use when symptoms are concerning, persistent, or limiting BUT not immediately da
 🚨 PHASE 2 REQUIREMENT — ACTIONABILITY TEST (MANDATORY)
 
 When operating in Phase 2, you MUST satisfy ALL of the following:
-
 • Identify ONE dominant driver that explains the symptom pattern.
 • Provide at least ONE action that directly targets that driver.
 • Describe the action in enough detail that the user could apply it immediately.
@@ -267,7 +267,8 @@ export async function handler(event) {
   const contextPacket = {
     user_type: journey.session_count > 0 ? "returning" : "new",
     input_type: type,
-    current_input: payload
+    current_input: payload,
+    refinement_context: payload?.refinement_context || null
   };
 
   /* ======================================================
