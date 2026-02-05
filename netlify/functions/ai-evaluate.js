@@ -19,11 +19,22 @@ const supabase = createClient(
 ====================================================== */
 
 function hashEmail(email = "") {
-  return crypto.createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
+  return crypto
+    .createHash("sha256")
+    .update(email.trim().toLowerCase())
+    .digest("hex");
 }
 
 function nowISO() {
   return new Date().toISOString();
+}
+
+function safeParseJSON(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 /* ======================================================
@@ -142,51 +153,57 @@ export async function handler(event) {
   };
 
   /* ======================================================
-     PASS 1 — ANALYSIS (STRUCTURED)
+     PASS 1 — ANALYSIS (JSON FORCED)
   ====================================================== */
 
-  const analysis = await openai.responses.create({
+  const analysisResponse = await openai.responses.create({
     model: "gpt-4.1-mini",
-    response_format: { type: "json_object" },
+    text: { format: { type: "json_object" } },
     input: [
-      {
-        role: "system",
-        content: analysisSystemPrompt
-      },
-      {
-        role: "user",
-        content: JSON.stringify(contextPacket)
-      }
+      { role: "system", content: analysisSystemPrompt },
+      { role: "user", content: JSON.stringify(contextPacket) }
     ]
   });
 
-  const analysisResult = analysis.output_parsed;
+  const analysis = safeParseJSON(analysisResponse.output_text) || {
+    proceed: true
+  };
 
   /* ======================================================
-     PASS 2 — PLAN GENERATION (STRUCTURED)
+     PASS 2 — PLAN GENERATION (JSON FORCED)
   ====================================================== */
 
   const planResponse = await openai.responses.create({
     model: "gpt-4.1-mini",
-    response_format: { type: "json_object" },
+    text: { format: { type: "json_object" } },
     input: [
-      {
-        role: "system",
-        content: planSystemPrompt
-      },
+      { role: "system", content: planSystemPrompt },
       {
         role: "user",
         content: JSON.stringify({
           ...contextPacket,
-          analysis_summary: analysisResult,
+          analysis_summary: analysis,
           required_disclaimer: DISCLAIMER
         })
       }
     ]
   });
 
-  const plan = planResponse.output_parsed;
+  const plan = safeParseJSON(planResponse.output_text);
 
+  if (!plan || !plan.plan) {
+    console.error("PLAN PARSE FAILED:", planResponse.output_text);
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        state: "error",
+        message: "AI returned invalid plan structure.",
+        disclaimer: DISCLAIMER
+      })
+    };
+  }
+
+  plan.state ||= "success";
   plan.disclaimer ||= DISCLAIMER;
 
   await supabase
