@@ -67,7 +67,7 @@ Return JSON EXACTLY:
 `.trim();
 
 /* ======================================================
-   ✅ UPDATED AI LOGIC — 3 PHASE MODEL (planSystemPrompt)
+   ✅ UPDATED AI LOGIC — 3 PHASE MODEL + ACTIONABILITY
 ====================================================== */
 
 const planSystemPrompt = `
@@ -106,6 +106,24 @@ Use when symptoms are concerning, persistent, or limiting BUT not immediately da
 • ALSO provide a stabilizing, non-prescription support plan.
 • Frame support as reducing strain, irritation, or worsening while evaluation occurs.
 • Explicitly state that support does NOT replace medical care.
+
+🚨 PHASE 2 REQUIREMENT — ACTIONABILITY TEST (MANDATORY)
+
+When operating in Phase 2, you MUST satisfy ALL of the following:
+
+• Identify ONE dominant driver that explains the symptom pattern.
+• Provide at least ONE action that directly targets that driver.
+• Describe the action in enough detail that the user could apply it immediately.
+• Briefly explain HOW and WHY this action could plausibly reduce symptoms within 2–5 days.
+
+Disallowed as standalone actions in Phase 2:
+• Tracking only
+• Waiting for appointments
+• Avoidance without replacement
+• General lifestyle advice (walking, breathing, mindfulness)
+• “Monitor and see”
+
+If you cannot identify an action that could realistically improve symptoms within days, you must explicitly say so and explain what makes this situation resistant to self-support instead of giving generic advice.
 
 PHASE 3 — MEDICAL-FIRST
 Use ONLY when delay could be unsafe (e.g., uncontrolled vomiting, active bleeding, fainting, severe dehydration, rapidly worsening neurological signs).
