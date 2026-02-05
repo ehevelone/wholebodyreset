@@ -44,17 +44,9 @@
       border-radius: 12px;
     }
 
-    h1 {
-      margin-top: 0;
-    }
-
-    h2 {
-      margin-top: 28px;
-    }
-
-    ul {
-      padding-left: 22px;
-    }
+    h1 { margin-top: 0; }
+    h2 { margin-top: 28px; }
+    ul { padding-left: 22px; }
 
     .box {
       background: #efe4c9;
@@ -77,16 +69,6 @@
       padding-top: 16px;
     }
 
-    .term {
-      margin: 8px 0;
-    }
-
-    .term strong {
-      display: inline-block;
-      min-width: 140px;
-    }
-
-    /* ✅ TEMPLATE FOOTER */
     footer {
       margin-top: 80px;
       padding: 40px 20px;
@@ -130,9 +112,14 @@
   let data = null;
   try { data = JSON.parse(raw); } catch {}
 
-  if (!data || !data.state) {
+  if (!data) {
     out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
     return;
+  }
+
+  // 🔥 FIX: if a plan exists, assume success
+  if (!data.state && data.plan) {
+    data.state = "success";
   }
 
   if (data.state === "error") {
@@ -156,7 +143,12 @@
     return;
   }
 
-  const p = data.plan || {};
+  if (data.state !== "success" || !data.plan) {
+    out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
+    return;
+  }
+
+  const p = data.plan;
 
   const list = (arr) =>
     Array.isArray(arr) && arr.length
@@ -170,15 +162,6 @@
       : "<p class='muted'>—</p>";
     return `<div class="box"><h3>${title}</h3>${goal}${actions}</div>`;
   };
-
-  const supplements = Array.isArray(p.supplements) && p.supplements.length
-    ? p.supplements.map(s => `
-        <div class="box">
-          <strong>${s.name || ""}</strong><br>
-          <span class="muted">${s.how_to_take || ""}</span>
-        </div>
-      `).join("")
-    : "<p class='muted'>None yet</p>";
 
   out.innerHTML = `
     <h2>Focus Today</h2>
@@ -196,31 +179,6 @@
     ${phaseBox("Day 1–2", p.day_1_2)}
     ${phaseBox("Day 3–4", p.day_3_4)}
     ${phaseBox("After Day 4", p.after_day_4)}
-
-    <h2>Food Support</h2>
-    ${list(p.food_support)}
-
-    <h2>Hydration & Movement</h2>
-    ${list(p.hydration_and_movement)}
-
-    <h2>Mechanical Support</h2>
-    ${list(p.mechanical_support)}
-
-    <h2>Supplement Support</h2>
-    ${supplements}
-
-    <h2>What to Expect</h2>
-    ${list(p.what_to_expect)}
-
-    <h2>Pause & Reassess If</h2>
-    ${list(p.red_flags_stop)}
-
-    <h2>Next Check-In</h2>
-    <div class="box">
-      <p><strong>Timing:</strong> ${p.next_check_in?.timing || ""}</p>
-      <p><strong>What to watch:</strong></p>
-      ${list(p.next_check_in?.what_to_watch || [])}
-    </div>
 
     <div class="disclaimer">${data.disclaimer || ""}</div>
   `;
