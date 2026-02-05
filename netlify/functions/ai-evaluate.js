@@ -3,12 +3,10 @@ import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 /* ======================================================
-   ENV + CLIENTS
+   CLIENTS
 ====================================================== */
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -21,25 +19,7 @@ const supabase = createClient(
 ====================================================== */
 
 function hashEmail(email = "") {
-  return crypto
-    .createHash("sha256")
-    .update(email.trim().toLowerCase())
-    .digest("hex");
-}
-
-function extractFirstJSONObject(text = "") {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
-  return text.slice(start, end + 1);
-}
-
-function safeJSONParse(text) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
+  return crypto.createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 }
 
 function nowISO() {
@@ -54,7 +34,7 @@ const DISCLAIMER =
   "Educational content only. Not medical advice. Do not stop or change medications. If symptoms are severe, worsening, or you feel unsafe, seek urgent medical care and contact your clinician.";
 
 /* ======================================================
-   SYSTEM PROMPTS (UNCHANGED)
+   PROMPTS (UNCHANGED)
 ====================================================== */
 
 const analysisSystemPrompt = `
@@ -68,11 +48,9 @@ Goal:
 
 Return JSON EXACTLY:
 {
-  "proceed": true|false,
-  "needs_followup": true|false,
-  "followup_reason": "string",
-  "followup_questions": ["string"],
-  "risk_level": "low"|"moderate"|"elevated",
+  "proceed": true,
+  "needs_followup": false,
+  "risk_level": "low",
   "notes_for_generator": "string"
 }
 `.trim();
@@ -104,39 +82,6 @@ Required JSON:
 `.trim();
 
 /* ======================================================
-   NORMALIZATION + VALIDATION
-====================================================== */
-
-function normalizePlan(plan) {
-  if (!plan || !plan.plan) return plan;
-
-  const ensureBlock = (b) => {
-    if (!b) return { goal: "", actions: [] };
-    if (typeof b === "string") return { goal: "", actions: [b] };
-    if (Array.isArray(b)) return { goal: "", actions: b };
-    if (!Array.isArray(b.actions)) b.actions = [];
-    return b;
-  };
-
-  plan.plan.day_1_2 = ensureBlock(plan.plan.day_1_2);
-  plan.plan.day_3_4 = ensureBlock(plan.plan.day_3_4);
-  plan.plan.after_day_4 = ensureBlock(plan.plan.after_day_4);
-
-  return plan;
-}
-
-function looksValidPlan(parsed) {
-  if (!parsed || parsed.state !== "success") return false;
-  if (!parsed.plan) return false;
-
-  return (
-    parsed.plan.day_1_2.actions.length > 0 ||
-    parsed.plan.day_3_4.actions.length > 0 ||
-    parsed.plan.after_day_4.actions.length > 0
-  );
-}
-
-/* ======================================================
    NETLIFY FUNCTION
 ====================================================== */
 
@@ -154,18 +99,13 @@ export async function handler(event) {
     payload?.email ||
     input?.email ||
     payload?.user_email ||
-    payload?.customer_email ||
-    null;
+    payload?.customer_email;
 
   if (!type || !payload || !email) {
     return {
       statusCode: 200,
       body: JSON.stringify({
         state: "clarification_needed",
-        clarification: {
-          reason: "We need your email to continue.",
-          questions: ["Please return to the start page and re-enter your email."]
-        },
         disclaimer: DISCLAIMER
       })
     };
@@ -188,7 +128,6 @@ export async function handler(event) {
           email,
           email_hash,
           current_state: "started",
-          last_plan: null,
           session_count: 0,
           last_checkin_at: nowISO()
         })
@@ -198,80 +137,57 @@ export async function handler(event) {
 
   const contextPacket = {
     user_type: journey.session_count > 0 ? "returning" : "new",
-    session_count: journey.session_count,
-    current_state: journey.current_state,
-    last_plan: journey.last_plan,
     input_type: type,
     current_input: payload
   };
 
   /* ======================================================
-     PASS 1 — ANALYSIS (JSON FORCED)
+     PASS 1 — ANALYSIS (STRUCTURED)
   ====================================================== */
 
-  let analysis = { proceed: true };
+  const analysis = await openai.responses.create({
+    model: "gpt-4.1-mini",
+    response_format: { type: "json_object" },
+    input: [
+      {
+        role: "system",
+        content: analysisSystemPrompt
+      },
+      {
+        role: "user",
+        content: JSON.stringify(contextPacket)
+      }
+    ]
+  });
 
-  try {
-    const ai = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" }, // 🔥 FIX
-      messages: [
-        { role: "system", content: analysisSystemPrompt },
-        { role: "user", content: JSON.stringify(contextPacket, null, 2) }
-      ]
-    });
-
-    analysis = safeJSONParse(ai.choices[0].message.content) || analysis;
-  } catch {}
+  const analysisResult = analysis.output_parsed;
 
   /* ======================================================
-     PASS 2 — PLAN GENERATION (JSON FORCED)
+     PASS 2 — PLAN GENERATION (STRUCTURED)
   ====================================================== */
 
-  let plan = null;
+  const planResponse = await openai.responses.create({
+    model: "gpt-4.1-mini",
+    response_format: { type: "json_object" },
+    input: [
+      {
+        role: "system",
+        content: planSystemPrompt
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          ...contextPacket,
+          analysis_summary: analysisResult,
+          required_disclaimer: DISCLAIMER
+        })
+      }
+    ]
+  });
 
-  try {
-    const ai = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      temperature: 0.4,
-      response_format: { type: "json_object" }, // 🔥 FIX
-      messages: [
-        { role: "system", content: planSystemPrompt },
-        {
-          role: "user",
-          content: JSON.stringify(
-            {
-              ...contextPacket,
-              analysis_summary: analysis,
-              required_disclaimer: DISCLAIMER
-            },
-            null,
-            2
-          )
-        }
-      ]
-    });
+  const plan = planResponse.output_parsed;
 
-    plan = safeJSONParse(ai.choices[0].message.content);
-    if (plan) {
-      plan.state = "success";
-      plan.disclaimer ||= DISCLAIMER;
-      plan = normalizePlan(plan);
-    }
-  } catch {}
-
-  if (!looksValidPlan(plan)) {
-    console.error("PLAN FAILED VALIDATION:", plan);
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        state: "error",
-        message: "AI returned unusable structure.",
-        disclaimer: DISCLAIMER
-      })
-    };
-  }
+  plan.disclaimer ||= DISCLAIMER;
 
   await supabase
     .from("ai_journey")
@@ -282,6 +198,8 @@ export async function handler(event) {
       last_checkin_at: nowISO()
     })
     .eq("id", journey.id);
+
+  console.log("AI-EVALUATE COMPLETE");
 
   return {
     statusCode: 200,
