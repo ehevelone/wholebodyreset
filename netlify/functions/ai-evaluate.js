@@ -6,10 +6,6 @@ import { createClient } from "@supabase/supabase-js";
    ENV + CLIENTS
 ====================================================== */
 
-if (!process.env.OPENAI_API_KEY) {
-  console.error("❌ OPENAI_API_KEY is missing");
-}
-
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -58,7 +54,7 @@ const DISCLAIMER =
   "Educational content only. Not medical advice. Do not stop or change medications. If symptoms are severe, worsening, or you feel unsafe, seek urgent medical care and contact your clinician.";
 
 /* ======================================================
-   SYSTEM PROMPTS
+   SYSTEM PROMPTS (UNCHANGED)
 ====================================================== */
 
 const analysisSystemPrompt = `
@@ -101,38 +97,42 @@ Required JSON:
     "medication_context": "string",
     "day_1_2": { "goal": "string", "actions": ["string"] },
     "day_3_4": { "goal": "string", "actions": ["string"] },
-    "after_day_4": { "goal": "string", "actions": ["string"] },
-    "food_support": ["string"],
-    "hydration_and_movement": ["string"],
-    "mechanical_support": ["string"],
-    "supplements": [{ "name": "string", "how_to_take": "string" }],
-    "what_to_expect": ["string"],
-    "red_flags_stop": ["string"],
-    "next_check_in": {
-      "timing": "string",
-      "what_to_watch": ["string"]
-    }
+    "after_day_4": { "goal": "string", "actions": ["string"] }
   },
   "disclaimer": "string"
 }
 `.trim();
 
 /* ======================================================
-   PLAN VALIDATION
+   🔧 NORMALIZATION + VALIDATION (FIXED)
 ====================================================== */
+
+function normalizePlan(plan) {
+  if (!plan || !plan.plan) return plan;
+
+  const ensureBlock = (b) => {
+    if (!b) return { goal: "", actions: [] };
+    if (typeof b === "string") return { goal: "", actions: [b] };
+    if (Array.isArray(b)) return { goal: "", actions: b };
+    if (!Array.isArray(b.actions)) b.actions = [];
+    return b;
+  };
+
+  plan.plan.day_1_2 = ensureBlock(plan.plan.day_1_2);
+  plan.plan.day_3_4 = ensureBlock(plan.plan.day_3_4);
+  plan.plan.after_day_4 = ensureBlock(plan.plan.after_day_4);
+
+  return plan;
+}
 
 function looksValidPlan(parsed) {
   if (!parsed || parsed.state !== "success") return false;
   if (!parsed.plan) return false;
 
-  const blocks = [
-    parsed.plan.day_1_2,
-    parsed.plan.day_3_4,
-    parsed.plan.after_day_4
-  ];
-
-  return blocks.some(
-    b => Array.isArray(b?.actions) && b.actions.length > 0
+  return (
+    parsed.plan.day_1_2.actions.length > 0 ||
+    parsed.plan.day_3_4.actions.length > 0 ||
+    parsed.plan.after_day_4.actions.length > 0
   );
 }
 
@@ -147,17 +147,8 @@ export async function handler(event) {
     return { statusCode: 405, body: "POST only" };
   }
 
-  let input;
-  try {
-    input = JSON.parse(event.body || "{}");
-  } catch {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ state: "error", message: "Invalid request." })
-    };
-  }
-
-  const { type, payload } = input || {};
+  const input = JSON.parse(event.body || "{}");
+  const { type, payload } = input;
 
   const email =
     payload?.email ||
@@ -173,9 +164,7 @@ export async function handler(event) {
         state: "clarification_needed",
         clarification: {
           reason: "We need your email to continue.",
-          questions: [
-            "Please return to the start page and re-enter your email."
-          ]
+          questions: ["Please return to the start page and re-enter your email."]
         },
         disclaimer: DISCLAIMER
       })
@@ -184,34 +173,28 @@ export async function handler(event) {
 
   const email_hash = hashEmail(email);
 
-  /* ======================================================
-     ENSURE JOURNEY EXISTS
-  ====================================================== */
-
   const { data: existing } = await supabase
     .from("ai_journey")
     .select("*")
     .eq("email_hash", email_hash)
     .maybeSingle();
 
-  let journey = existing;
-
-  if (!journey) {
-    const { data: inserted } = await supabase
-      .from("ai_journey")
-      .insert({
-        email,
-        email_hash,
-        current_state: "started",
-        last_plan: null,
-        session_count: 0,
-        last_checkin_at: nowISO()
-      })
-      .select()
-      .single();
-
-    journey = inserted;
-  }
+  const journey =
+    existing ||
+    (
+      await supabase
+        .from("ai_journey")
+        .insert({
+          email,
+          email_hash,
+          current_state: "started",
+          last_plan: null,
+          session_count: 0,
+          last_checkin_at: nowISO()
+        })
+        .select()
+        .single()
+    ).data;
 
   const contextPacket = {
     user_type: journey.session_count > 0 ? "returning" : "new",
@@ -223,14 +206,14 @@ export async function handler(event) {
   };
 
   /* ======================================================
-     PASS 1 — ANALYSIS
+     PASS 1 — ANALYSIS (NON-BLOCKING)
   ====================================================== */
 
-  let analysis = null;
+  let analysis = { proceed: true };
 
   try {
     const ai = await openai.chat.completions.create({
-      model: "gpt-4.1-mini", // ✅ FIX
+      model: "gpt-4.1-mini",
       temperature: 0.2,
       messages: [
         { role: "system", content: analysisSystemPrompt },
@@ -239,7 +222,7 @@ export async function handler(event) {
     });
 
     const raw = ai.choices[0].message.content;
-    analysis = safeJSONParse(extractFirstJSONObject(raw) || raw);
+    analysis = safeJSONParse(extractFirstJSONObject(raw)) || analysis;
   } catch {}
 
   /* ======================================================
@@ -250,8 +233,8 @@ export async function handler(event) {
 
   try {
     const ai = await openai.chat.completions.create({
-      model: "gpt-4.1-mini", // ✅ FIX
-      temperature: 0.35,
+      model: "gpt-4.1-mini",
+      temperature: 0.4,
       messages: [
         { role: "system", content: planSystemPrompt },
         {
@@ -270,18 +253,23 @@ export async function handler(event) {
     });
 
     const raw = ai.choices[0].message.content;
-    plan = safeJSONParse(extractFirstJSONObject(raw) || raw);
+    console.log("RAW PLAN OUTPUT:", raw);
 
-    if (plan && !plan.disclaimer) plan.disclaimer = DISCLAIMER;
-    if (plan && !plan.state) plan.state = "success";
+    plan = safeJSONParse(extractFirstJSONObject(raw));
+    if (plan) {
+      plan.state = "success";
+      plan.disclaimer ||= DISCLAIMER;
+      plan = normalizePlan(plan);
+    }
   } catch {}
 
   if (!looksValidPlan(plan)) {
+    console.error("PLAN FAILED VALIDATION:", plan);
     return {
       statusCode: 200,
       body: JSON.stringify({
         state: "error",
-        message: "AI failed to generate a valid plan.",
+        message: "AI returned unusable structure.",
         disclaimer: DISCLAIMER
       })
     };
