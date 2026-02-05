@@ -104,7 +104,7 @@ Required JSON:
 `.trim();
 
 /* ======================================================
-   🔧 NORMALIZATION + VALIDATION (FIXED)
+   NORMALIZATION + VALIDATION
 ====================================================== */
 
 function normalizePlan(plan) {
@@ -206,7 +206,7 @@ export async function handler(event) {
   };
 
   /* ======================================================
-     PASS 1 — ANALYSIS (NON-BLOCKING)
+     PASS 1 — ANALYSIS (JSON FORCED)
   ====================================================== */
 
   let analysis = { proceed: true };
@@ -215,18 +215,18 @@ export async function handler(event) {
     const ai = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
       temperature: 0.2,
+      response_format: { type: "json_object" }, // 🔥 FIX
       messages: [
         { role: "system", content: analysisSystemPrompt },
         { role: "user", content: JSON.stringify(contextPacket, null, 2) }
       ]
     });
 
-    const raw = ai.choices[0].message.content;
-    analysis = safeJSONParse(extractFirstJSONObject(raw)) || analysis;
+    analysis = safeJSONParse(ai.choices[0].message.content) || analysis;
   } catch {}
 
   /* ======================================================
-     PASS 2 — GENERATE PLAN
+     PASS 2 — PLAN GENERATION (JSON FORCED)
   ====================================================== */
 
   let plan = null;
@@ -235,6 +235,7 @@ export async function handler(event) {
     const ai = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
       temperature: 0.4,
+      response_format: { type: "json_object" }, // 🔥 FIX
       messages: [
         { role: "system", content: planSystemPrompt },
         {
@@ -252,10 +253,7 @@ export async function handler(event) {
       ]
     });
 
-    const raw = ai.choices[0].message.content;
-    console.log("RAW PLAN OUTPUT:", raw);
-
-    plan = safeJSONParse(extractFirstJSONObject(raw));
+    plan = safeJSONParse(ai.choices[0].message.content);
     if (plan) {
       plan.state = "success";
       plan.disclaimer ||= DISCLAIMER;
