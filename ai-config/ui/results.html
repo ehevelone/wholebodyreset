@@ -46,6 +46,7 @@
 
     h1 { margin-top: 0; }
     h2 { margin-top: 28px; }
+    h3 { margin-top: 18px; }
     ul { padding-left: 22px; }
 
     .box {
@@ -59,6 +60,34 @@
     .muted {
       color: #4f5a45;
       font-size: 0.95rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #b9b29a;
+      background: #fff;
+      margin-top: 10px;
+    }
+
+    button {
+      margin-top: 16px;
+      background: #2f3b2f;
+      color: #fff;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
     }
 
     .disclaimer {
@@ -117,7 +146,6 @@
     return;
   }
 
-  // 🔥 FIX: if a plan exists, assume success
   if (!data.state && data.plan) {
     data.state = "success";
   }
@@ -130,30 +158,12 @@
     return;
   }
 
-  if (data.state === "clarification_needed") {
-    const qs = Array.isArray(data.clarification?.questions)
-      ? data.clarification.questions.map(q => `<li>${q}</li>`).join("")
-      : "";
-    out.innerHTML = `
-      <h2>We need more information</h2>
-      <p>${data.clarification?.reason || ""}</p>
-      <ul>${qs}</ul>
-      <div class="disclaimer">${data.disclaimer || ""}</div>
-    `;
-    return;
-  }
-
   if (data.state !== "success" || !data.plan) {
     out.innerHTML = "<p>Unable to load your plan. Please restart the intake.</p>";
     return;
   }
 
   const p = data.plan;
-
-  const list = (arr) =>
-    Array.isArray(arr) && arr.length
-      ? `<ul>${arr.map(x => `<li>${x}</li>`).join("")}</ul>`
-      : "<p class='muted'>—</p>";
 
   const phaseBox = (title, obj) => {
     const goal = obj?.goal ? `<p><strong>Goal:</strong> ${obj.goal}</p>` : "";
@@ -180,8 +190,31 @@
     ${phaseBox("Day 3–4", p.day_3_4)}
     ${phaseBox("After Day 4", p.after_day_4)}
 
+    <!-- 🔹 CONTEXT REFINEMENT (NEW) -->
+    <div class="box">
+      <h3>Have you already explored this path?</h3>
+      <p class="muted">
+        If you’ve already had testing, evaluations, or tried something that changed how this feels,
+        you can share that here so the system can adjust its reasoning.
+      </p>
+
+      <textarea id="refinementInput"
+        placeholder="Example: Upper and lower GI were completed and nothing was found. Symptoms improved previously with gentle gut support."></textarea>
+
+      <button id="refineBtn">Update plan with this context</button>
+    </div>
+
     <div class="disclaimer">${data.disclaimer || ""}</div>
   `;
+
+  // Placeholder hook — backend wiring comes next
+  document.getElementById("refineBtn").addEventListener("click", () => {
+    const txt = document.getElementById("refinementInput").value.trim();
+    if (!txt) return;
+
+    localStorage.setItem("ai_refinement", txt);
+    alert("Context saved. We’ll use this to adjust the plan next.");
+  });
 })();
 </script>
 
