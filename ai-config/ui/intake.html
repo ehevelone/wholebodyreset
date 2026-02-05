@@ -96,6 +96,23 @@
       color: #4f5a45;
       text-align: center;
     }
+
+    /* 🔄 Loading spinner — SURGICAL ADDITION */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top: 3px solid #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
@@ -271,7 +288,7 @@ document.getElementById("intakeForm").addEventListener("submit", async (e) => {
 
   const btn = document.getElementById("submitBtn");
   btn.disabled = true;
-  btn.textContent = "Generating…";
+  btn.innerHTML = `<span class="spinner"></span>Generating…`;
 
   const payload = Object.fromEntries(new FormData(e.target).entries());
 
