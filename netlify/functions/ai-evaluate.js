@@ -45,7 +45,7 @@ const DISCLAIMER =
   "Educational content only. Not medical advice. Do not stop or change medications. If symptoms are severe, worsening, or you feel unsafe, seek urgent medical care and contact your clinician.";
 
 /* ======================================================
-   PROMPTS
+   PROMPTS (UNCHANGED)
 ====================================================== */
 
 const analysisSystemPrompt = `
@@ -67,7 +67,7 @@ Return JSON EXACTLY:
 `.trim();
 
 /* ======================================================
-   🔥 FINAL PLAN PROMPT (NO ESCAPE HATCH VERSION)
+   ✅ UPDATED AI LOGIC SECTION ONLY (planSystemPrompt)
 ====================================================== */
 
 const planSystemPrompt = `
@@ -90,7 +90,7 @@ YOUR ROLE
 • Explain the reasoning in clear, real-person language.
 • Provide specific, practical actions that are appropriate for the level of concern.
 
-IMPORTANT:
+IMPORTANT:  
 If the pattern of symptoms suggests a condition that should not be managed conservatively, you MUST say so clearly and explain why.
 
 BOUNDARIES (OUTPUT ONLY)
@@ -142,9 +142,18 @@ OUTPUT FORMAT — JSON ONLY
     "plan_overview": "string",
     "dominant_driver": "string",
     "medication_context": "string",
-    "day_1_2": { "goal": "string", "actions": ["string"] },
-    "day_3_4": { "goal": "string", "actions": ["string"] },
-    "after_day_4": { "goal": "string", "actions": ["string"] },
+    "day_1_2": {
+      "goal": "string",
+      "actions": ["string"]
+    },
+    "day_3_4": {
+      "goal": "string",
+      "actions": ["string"]
+    },
+    "after_day_4": {
+      "goal": "string",
+      "actions": ["string"]
+    },
     "food_support": ["string"],
     "hydration_and_movement": ["string"],
     "mechanical_support": ["string"],
@@ -158,7 +167,7 @@ OUTPUT FORMAT — JSON ONLY
       "what_to_watch": ["string"]
     }
   },
-  "disclaimer": "${DISCLAIMER}"
+  "disclaimer": "Educational content only. Not medical advice. Do not stop or change medications. If symptoms are severe, worsening, or you feel unsafe, seek urgent medical care and contact your clinician."
 }
 `.trim();
 
@@ -223,7 +232,7 @@ export async function handler(event) {
   };
 
   /* ======================================================
-     PASS 1 — ANALYSIS
+     PASS 1 — ANALYSIS (JSON FORCED)
   ====================================================== */
 
   const analysisResponse = await openai.responses.create({
@@ -235,11 +244,12 @@ export async function handler(event) {
     ]
   });
 
-  const analysis =
-    safeParseJSON(analysisResponse.output_text) || { proceed: true };
+  const analysis = safeParseJSON(analysisResponse.output_text) || {
+    proceed: true
+  };
 
   /* ======================================================
-     PASS 2 — PLAN GENERATION
+     PASS 2 — PLAN GENERATION (JSON FORCED)
   ====================================================== */
 
   const planResponse = await openai.responses.create({
@@ -293,5 +303,3 @@ export async function handler(event) {
     body: JSON.stringify(plan)
   };
 }
-/ /   f o r c e   d e p l o y   0 2 / 0 5 / 2 0 2 6   1 1 : 4 2 : 1 8  
- 
