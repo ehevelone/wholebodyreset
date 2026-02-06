@@ -9,17 +9,11 @@
     "netlify/functions/foundations_email_sequence.json"
   ]
 
-# 🔑 REQUIRED: Allow Netlify Functions to execute
-[[redirects]]
-  from = "/.netlify/functions/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-
 # 🔁 SCHEDULED FUNCTIONS
 [functions."daily-dispatcher"]
   schedule = "*/2 * * * *"
 
-# 🔒 BLOCK PUBLIC ACCESS TO PRIVATE ASSETS
+# 🔒 BLOCK PUBLIC ACCESS TO PRIVATE FUNCTION ASSETS
 [[redirects]]
   from = "/netlify/functions/assets/*"
   to = "/404.html"
