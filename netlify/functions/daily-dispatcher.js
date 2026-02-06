@@ -7,7 +7,7 @@ const PROGRAM = "guided_foundations";
 // ⏱️ Delay between Welcome → Start Here
 const WELCOME_TO_START_MINUTES = 5;
 
-// If a tester has no test_interval_hours set, default to 2 minutes for testing.
+// Tester default (minutes)
 const DEFAULT_TEST_INTERVAL_MINUTES = 2;
 
 const nowIso = () => new Date().toISOString();
@@ -36,9 +36,7 @@ function moduleFromEmailPath(p = "") {
 }
 
 /**
- * Build FULL RELATIVE PATHS that match your repo:
- * netlify/functions/emails/templates/<phase>/<group>/<file>
- * NOTE: hydration intro files are directly in /hydration (no /intro folder)
+ * Build FULL RELATIVE PATHS
  */
 function loadSequence() {
   const filePath = path.join(__dirname, "foundations_email_sequence.json");
@@ -46,13 +44,12 @@ function loadSequence() {
 
   const sequence = [];
 
-  // ✅ INTRO ORDER (hard enforced)
+  // ✅ INTRO (AUTO FLOW)
   const INTRO_ORDER = [
     "hd-01-welcome.html",
     "hd-00-start-here.html"
   ];
 
-  // Intro lives directly in hydration/
   for (const email of INTRO_ORDER) {
     sequence.push({
       email: `hydration/${email}`,
@@ -71,7 +68,6 @@ function loadSequence() {
 
     for (const groupKey of Object.keys(phase)) {
       for (const filename of phase[groupKey]) {
-        // hydration_paths go to hydration/<bt|nc|os>/
         if (phaseKey === "hydration_paths") {
           sequence.push({
             email: `hydration/${groupKey}/${filename}`,
@@ -90,12 +86,8 @@ function loadSequence() {
   return sequence;
 }
 
-/**
- * "__START__" or null = user has received nothing yet
- */
 function findNextEmail(sequence, current) {
   if (!current || current === "__START__") return sequence[0];
-
   const idx = sequence.findIndex((e) => e.email === current);
   return idx === -1 || idx + 1 >= sequence.length ? null : sequence[idx + 1];
 }
@@ -110,9 +102,10 @@ async function sendEmail(payload) {
 }
 
 function getTestIntervalMinutes(user) {
-  // user.test_interval_hours is int4 per your screenshot
   const hours = Number(user.test_interval_hours);
-  if (!Number.isFinite(hours) || hours <= 0) return DEFAULT_TEST_INTERVAL_MINUTES;
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return DEFAULT_TEST_INTERVAL_MINUTES;
+  }
   return Math.max(1, Math.round(hours * 60));
 }
 
@@ -141,7 +134,11 @@ exports.handler = async function () {
   const now = Date.now();
 
   for (const user of users) {
-    // Too early
+
+    // ⛔ STOP if waiting for BT / NC / OS input
+    if (user.awaiting_input === true) continue;
+
+    // ⏳ Too early
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
     const next = findNextEmail(sequence, user.current_email);
@@ -159,21 +156,29 @@ exports.handler = async function () {
       continue;
     }
 
-    // ✅ Scheduling rules
     const isTester = user.test_mode === true;
     const testMinutes = isTester ? getTestIntervalMinutes(user) : null;
 
-    let nextAt;
+    let nextAt = null;
+    let awaitingInput = false;
 
-    // If we just sent Welcome, ALWAYS wait 5 minutes for Start Here (tester or not)
-    if (next.email === "hydration/hd-01-welcome.html") {
+    // 🚦 FIRST HYDRATION PATH EMAIL → INTERACTIVE MODE
+    if (
+      next.email.startsWith("hydration/") &&
+      next.email.includes("/bt/")
+    ) {
+      awaitingInput = true;
+      nextAt = null;
+    }
+    // ⏱ Welcome → Start Here delay
+    else if (next.email === "hydration/hd-01-welcome.html") {
       nextAt = addMinutesISO(WELCOME_TO_START_MINUTES);
-    } else {
-      // After that: testers run fast, real users run daily
+    }
+    // 🔁 Normal cadence
+    else {
       if (isTester) {
         nextAt = addMinutesISO(testMinutes);
       } else {
-        // cadence_days 0 or 1 both become daily for real users after welcome
         nextAt = addDaysISO(1);
       }
     }
@@ -184,7 +189,8 @@ exports.handler = async function () {
         current_email: next.email,
         current_module: moduleFromEmailPath(next.email),
         last_sent_at: nowIso(),
-        next_email_at: nextAt
+        next_email_at: nextAt,
+        awaiting_input: awaitingInput
       })
       .eq("id", user.id);
   }
