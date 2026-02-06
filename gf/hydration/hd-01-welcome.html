@@ -11,7 +11,7 @@
   <!-- GLOBAL SITE STYLES -->
   <link rel="stylesheet" href="css/site.css">
 
-  <!-- PAGE-SPECIFIC STYLES (OPTIONAL) -->
+  <!-- PAGE-SPECIFIC STYLES -->
   <style>
     body {
       margin: 0;
@@ -48,6 +48,24 @@
       padding: 0 20px;
     }
 
+    .box {
+      background: #f5edd5;
+      border: 1px solid #c8bea2;
+      border-radius: 10px;
+      padding: 22px;
+      margin: 30px 0;
+    }
+
+    .box h2 {
+      margin-top: 0;
+    }
+
+    .download-link {
+      display: inline-block;
+      margin-top: 12px;
+      font-weight: 600;
+    }
+
     footer {
       margin-top: 80px;
       padding: 40px 20px;
@@ -61,12 +79,11 @@
 
 <body>
 
-<!-- LEAFY BACKGROUND PLACEHOLDERS (DO NOT REMOVE) -->
+<!-- LEAFY BACKGROUND PLACEHOLDERS -->
 <div class="leafy-left"></div>
 <div class="leafy-right"></div>
 
 <header>
-  <base href="/" />
   <img src="images/et-naturals-logo.png" alt="ET Naturals Logo">
   <nav>
     <a href="/">Home</a>
@@ -83,9 +100,7 @@
 
   <h1>Welcome to Guided Foundations</h1>
 
-  <p>
-    If you’re reading this, you’re officially in.
-  </p>
+  <p>If you’re reading this, you’re officially in.</p>
 
   <p>
     Guided Foundations is not about fixing everything at once.
@@ -93,7 +108,7 @@
   </p>
 
   <p>
-    That’s important — because a body that doesn’t feel safe
+    That matters — because a body that doesn’t feel safe
     doesn’t heal well, no matter how good the protocol looks on paper.
   </p>
 
@@ -108,6 +123,25 @@
     how this program works, how your body responds,
     and how to move forward without pushing past your limits.
   </p>
+
+  <!-- 📘 BOOK DOWNLOAD -->
+  <div class="box">
+    <h2>Your Foundations Book</h2>
+
+    <p>
+      As part of Guided Foundations, you have full access to the
+      <em>Whole Body Reset – Foundations</em> book.
+    </p>
+
+    <p>
+      If you closed it earlier or want to download it again,
+      you can always access it here.
+    </p>
+
+    <p id="bookLinkArea">
+      Checking your access…
+    </p>
+  </div>
 
   <h2>What happens next</h2>
 
@@ -144,6 +178,32 @@
   <p>© ET Naturals. All rights reserved.</p>
   <p>Educational content only. No medical claims.</p>
 </footer>
+
+<script>
+(function () {
+  const area = document.getElementById("bookLinkArea");
+
+  const email =
+    localStorage.getItem("user_email") ||
+    sessionStorage.getItem("user_email");
+
+  if (!email) {
+    area.innerHTML =
+      "<em>If you don’t see the download link, please open this page from your welcome email or contact support.</em>";
+    return;
+  }
+
+  const url =
+    "/.netlify/functions/dl-book?email=" +
+    encodeURIComponent(email);
+
+  area.innerHTML = `
+    <a class="download-link" href="${url}" target="_blank">
+      Download the Foundations Book →
+    </a>
+  `;
+})();
+</script>
 
 </body>
 </html>
