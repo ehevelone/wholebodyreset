@@ -1,27 +1,68 @@
-import Stripe from "stripe";
+// verify-access.js
+// Purpose: Verify Foundations book access via Supabase email lookup ONLY
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { persistSession: false } }
+);
 
 export async function handler(event) {
-  const token = event.queryStringParameters?.token;
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: "Method Not Allowed"
+    };
+  }
 
-  if (!token) {
-    return { statusCode: 401, body: "No token" };
+  let body;
+  try {
+    body = JSON.parse(event.body);
+  } catch {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ allowed: false, error: "Invalid JSON" })
+    };
+  }
+
+  const email = body?.email?.trim().toLowerCase();
+
+  if (!email) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ allowed: false, error: "Missing email" })
+    };
   }
 
   try {
-    const session = await stripe.checkout.sessions.retrieve(token);
+    // ✅ Check Guided Foundations enrollment
+    const { data, error } = await supabase
+      .from("guided_users")
+      .select("id,status")
+      .eq("email", email)
+      .eq("status", "active")
+      .maybeSingle();
 
-    if (session.payment_status === "paid") {
+    if (error || !data) {
       return {
         statusCode: 200,
-        body: JSON.stringify({ access: "granted" })
+        body: JSON.stringify({ allowed: false })
       };
     }
 
-    return { statusCode: 403, body: "Payment not complete" };
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allowed: true })
+    };
 
   } catch (err) {
-    return { statusCode: 401, body: "Invalid token" };
+    console.error("verify-access error:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ allowed: false, error: "Server error" })
+    };
   }
 }
