@@ -100,7 +100,10 @@ exports.registerUser = async function ({ email, product = "guided" }) {
         email,
         program: "guided_foundations",
         status: "active",
-        current_email: "__START__",   // 🔑 DO NOT CHANGE
+
+        // 🔑 FIX: mark welcome as already sent in the sequence
+        current_email: "hydration/hd-01-welcome.html",
+
         current_module: "hydration"
       },
       { onConflict: "email" }
