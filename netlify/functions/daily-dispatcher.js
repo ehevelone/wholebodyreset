@@ -57,10 +57,8 @@ function loadSequence() {
     });
   }
 
-  // 🔁 ALL OTHER PHASES
+  // 🔁 ALL OTHER PHASES (INCLUDING hydration_paths)
   for (const phaseKey of Object.keys(data.phases)) {
-    if (phaseKey === "hydration") continue;
-
     const folder = PHASE_FOLDER_MAP[phaseKey];
     if (!folder) continue;
 
@@ -93,11 +91,14 @@ function findNextEmail(sequence, current) {
 }
 
 async function sendEmail(payload) {
-  const res = await fetch("https://wholebodyreset.life/.netlify/functions/send_email", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  const res = await fetch(
+    "https://wholebodyreset.life/.netlify/functions/send_email",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    }
+  );
   return res.ok;
 }
 
@@ -163,10 +164,7 @@ exports.handler = async function () {
     let awaitingInput = false;
 
     // 🚦 FIRST HYDRATION PATH EMAIL → INTERACTIVE MODE
-    if (
-      next.email.startsWith("hydration/") &&
-      next.email.includes("/bt/")
-    ) {
+    if (next.email.startsWith("hydration/") && next.email.includes("/bt/")) {
       awaitingInput = true;
       nextAt = null;
     }
