@@ -1,3 +1,5 @@
+<!----comment to get this to commit--->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -161,7 +163,7 @@
     downloadBtn.style.display = "none";
 
     try {
-      const res = await fetch("/.netlify/functions/verify-book-access", {
+      const res = await fetch("/.netlify/functions/verify-access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
@@ -181,7 +183,8 @@
 
       downloadBtn.style.display = "inline-block";
       downloadBtn.onclick = () => {
-        window.location.href = "/.netlify/functions/download-book?email=" +
+        window.location.href =
+          "/.netlify/functions/download-book?email=" +
           encodeURIComponent(email);
       };
 
