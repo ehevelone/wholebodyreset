@@ -1,42 +1,68 @@
+const Stripe = require("stripe");
 const fs = require("fs");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 exports.handler = async function (event) {
   try {
-    const email = event.queryStringParameters?.email;
-    if (!email) {
-      return { statusCode: 400, body: "Missing email" };
+    const qs = event.queryStringParameters || {};
+    const sessionId = qs.session_id;
+    const email = qs.email?.trim().toLowerCase();
+
+    let verified = false;
+
+    /* ======================================================
+       PATH 1 — STRIPE VERIFICATION (FIRST-TIME DOWNLOAD)
+    ====================================================== */
+    if (sessionId) {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      if (session.payment_status === "paid") {
+        verified = true;
+      }
     }
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    /* ======================================================
+       PATH 2 — SUPABASE EMAIL VERIFICATION (RE-DOWNLOAD)
+    ====================================================== */
+    if (!verified && email) {
+      const { data: guided } = await supabase
+        .from("guided_users")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
 
-    // 🔎 Verify enrollment
-    const { data: user, error } = await supabase
-      .from("guided_users")
-      .select("id,email,status")
-      .eq("email", email)
-      .eq("status", "active")
-      .single();
+      const { data: ai } = await supabase
+        .from("ai_journey")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
 
-    if (error || !user) {
+      if (guided || ai) {
+        verified = true;
+      }
+    }
+
+    /* ======================================================
+       BLOCK ACCESS IF NOT VERIFIED
+    ====================================================== */
+    if (!verified) {
       return {
         statusCode: 403,
-        body: "Not enrolled"
+        body: "Missing purchase verification"
       };
     }
 
-    // 🧾 LOG DOWNLOAD (non-blocking but recorded)
-    await supabase.from("book_downloads").insert({
-      email: user.email,
-      user_id: user.id,
-      source: "welcome_page"
-    });
-
-    // 📄 Load PDF
+    /* ======================================================
+       SERVE PDF
+    ====================================================== */
     const filePath = path.join(
       __dirname,
       "assets",
@@ -56,8 +82,9 @@ exports.handler = async function (event) {
       body: fileBuffer.toString("base64"),
       isBase64Encoded: true
     };
+
   } catch (err) {
-    console.error("❌ download-book error:", err);
+    console.error("❌ dl-book error:", err);
     return {
       statusCode: 500,
       body: "Server error"
