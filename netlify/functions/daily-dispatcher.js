@@ -35,10 +35,7 @@ function moduleFromEmailPath(p = "") {
 
 function loadSequence() {
   const data = JSON.parse(
-    fs.readFileSync(
-      path.join(__dirname, "foundations_email_sequence.json"),
-      "utf8"
-    )
+    fs.readFileSync(path.join(__dirname, "foundations_email_sequence.json"), "utf8")
   );
 
   const seq = [];
@@ -77,14 +74,11 @@ function findNextEmail(seq, current) {
 }
 
 async function sendEmail(payload) {
-  const r = await fetch(
-    "https://wholebodyreset.life/.netlify/functions/send_email",
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload)
-    }
-  );
+  const r = await fetch("https://wholebodyreset.life/.netlify/functions/send_email", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload)
+  });
   return r.ok;
 }
 
@@ -120,25 +114,20 @@ exports.handler = async function () {
 
   if (fetchErr) {
     console.error("FETCH USERS ERROR:", fetchErr);
-    return { statusCode: 500 };
+    return { statusCode: 500, body: "Fetch error" };
   }
 
   console.log("DD users found:", users?.length || 0);
 
-  for (const user of users) {
-    // Waiting on user response
+  for (const user of users || []) {
     if (user.awaiting_input) continue;
-
-    // Not due yet
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
-    // Safety buffer
     if (user.last_sent_at) {
       const last = Date.parse(user.last_sent_at);
       if (now - last < SAFETY_BUFFER_MS) continue;
     }
 
-    // 🔑 POINTER FIX: always compute from LAST CONFIRMED EMAIL
     const lastSent = user.current_email || "__START__";
     const next = findNextEmail(seq, lastSent);
     if (!next) continue;
@@ -148,11 +137,7 @@ exports.handler = async function () {
       ? applyHydrationBranch(next.email, state)
       : next.email;
 
-    const sent = await sendEmail({
-      email: user.email,
-      email_file: emailToSend
-    });
-
+    const sent = await sendEmail({ email: user.email, email_file: emailToSend });
     if (!sent) continue;
 
     const isTester = user.test_mode === true;
@@ -164,35 +149,58 @@ exports.handler = async function () {
     if (emailToSend === "hydration/hd-01-welcome.html") {
       nextAt = addMinutesISO(WELCOME_TO_START_MINUTES);
     } else if (emailToSend === "hydration/hd-00-start-here.html") {
-      nextAt = isTester
-        ? addMinutesISO(testMin)
-        : addDaysISO(REAL_USER_DAYS_AFTER_START_HERE);
+      nextAt = isTester ? addMinutesISO(testMin) : addDaysISO(REAL_USER_DAYS_AFTER_START_HERE);
     } else if (isHydrationPathEmail(emailToSend)) {
-      // Send once, then block until user responds
       awaiting = true;
       nextAt = null;
     } else {
       nextAt = isTester ? addMinutesISO(testMin) : addDaysISO(1);
     }
 
-    const { error: updateErr } = await supabase
-      .from("guided_users")
-      .update({
-        current_email: emailToSend,          // 🔒 ALWAYS the email just sent
-        current_module: moduleFromEmailPath(emailToSend),
-        last_sent_at: nowIso(),
-        next_email_at: nextAt,
-        awaiting_input: awaiting
-      })
-      .eq("id", user.id);
+    const patch = {
+      current_email: emailToSend,
+      current_module: moduleFromEmailPath(emailToSend),
+      last_sent_at: nowIso(),
+      next_email_at: nextAt,
+      awaiting_input: awaiting
+    };
 
-    if (updateErr) {
-      console.error("UPDATE FAILED:", user.id, updateErr);
+    // ✅ Update by ID, then VERIFY it actually updated
+    const { data: updatedById, error: updateErrById } = await supabase
+      .from("guided_users")
+      .update(patch)
+      .eq("id", user.id)
+      .select("id,email,program,current_email,last_sent_at,next_email_at,awaiting_input");
+
+    if (updateErrById) {
+      console.error("UPDATE FAILED (by id):", user.id, updateErrById);
+      continue;
+    }
+
+    // 🔥 If zero rows updated, fallback to (email + program)
+    if (!updatedById || updatedById.length === 0) {
+      console.error("UPDATE AFFECTED 0 ROWS (by id). Falling back:", {
+        user_id: user.id,
+        email: user.email,
+        program: user.program
+      });
+
+      const { data: updatedFallback, error: updateErrFallback } = await supabase
+        .from("guided_users")
+        .update(patch)
+        .eq("email", user.email)
+        .eq("program", PROGRAM)
+        .select("id,email,program,current_email,last_sent_at,next_email_at,awaiting_input");
+
+      if (updateErrFallback) {
+        console.error("UPDATE FAILED (fallback):", updateErrFallback);
+      } else {
+        console.log("UPDATED (fallback):", updatedFallback?.[0] || null);
+      }
+    } else {
+      console.log("UPDATED (by id):", updatedById[0]);
     }
   }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ ok: true })
-  };
+  return { statusCode: 200, body: JSON.stringify({ ok: true }) };
 };

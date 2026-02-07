@@ -5,6 +5,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
+
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "POST only" };
@@ -20,20 +22,13 @@ export async function handler(event) {
   const { email, response } = payload;
 
   if (!email || !response) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Missing email or response" })
-    };
+    return { statusCode: 400, body: "Missing email or response" };
   }
 
   if (!["better", "same", "worse"].includes(response)) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Invalid response value" })
-    };
+    return { statusCode: 400, body: "Invalid response value" };
   }
 
-  // 🔎 Load user
   const { data: user, error } = await supabase
     .from("guided_users")
     .select("*")
@@ -41,13 +36,9 @@ export async function handler(event) {
     .single();
 
   if (error || !user) {
-    return {
-      statusCode: 404,
-      body: JSON.stringify({ error: "User not found" })
-    };
+    return { statusCode: 404, body: "User not found" };
   }
 
-  // ⛔ Ignore clicks if we're not waiting for input
   if (user.awaiting_input !== true) {
     return {
       statusCode: 200,
@@ -55,25 +46,25 @@ export async function handler(event) {
     };
   }
 
-  // 🎯 Map response → system state
-  let user_state = user.user_state;
-
+  let user_state = "nc";
   if (response === "better") user_state = "bt";
-  if (response === "same") user_state = "nc";
   if (response === "worse") user_state = "os";
 
-  const now = new Date().toISOString();
-
-  // ✅ Unlock dispatcher + save response
-  await supabase
+  const { error: updateErr, data: updated } = await supabase
     .from("guided_users")
     .update({
       user_state,
       last_user_response: response,
       awaiting_input: false,
-      next_email_at: now
+      next_email_at: addMinutesISO(5)
     })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .select("id,email,current_email,awaiting_input,next_email_at,user_state,last_user_response");
+
+  if (updateErr) {
+    console.error("USER RESPONSE UPDATE FAILED:", updateErr);
+    return { statusCode: 500, body: "Update failed" };
+  }
 
   return {
     statusCode: 200,
@@ -81,7 +72,8 @@ export async function handler(event) {
       ok: true,
       email,
       response,
-      user_state
+      user_state,
+      updated: updated?.[0] || null
     })
   };
 }
