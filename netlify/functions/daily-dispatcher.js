@@ -8,6 +8,10 @@ const path = require("path");
 const PROGRAM = "guided_foundations";
 const WELCOME_TO_START_MINUTES = 5;
 
+// test vs prod timing for INTRO email
+const IS_TEST_MODE = process.env.TEST_MODE === "true";
+const START_TO_INTRO_MINUTES = IS_TEST_MODE ? 60 : 72 * 60; // 1 hour test, ~3 days prod
+
 // hard safety buffer to prevent resend loops
 const SAFETY_BUFFER_MS = 2 * 60 * 1000;
 
@@ -36,10 +40,13 @@ function loadSequence() {
 
   const seq = [];
 
-  // intro
+  // hydration onboarding
   ["hd-01-welcome.html", "hd-00-start-here.html"].forEach(f =>
     seq.push({ email: `hydration/${f}` })
   );
+
+  // ⏳ delayed engagement / interaction starter
+  seq.push({ email: "intro/hd-9f3a2-e01-intro.html" });
 
   // hydration paths
   const hp = data?.phases?.hydration_paths || {};
@@ -139,12 +146,20 @@ exports.handler = async function () {
       continue;
     }
 
+    // default delay
+    let delayMinutes = WELCOME_TO_START_MINUTES;
+
+    // ⏳ special delay: Start Here → Intro
+    if (next.email === "hydration/hd-00-start-here.html") {
+      delayMinutes = START_TO_INTRO_MINUTES;
+    }
+
     const { error: updateErr } = await supabase
       .from("guided_users")
       .update({
         current_email: next.email,
         last_sent_at: new Date().toISOString(),
-        next_email_at: addMinutesISO(WELCOME_TO_START_MINUTES),
+        next_email_at: addMinutesISO(delayMinutes),
         awaiting_input: true
       })
       .eq("id", user.id);
