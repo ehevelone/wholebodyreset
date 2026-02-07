@@ -37,18 +37,15 @@ function loadSequence() {
 
   const seq = [];
 
-  // INTRO
   ["hd-01-welcome.html", "hd-00-start-here.html"].forEach(f =>
     seq.push({ email: `hydration/${f}` })
   );
 
-  // hydration paths
   const hp = data?.phases?.hydration_paths || {};
   Object.keys(hp).forEach(g =>
     hp[g].forEach(f => seq.push({ email: `hydration/${g}/${f}` }))
   );
 
-  // everything else
   Object.keys(data.phases || {}).forEach(phase => {
     if (phase === "hydration" || phase === "hydration_paths") return;
     const folder = PHASE_FOLDER_MAP[phase];
@@ -90,7 +87,6 @@ function isHydrationPathEmail(p = "") {
 }
 
 function applyHydrationBranch(p, state) {
-  if (!isHydrationPathEmail(p)) return p;
   return p.replace(/^hydration\/(bt|nc|os)\//, `hydration/${state}/`);
 }
 
@@ -103,12 +99,17 @@ exports.handler = async function () {
   const seq = loadSequence();
   const now = Date.now();
 
-  const { data: users } = await supabase
+  const { data: users, error: fetchErr } = await supabase
     .from("guided_users")
     .select("*")
     .eq("program", PROGRAM)
     .eq("status", "active")
     .eq("is_paused", false);
+
+  if (fetchErr) {
+    console.error("FETCH USERS ERROR:", fetchErr);
+    return { statusCode: 500 };
+  }
 
   for (const user of users) {
     if (user.awaiting_input) continue;
@@ -146,8 +147,7 @@ exports.handler = async function () {
       nextAt = isTester ? addMinutesISO(testMin) : addDaysISO(1);
     }
 
-    // 🔥 GUARANTEED ADVANCE
-    await supabase
+    const { error: updateErr } = await supabase
       .from("guided_users")
       .update({
         current_email: emailToSend,
@@ -156,8 +156,11 @@ exports.handler = async function () {
         next_email_at: nextAt,
         awaiting_input: awaiting
       })
-      .eq("id", user.id)
-      .eq("email", user.email);
+      .eq("id", user.id);
+
+    if (updateErr) {
+      console.error("UPDATE FAILED:", user.id, updateErr);
+    }
   }
 
   return { statusCode: 200, body: JSON.stringify({ ok: true }) };
