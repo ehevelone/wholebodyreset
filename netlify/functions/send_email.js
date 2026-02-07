@@ -4,9 +4,7 @@ const { Resend } = require("resend");
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-/**
- * Email root — this MUST match your real structure
- */
+// IMPORTANT: this path matches your repo layout
 const EMAIL_ROOT = path.join(__dirname, "emails", "templates");
 
 function loadFile(p) {
@@ -28,16 +26,33 @@ exports.handler = async function (event) {
     const htmlPath = path.join(EMAIL_ROOT, email_file);
     const subjectPath = htmlPath.replace(".html", ".subject.txt");
 
-    // ❌ REAL failure: missing files
     if (!fs.existsSync(htmlPath) || !fs.existsSync(subjectPath)) {
       console.error("EMAIL FILE MISSING", { htmlPath, subjectPath });
       return { statusCode: 500, body: "Email assets missing" };
     }
 
-    const html = loadFile(htmlPath);
+    let html = loadFile(htmlPath);
     const subject = loadFile(subjectPath).trim();
 
-    // ✅ ATTEMPT SEND — THIS IS THE ONLY THING THAT MATTERS
+    // ===============================================
+    // 🔥 RESPONSE BLOCK INJECTION
+    // ===============================================
+    const responseBlockPath = path.join(
+      EMAIL_ROOT,
+      "response-block.html"
+    );
+
+    if (fs.existsSync(responseBlockPath)) {
+      let responseBlock = loadFile(responseBlockPath);
+      responseBlock = responseBlock.replace(/{{EMAIL}}/g, email);
+
+      if (html.includes("</body>")) {
+        html = html.replace("</body>", `${responseBlock}\n</body>`);
+      } else {
+        html += `\n${responseBlock}`;
+      }
+    }
+
     try {
       await resend.emails.send({
         from:
@@ -48,11 +63,9 @@ exports.handler = async function (event) {
         html
       });
     } catch (err) {
-      // ⚠️ TRANSPORT ERRORS DO NOT BLOCK PROGRESSION
       console.warn("Resend transport issue (ignored):", err.message);
     }
 
-    // ✅ ALWAYS REPORT SUCCESS IF WE GOT THIS FAR
     console.log("send_email ACCEPTED", email_file, "→", email);
 
     return {

@@ -8,81 +8,58 @@ const supabase = createClient(
 const addMinutesISO = m =>
   new Date(Date.now() + m * 60000).toISOString();
 
+function htmlPage(title, msg) {
+  return {
+    statusCode: 200,
+    headers: { "content-type": "text/html; charset=utf-8" },
+    body: `<!doctype html>
+<html>
+<body style="font-family:Georgia,serif;background:#efe4c9;color:#2f3b2f;padding:24px">
+<h2>${title}</h2>
+<p>${msg}</p>
+</body></html>`
+  };
+}
+
 export async function handler(event) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "POST only" };
+  const method = event.httpMethod;
+  if (!["GET", "POST"].includes(method)) {
+    return { statusCode: 405, body: "GET or POST only" };
   }
 
-  let payload;
-  try {
+  let payload = {};
+  if (method === "POST") {
     payload = JSON.parse(event.body || "{}");
-  } catch {
-    return { statusCode: 400, body: "Invalid JSON" };
+  } else {
+    payload = event.queryStringParameters || {};
   }
 
-  const { email, response, sent_email, event: systemEvent } = payload;
+  const email = (payload.email || "").trim();
+  const response = (payload.response || "").toLowerCase();
 
-  if (!email) {
-    return { statusCode: 400, body: "Missing email" };
+  if (!email || !["better", "same", "worse"].includes(response)) {
+    return htmlPage("Invalid link", "This response link is not valid.");
   }
 
-  // ==================================================
-  // 🔥 SYSTEM MODE — called by DAILY DISPATCHER
-  // ==================================================
-  if (systemEvent === "email_sent" && sent_email) {
-    const { error } = await supabase
-      .from("guided_users")
-      .update({
-        current_email: sent_email,
-        last_sent_at: new Date().toISOString()
-        // ⛔ next_email_at stays owned by DD
-      })
-      .eq("email", email);
-
-    if (error) {
-      console.error("SYSTEM UPDATE FAILED:", error);
-      return { statusCode: 500, body: "System update failed" };
-    }
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ ok: true, mode: "system", email, sent_email })
-    };
-  }
-
-  // ==================================================
-  // 👤 USER MODE — bt / nc / os click
-  // ==================================================
-  if (!response) {
-    return { statusCode: 400, body: "Missing response" };
-  }
-
-  if (!["better", "same", "worse"].includes(response)) {
-    return { statusCode: 400, body: "Invalid response value" };
-  }
-
-  const { data: user, error } = await supabase
+  const { data: user } = await supabase
     .from("guided_users")
     .select("*")
     .eq("email", email)
     .single();
 
-  if (error || !user) {
-    return { statusCode: 404, body: "User not found" };
+  if (!user) {
+    return htmlPage("User not found", "We couldn’t find your account.");
   }
 
   if (user.awaiting_input !== true) {
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ ok: true, ignored: true })
-    };
+    return htmlPage("Already received", "Your response was already saved.");
   }
 
   let user_state = "nc";
   if (response === "better") user_state = "bt";
   if (response === "worse") user_state = "os";
 
-  const { error: updateErr, data: updated } = await supabase
+  const { error } = await supabase
     .from("guided_users")
     .update({
       user_state,
@@ -90,25 +67,14 @@ export async function handler(event) {
       awaiting_input: false,
       next_email_at: addMinutesISO(5)
     })
-    .eq("id", user.id)
-    .select(
-      "id,email,current_email,awaiting_input,next_email_at,user_state,last_user_response"
-    );
+    .eq("id", user.id);
 
-  if (updateErr) {
-    console.error("USER RESPONSE UPDATE FAILED:", updateErr);
-    return { statusCode: 500, body: "Update failed" };
+  if (error) {
+    return htmlPage("Error", "We couldn’t save your response. Please try again.");
   }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      ok: true,
-      mode: "user",
-      email,
-      response,
-      user_state,
-      updated: updated?.[0] || null
-    })
-  };
+  return htmlPage(
+    "Response received",
+    "Thanks — your check-in was saved. You can close this page."
+  );
 }

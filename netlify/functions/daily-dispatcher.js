@@ -7,13 +7,12 @@ const path = require("path");
 
 const PROGRAM = "guided_foundations";
 const WELCOME_TO_START_MINUTES = 5;
-const DEFAULT_TEST_INTERVAL_MINUTES = 2;
 
 // hard safety buffer to prevent resend loops
 const SAFETY_BUFFER_MS = 2 * 60 * 1000;
 
-const addDaysISO = d => new Date(Date.now() + d * 86400000).toISOString();
-const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
+const addMinutesISO = m =>
+  new Date(Date.now() + m * 60000).toISOString();
 
 const PHASE_FOLDER_MAP = {
   hydration: "hydration",
@@ -25,7 +24,7 @@ const PHASE_FOLDER_MAP = {
 };
 
 // ==================================================
-// 📦 LOAD SEQUENCE (UNCHANGED)
+// 📦 LOAD SEQUENCE
 // ==================================================
 function loadSequence() {
   const data = JSON.parse(
@@ -37,7 +36,7 @@ function loadSequence() {
 
   const seq = [];
 
-  // INTRO
+  // intro
   ["hd-01-welcome.html", "hd-00-start-here.html"].forEach(f =>
     seq.push({ email: `hydration/${f}` })
   );
@@ -65,7 +64,7 @@ function loadSequence() {
 }
 
 // ==================================================
-// 🔎 FIND NEXT EMAIL (UNCHANGED)
+// 🔎 NEXT EMAIL
 // ==================================================
 function findNextEmail(seq, current) {
   if (!current || current === "__START__") return seq[0];
@@ -74,7 +73,7 @@ function findNextEmail(seq, current) {
 }
 
 // ==================================================
-// ✉️ SEND EMAIL (UNCHANGED)
+// ✉️ SEND EMAIL
 // ==================================================
 async function sendEmail(payload) {
   const res = await fetch(
@@ -110,18 +109,14 @@ exports.handler = async function () {
     .or("is_paused.is.null,is_paused.eq.false");
 
   if (error) {
-    console.error("❌ FETCH USERS ERROR:", error);
+    console.error("FETCH USERS ERROR:", error);
     return { statusCode: 500, body: "Fetch error" };
   }
 
   console.log("📨 Users found:", users.length);
 
   for (const user of users) {
-    // ----------------------------------------------
-    // 🛑 GUARDS (UNCHANGED)
-    // ----------------------------------------------
     if (user.awaiting_input) continue;
-
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
     if (user.last_sent_at) {
@@ -140,25 +135,22 @@ exports.handler = async function () {
     });
 
     if (!sent) {
-      console.error("❌ SEND FAILED:", user.email);
+      console.error("SEND FAILED:", user.email);
       continue;
     }
 
-    // ----------------------------------------------
-    // 🔥 AUTHORITATIVE STATE WRITE (NEW)
-    // ----------------------------------------------
     const { error: updateErr } = await supabase
       .from("guided_users")
       .update({
         current_email: next.email,
         last_sent_at: new Date().toISOString(),
         next_email_at: addMinutesISO(WELCOME_TO_START_MINUTES),
-        awaiting_input: true // flip to false later via update-user
+        awaiting_input: true
       })
-      .eq("email", user.email);
+      .eq("id", user.id);
 
     if (updateErr) {
-      console.error("❌ STATE UPDATE FAILED:", user.email, updateErr);
+      console.error("STATE UPDATE FAILED:", user.email, updateErr);
     } else {
       console.log("✅ STATE UPDATED:", user.email, next.email);
     }
