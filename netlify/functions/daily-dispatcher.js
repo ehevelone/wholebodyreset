@@ -5,11 +5,14 @@ const path = require("path");
 
 const PROGRAM = "guided_foundations";
 
-// ⏱️ Delay between Welcome → Start Here
+// ⏱️ Delay between Welcome → Start Here (ALWAYS 5 minutes)
 const WELCOME_TO_START_MINUTES = 5;
 
-// Tester default (minutes)
+// Tester default (minutes) if test_interval_hours missing/invalid
 const DEFAULT_TEST_INTERVAL_MINUTES = 2;
+
+// Real users cadence AFTER Start Here (until first hydration interactive email)
+const REAL_USER_DAYS_AFTER_START_HERE = 3;
 
 const nowIso = () => new Date().toISOString();
 const addDaysISO = (d) => new Date(Date.now() + d * 86400000).toISOString();
@@ -37,7 +40,10 @@ function moduleFromEmailPath(p = "") {
 }
 
 /**
- * Build FULL SEQUENCE (keeps your original structure)
+ * Build FULL SEQUENCE (PRODUCTION, ORDERED)
+ * - Intro is ALWAYS first
+ * - hydration_paths ALWAYS comes immediately after intro (order is enforced)
+ * - then everything else
  */
 function loadSequence() {
   const filePath = path.join(__dirname, "foundations_email_sequence.json");
@@ -51,22 +57,26 @@ function loadSequence() {
     sequence.push({ email: `hydration/${email}` });
   }
 
-  // 🔁 ALL OTHER PHASES
-  for (const phaseKey of Object.keys(data.phases)) {
+  // ✅ hydration_paths — ALWAYS NEXT (order enforced)
+  const hydrationPaths = data?.phases?.hydration_paths || {};
+  for (const groupKey of Object.keys(hydrationPaths)) {
+    for (const filename of hydrationPaths[groupKey]) {
+      sequence.push({ email: `hydration/${groupKey}/${filename}` });
+    }
+  }
+
+  // 🔁 ALL OTHER PHASES (excluding hydration + hydration_paths)
+  for (const phaseKey of Object.keys(data.phases || {})) {
     if (phaseKey === "hydration") continue;
+    if (phaseKey === "hydration_paths") continue;
 
     const folder = PHASE_FOLDER_MAP[phaseKey];
     if (!folder) continue;
 
     const phase = data.phases[phaseKey];
-
     for (const groupKey of Object.keys(phase)) {
       for (const filename of phase[groupKey]) {
-        if (phaseKey === "hydration_paths") {
-          sequence.push({ email: `hydration/${groupKey}/${filename}` });
-        } else {
-          sequence.push({ email: `${folder}/${groupKey}/${filename}` });
-        }
+        sequence.push({ email: `${folder}/${groupKey}/${filename}` });
       }
     }
   }
@@ -77,7 +87,6 @@ function loadSequence() {
 /**
  * IMPORTANT:
  * We do NOT filter the sequence before calling findNextEmail.
- * Filtering is what caused “start-here spam” and “no advance”.
  */
 function findNextEmail(sequence, current) {
   if (!current || current === "__START__") return sequence[0];
@@ -86,14 +95,11 @@ function findNextEmail(sequence, current) {
 }
 
 async function sendEmail(payload) {
-  const res = await fetch(
-    "https://wholebodyreset.life/.netlify/functions/send_email",
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload)
-    }
-  );
+  const res = await fetch("https://wholebodyreset.life/.netlify/functions/send_email", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload)
+  });
   return res.ok;
 }
 
@@ -104,7 +110,7 @@ function getTestIntervalMinutes(user) {
   return Math.max(1, Math.round(hours * 60));
 }
 
-// helper: is this one of the interactive hydration path emails?
+// hydration path email = anything inside hydration/(bt|nc|os)/
 function isHydrationPathEmail(emailPath = "") {
   return (
     emailPath.startsWith("hydration/") &&
@@ -112,19 +118,13 @@ function isHydrationPathEmail(emailPath = "") {
   );
 }
 
-// helper: choose which hydration path to send AFTER user clicks (bt/nc/os)
+// Force hydration path folder to match user_state (bt|nc|os)
 function applyHydrationBranch(emailPath, userState) {
-  // Only rewrite hydration_paths emails. Everything else stays the same.
-  // Example incoming: hydration/bt/hd-xx.html  OR hydration/nc/...
-  if (!emailPath.startsWith("hydration/")) return emailPath;
+  if (!isHydrationPathEmail(emailPath)) return emailPath;
 
-  const match = emailPath.match(/^hydration\/(bt|nc|os)\//);
-  if (!match) return emailPath;
-
-  const state = (userState || "").toLowerCase();
+  const state = String(userState || "").toLowerCase();
   if (!["bt", "nc", "os"].includes(state)) return emailPath;
 
-  // Replace the branch folder only
   return emailPath.replace(/^hydration\/(bt|nc|os)\//, `hydration/${state}/`);
 }
 
@@ -153,21 +153,22 @@ exports.handler = async function () {
   const now = Date.now();
 
   for (const user of users) {
-    // ⛔ WAITING FOR USER INPUT
+    // ⛔ WAITING FOR USER INPUT (interactive mode)
     if (user.awaiting_input === true) continue;
 
     // ⏳ TOO EARLY
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
-    // ✅ Determine "next" from the FULL sequence (no filtering!)
+    // ✅ Determine next from FULL sequence (no filtering)
     const nextBase = findNextEmail(fullSequence, user.current_email);
     if (!nextBase) continue;
 
-    // ✅ If we're about to send a hydration path email, apply user_state branch (bt/nc/os)
-    const nextEmail =
-      isHydrationPathEmail(nextBase.email) && user.user_state
-        ? applyHydrationBranch(nextBase.email, user.user_state)
-        : nextBase.email;
+    // ✅ If hydration path email and user has no state yet, default to NC for the FIRST interactive send
+    const effectiveState = user.user_state ? String(user.user_state).toLowerCase() : "nc";
+
+    const nextEmail = isHydrationPathEmail(nextBase.email)
+      ? applyHydrationBranch(nextBase.email, effectiveState)
+      : nextBase.email;
 
     console.log("SENDING", nextEmail, "TO", user.email);
 
@@ -187,21 +188,27 @@ exports.handler = async function () {
     let nextAt = null;
     let awaitingInput = false;
 
-    // ⏱ Welcome → Start Here delay
+    // ⏱ Welcome → Start Here (always 5 min)
     if (nextEmail === "hydration/hd-01-welcome.html") {
       nextAt = addMinutesISO(WELCOME_TO_START_MINUTES);
     }
-    // 🚦 FIRST HYDRATION PATH EMAIL → LOCK SYSTEM (wait for click)
+    // ✅ After Start Here, schedule next send:
+    // - testers: their interval
+    // - real users: 3 days
+    else if (nextEmail === "hydration/hd-00-start-here.html") {
+      nextAt = isTester ? addMinutesISO(testMinutes) : addDaysISO(REAL_USER_DAYS_AFTER_START_HERE);
+    }
+    // 🚦 First hydration path email sent → LOCK and wait for click (bt/nc/os)
     else if (isHydrationPathEmail(nextEmail)) {
       awaitingInput = true;
       nextAt = null;
     }
-    // 🔁 NORMAL CADENCE
+    // 🔁 Everything else (post-hydration branches + later phases)
     else {
-      nextAt = isTester ? addMinutesISO(testMinutes) : addDaysISO(3); // <-- 3 days for real users (your requirement)
+      nextAt = isTester ? addMinutesISO(testMinutes) : addDaysISO(1);
     }
 
-    // ✅ CRITICAL: always advance current_email to what we ACTUALLY sent
+    // ✅ CRITICAL: advance current_email to what we ACTUALLY sent
     await supabase
       .from("guided_users")
       .update({
