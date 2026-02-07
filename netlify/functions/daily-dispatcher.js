@@ -1,3 +1,4 @@
+// netlify/functions/daily-dispatcher.js
 const { createClient } = require("@supabase/supabase-js");
 const fs = require("fs");
 const path = require("path");
@@ -36,7 +37,7 @@ function moduleFromEmailPath(p = "") {
 }
 
 /**
- * Build FULL SEQUENCE
+ * Build FULL SEQUENCE (keeps your original structure)
  */
 function loadSequence() {
   const filePath = path.join(__dirname, "foundations_email_sequence.json");
@@ -45,11 +46,7 @@ function loadSequence() {
   const sequence = [];
 
   // ✅ INTRO — ALWAYS FIRST
-  const INTRO_ORDER = [
-    "hd-01-welcome.html",
-    "hd-00-start-here.html"
-  ];
-
+  const INTRO_ORDER = ["hd-01-welcome.html", "hd-00-start-here.html"];
   for (const email of INTRO_ORDER) {
     sequence.push({ email: `hydration/${email}` });
   }
@@ -77,9 +74,14 @@ function loadSequence() {
   return sequence;
 }
 
+/**
+ * IMPORTANT:
+ * We do NOT filter the sequence before calling findNextEmail.
+ * Filtering is what caused “start-here spam” and “no advance”.
+ */
 function findNextEmail(sequence, current) {
   if (!current || current === "__START__") return sequence[0];
-  const idx = sequence.findIndex(e => e.email === current);
+  const idx = sequence.findIndex((e) => e.email === current);
   return idx === -1 || idx + 1 >= sequence.length ? null : sequence[idx + 1];
 }
 
@@ -95,10 +97,35 @@ async function sendEmail(payload) {
   return res.ok;
 }
 
+// supports int OR decimal hours (0.25 = 15 mins)
 function getTestIntervalMinutes(user) {
   const hours = Number(user.test_interval_hours);
   if (!Number.isFinite(hours) || hours <= 0) return DEFAULT_TEST_INTERVAL_MINUTES;
   return Math.max(1, Math.round(hours * 60));
+}
+
+// helper: is this one of the interactive hydration path emails?
+function isHydrationPathEmail(emailPath = "") {
+  return (
+    emailPath.startsWith("hydration/") &&
+    (emailPath.includes("/bt/") || emailPath.includes("/nc/") || emailPath.includes("/os/"))
+  );
+}
+
+// helper: choose which hydration path to send AFTER user clicks (bt/nc/os)
+function applyHydrationBranch(emailPath, userState) {
+  // Only rewrite hydration_paths emails. Everything else stays the same.
+  // Example incoming: hydration/bt/hd-xx.html  OR hydration/nc/...
+  if (!emailPath.startsWith("hydration/")) return emailPath;
+
+  const match = emailPath.match(/^hydration\/(bt|nc|os)\//);
+  if (!match) return emailPath;
+
+  const state = (userState || "").toLowerCase();
+  if (!["bt", "nc", "os"].includes(state)) return emailPath;
+
+  // Replace the branch folder only
+  return emailPath.replace(/^hydration\/(bt|nc|os)\//, `hydration/${state}/`);
 }
 
 exports.handler = async function () {
@@ -126,32 +153,33 @@ exports.handler = async function () {
   const now = Date.now();
 
   for (const user of users) {
-
     // ⛔ WAITING FOR USER INPUT
     if (user.awaiting_input === true) continue;
 
     // ⏳ TOO EARLY
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
-    // 🎯 BRANCH BY USER STATE IF PRESENT
-    let sequence = fullSequence;
-    if (user.user_state) {
-      sequence = fullSequence.filter(e =>
-        e.email.includes(`/hydration/${user.user_state}/`)
-      );
-    }
+    // ✅ Determine "next" from the FULL sequence (no filtering!)
+    const nextBase = findNextEmail(fullSequence, user.current_email);
+    if (!nextBase) continue;
 
-    const next = findNextEmail(sequence, user.current_email);
-    if (!next) continue;
+    // ✅ If we're about to send a hydration path email, apply user_state branch (bt/nc/os)
+    const nextEmail =
+      isHydrationPathEmail(nextBase.email) && user.user_state
+        ? applyHydrationBranch(nextBase.email, user.user_state)
+        : nextBase.email;
 
-    console.log("SENDING", next.email, "TO", user.email);
+    console.log("SENDING", nextEmail, "TO", user.email);
 
     const sent = await sendEmail({
       email: user.email,
-      email_file: next.email
+      email_file: nextEmail
     });
 
-    if (!sent) continue;
+    if (!sent) {
+      console.error("FAILED SEND", user.email, nextEmail);
+      continue;
+    }
 
     const isTester = user.test_mode === true;
     const testMinutes = isTester ? getTestIntervalMinutes(user) : null;
@@ -159,27 +187,26 @@ exports.handler = async function () {
     let nextAt = null;
     let awaitingInput = false;
 
-    // ⏱ Welcome → Start Here
-    if (next.email === "hydration/hd-01-welcome.html") {
+    // ⏱ Welcome → Start Here delay
+    if (nextEmail === "hydration/hd-01-welcome.html") {
       nextAt = addMinutesISO(WELCOME_TO_START_MINUTES);
     }
-
-    // 🚦 FIRST BT / NC / OS EMAIL → LOCK SYSTEM
-    else if (next.email.match(/\/(bt|nc|os)\//)) {
+    // 🚦 FIRST HYDRATION PATH EMAIL → LOCK SYSTEM (wait for click)
+    else if (isHydrationPathEmail(nextEmail)) {
       awaitingInput = true;
       nextAt = null;
     }
-
     // 🔁 NORMAL CADENCE
     else {
-      nextAt = isTester ? addMinutesISO(testMinutes) : addDaysISO(1);
+      nextAt = isTester ? addMinutesISO(testMinutes) : addDaysISO(3); // <-- 3 days for real users (your requirement)
     }
 
+    // ✅ CRITICAL: always advance current_email to what we ACTUALLY sent
     await supabase
       .from("guided_users")
       .update({
-        current_email: next.email,
-        current_module: moduleFromEmailPath(next.email),
+        current_email: nextEmail,
+        current_module: moduleFromEmailPath(nextEmail),
         last_sent_at: nowIso(),
         next_email_at: nextAt,
         awaiting_input: awaitingInput
