@@ -8,7 +8,7 @@ const WELCOME_TO_START_MINUTES = 5;
 const DEFAULT_TEST_INTERVAL_MINUTES = 2;
 const REAL_USER_DAYS_AFTER_START_HERE = 3;
 
-// ⏳ Safety buffer to prevent race conditions
+// Safety buffer to prevent race conditions
 const SAFETY_BUFFER_MS = 2 * 60 * 1000;
 
 const nowIso = () => new Date().toISOString();
@@ -48,13 +48,13 @@ function loadSequence() {
     seq.push({ email: `hydration/${f}` })
   );
 
-  // hydration paths
+  // Hydration paths
   const hp = data?.phases?.hydration_paths || {};
   Object.keys(hp).forEach(g =>
     hp[g].forEach(f => seq.push({ email: `hydration/${g}/${f}` }))
   );
 
-  // everything else
+  // Remaining phases
   Object.keys(data.phases || {}).forEach(phase => {
     if (phase === "hydration" || phase === "hydration_paths") return;
     const folder = PHASE_FOLDER_MAP[phase];
@@ -126,25 +126,27 @@ exports.handler = async function () {
   console.log("DD users found:", users?.length || 0);
 
   for (const user of users) {
-    // ⛔ waiting on user input
+    // Waiting on user response
     if (user.awaiting_input) continue;
 
-    // ⏰ next email not due yet
+    // Not due yet
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
-    // ⏳ safety buffer to avoid race conditions
+    // Safety buffer
     if (user.last_sent_at) {
       const last = Date.parse(user.last_sent_at);
       if (now - last < SAFETY_BUFFER_MS) continue;
     }
 
-    const base = findNextEmail(seq, user.current_email);
-    if (!base) continue;
+    // 🔑 POINTER FIX: always compute from LAST CONFIRMED EMAIL
+    const lastSent = user.current_email || "__START__";
+    const next = findNextEmail(seq, lastSent);
+    if (!next) continue;
 
     const state = (user.user_state || "nc").toLowerCase();
-    const emailToSend = isHydrationPathEmail(base.email)
-      ? applyHydrationBranch(base.email, state)
-      : base.email;
+    const emailToSend = isHydrationPathEmail(next.email)
+      ? applyHydrationBranch(next.email, state)
+      : next.email;
 
     const sent = await sendEmail({
       email: user.email,
@@ -166,7 +168,9 @@ exports.handler = async function () {
         ? addMinutesISO(testMin)
         : addDaysISO(REAL_USER_DAYS_AFTER_START_HERE);
     } else if (isHydrationPathEmail(emailToSend)) {
+      // Send once, then block until user responds
       awaiting = true;
+      nextAt = null;
     } else {
       nextAt = isTester ? addMinutesISO(testMin) : addDaysISO(1);
     }
@@ -174,7 +178,7 @@ exports.handler = async function () {
     const { error: updateErr } = await supabase
       .from("guided_users")
       .update({
-        current_email: emailToSend,
+        current_email: emailToSend,          // 🔒 ALWAYS the email just sent
         current_module: moduleFromEmailPath(emailToSend),
         last_sent_at: nowIso(),
         next_email_at: nextAt,
