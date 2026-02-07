@@ -1,5 +1,6 @@
-// 🔥 FORCE GIT CHANGE - DD MAILMAN MODE
+// 🔥 DAILY DISPATCH — MAILMAN + LEDGER (AUTHORITATIVE)
 // netlify/functions/daily-dispatcher.js
+
 const { createClient } = require("@supabase/supabase-js");
 const fs = require("fs");
 const path = require("path");
@@ -23,6 +24,9 @@ const PHASE_FOLDER_MAP = {
   maintenance: "maintenance"
 };
 
+// ==================================================
+// 📦 LOAD SEQUENCE (UNCHANGED)
+// ==================================================
 function loadSequence() {
   const data = JSON.parse(
     fs.readFileSync(
@@ -60,12 +64,18 @@ function loadSequence() {
   return seq;
 }
 
+// ==================================================
+// 🔎 FIND NEXT EMAIL (UNCHANGED)
+// ==================================================
 function findNextEmail(seq, current) {
   if (!current || current === "__START__") return seq[0];
   const i = seq.findIndex(e => e.email === current);
   return i === -1 || i + 1 >= seq.length ? null : seq[i + 1];
 }
 
+// ==================================================
+// ✉️ SEND EMAIL (UNCHANGED)
+// ==================================================
 async function sendEmail(payload) {
   const res = await fetch(
     "https://wholebodyreset.life/.netlify/functions/send_email",
@@ -78,19 +88,9 @@ async function sendEmail(payload) {
   return res.ok;
 }
 
-// 🔥 NEW: HANDOFF TO UPDATE-USER (THE BRAIN)
-async function notifyUpdateUser(payload) {
-  const res = await fetch(
-    "https://wholebodyreset.life/.netlify/functions/update-user",
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload)
-    }
-  );
-  return res.ok;
-}
-
+// ==================================================
+// 🚀 HANDLER
+// ==================================================
 exports.handler = async function () {
   console.log("📬 DAILY DISPATCH RUN", new Date().toISOString());
 
@@ -110,14 +110,18 @@ exports.handler = async function () {
     .or("is_paused.is.null,is_paused.eq.false");
 
   if (error) {
-    console.error("FETCH USERS ERROR:", error);
+    console.error("❌ FETCH USERS ERROR:", error);
     return { statusCode: 500, body: "Fetch error" };
   }
 
   console.log("📨 Users found:", users.length);
 
   for (const user of users) {
+    // ----------------------------------------------
+    // 🛑 GUARDS (UNCHANGED)
+    // ----------------------------------------------
     if (user.awaiting_input) continue;
+
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
     if (user.last_sent_at) {
@@ -140,17 +144,23 @@ exports.handler = async function () {
       continue;
     }
 
-    // 🔥 HANDOFF — THIS IS THE FIX
-    const updated = await notifyUpdateUser({
-      email: user.email,
-      sent_email: next.email,
-      event: "email_sent"
-    });
+    // ----------------------------------------------
+    // 🔥 AUTHORITATIVE STATE WRITE (NEW)
+    // ----------------------------------------------
+    const { error: updateErr } = await supabase
+      .from("guided_users")
+      .update({
+        current_email: next.email,
+        last_sent_at: new Date().toISOString(),
+        next_email_at: addMinutesISO(WELCOME_TO_START_MINUTES),
+        awaiting_input: true // flip to false later via update-user
+      })
+      .eq("email", user.email);
 
-    if (!updated) {
-      console.error("❌ UPDATE-USER FAILED:", user.email);
+    if (updateErr) {
+      console.error("❌ STATE UPDATE FAILED:", user.email, updateErr);
     } else {
-      console.log("✅ UPDATE-USER CALLED:", user.email);
+      console.log("✅ STATE UPDATED:", user.email, next.email);
     }
   }
 
