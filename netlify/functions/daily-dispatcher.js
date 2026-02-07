@@ -8,6 +8,9 @@ const WELCOME_TO_START_MINUTES = 5;
 const DEFAULT_TEST_INTERVAL_MINUTES = 2;
 const REAL_USER_DAYS_AFTER_START_HERE = 3;
 
+// ⏳ Safety buffer to prevent race conditions
+const SAFETY_BUFFER_MS = 2 * 60 * 1000;
+
 const nowIso = () => new Date().toISOString();
 const addDaysISO = d => new Date(Date.now() + d * 86400000).toISOString();
 const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
@@ -32,20 +35,26 @@ function moduleFromEmailPath(p = "") {
 
 function loadSequence() {
   const data = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "foundations_email_sequence.json"), "utf8")
+    fs.readFileSync(
+      path.join(__dirname, "foundations_email_sequence.json"),
+      "utf8"
+    )
   );
 
   const seq = [];
 
+  // INTRO
   ["hd-01-welcome.html", "hd-00-start-here.html"].forEach(f =>
     seq.push({ email: `hydration/${f}` })
   );
 
+  // hydration paths
   const hp = data?.phases?.hydration_paths || {};
   Object.keys(hp).forEach(g =>
     hp[g].forEach(f => seq.push({ email: `hydration/${g}/${f}` }))
   );
 
+  // everything else
   Object.keys(data.phases || {}).forEach(phase => {
     if (phase === "hydration" || phase === "hydration_paths") return;
     const folder = PHASE_FOLDER_MAP[phase];
@@ -68,11 +77,14 @@ function findNextEmail(seq, current) {
 }
 
 async function sendEmail(payload) {
-  const r = await fetch("https://wholebodyreset.life/.netlify/functions/send_email", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  const r = await fetch(
+    "https://wholebodyreset.life/.netlify/functions/send_email",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    }
+  );
   return r.ok;
 }
 
@@ -103,17 +115,28 @@ exports.handler = async function () {
     .from("guided_users")
     .select("*")
     .eq("program", PROGRAM)
-    .eq("status", "active")
-    .eq("is_paused", false);
+    .in("status", ["active", "enrolled", "started"])
+    .or("is_paused.is.null,is_paused.eq.false");
 
   if (fetchErr) {
     console.error("FETCH USERS ERROR:", fetchErr);
     return { statusCode: 500 };
   }
 
+  console.log("DD users found:", users?.length || 0);
+
   for (const user of users) {
+    // ⛔ waiting on user input
     if (user.awaiting_input) continue;
+
+    // ⏰ next email not due yet
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
+
+    // ⏳ safety buffer to avoid race conditions
+    if (user.last_sent_at) {
+      const last = Date.parse(user.last_sent_at);
+      if (now - last < SAFETY_BUFFER_MS) continue;
+    }
 
     const base = findNextEmail(seq, user.current_email);
     if (!base) continue;
@@ -127,6 +150,7 @@ exports.handler = async function () {
       email: user.email,
       email_file: emailToSend
     });
+
     if (!sent) continue;
 
     const isTester = user.test_mode === true;
@@ -163,5 +187,8 @@ exports.handler = async function () {
     }
   }
 
-  return { statusCode: 200, body: JSON.stringify({ ok: true }) };
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ ok: true })
+  };
 };
