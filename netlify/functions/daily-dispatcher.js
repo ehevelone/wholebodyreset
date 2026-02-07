@@ -36,7 +36,7 @@ function moduleFromEmailPath(p = "") {
 }
 
 /**
- * Build FULL RELATIVE PATHS
+ * Build FULL SEQUENCE
  */
 function loadSequence() {
   const filePath = path.join(__dirname, "foundations_email_sequence.json");
@@ -44,19 +44,18 @@ function loadSequence() {
 
   const sequence = [];
 
-  // ✅ INTRO (AUTO FLOW) — ALWAYS FIRST, ALWAYS ONLY ONCE IN SEQUENCE
-  const INTRO_ORDER = ["hd-01-welcome.html", "hd-00-start-here.html"];
+  // ✅ INTRO — ALWAYS FIRST
+  const INTRO_ORDER = [
+    "hd-01-welcome.html",
+    "hd-00-start-here.html"
+  ];
 
   for (const email of INTRO_ORDER) {
-    sequence.push({
-      email: `hydration/${email}`,
-      cadence_days: 0
-    });
+    sequence.push({ email: `hydration/${email}` });
   }
 
   // 🔁 ALL OTHER PHASES
   for (const phaseKey of Object.keys(data.phases)) {
-    // 🚫 DO NOT re-add hydration here (intro already handled above)
     if (phaseKey === "hydration") continue;
 
     const folder = PHASE_FOLDER_MAP[phaseKey];
@@ -66,17 +65,10 @@ function loadSequence() {
 
     for (const groupKey of Object.keys(phase)) {
       for (const filename of phase[groupKey]) {
-        // hydration_paths go to hydration/<bt|nc|os>/
         if (phaseKey === "hydration_paths") {
-          sequence.push({
-            email: `hydration/${groupKey}/${filename}`,
-            cadence_days: 1
-          });
+          sequence.push({ email: `hydration/${groupKey}/${filename}` });
         } else {
-          sequence.push({
-            email: `${folder}/${groupKey}/${filename}`,
-            cadence_days: 1
-          });
+          sequence.push({ email: `${folder}/${groupKey}/${filename}` });
         }
       }
     }
@@ -87,7 +79,7 @@ function loadSequence() {
 
 function findNextEmail(sequence, current) {
   if (!current || current === "__START__") return sequence[0];
-  const idx = sequence.findIndex((e) => e.email === current);
+  const idx = sequence.findIndex(e => e.email === current);
   return idx === -1 || idx + 1 >= sequence.length ? null : sequence[idx + 1];
 }
 
@@ -105,9 +97,7 @@ async function sendEmail(payload) {
 
 function getTestIntervalMinutes(user) {
   const hours = Number(user.test_interval_hours);
-  if (!Number.isFinite(hours) || hours <= 0) {
-    return DEFAULT_TEST_INTERVAL_MINUTES;
-  }
+  if (!Number.isFinite(hours) || hours <= 0) return DEFAULT_TEST_INTERVAL_MINUTES;
   return Math.max(1, Math.round(hours * 60));
 }
 
@@ -119,7 +109,7 @@ exports.handler = async function () {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  const sequence = loadSequence();
+  const fullSequence = loadSequence();
 
   const { data: users, error } = await supabase
     .from("guided_users")
@@ -136,11 +126,20 @@ exports.handler = async function () {
   const now = Date.now();
 
   for (const user of users) {
-    // ⛔ STOP if waiting for BT / NC / OS input
+
+    // ⛔ WAITING FOR USER INPUT
     if (user.awaiting_input === true) continue;
 
-    // ⏳ Too early
+    // ⏳ TOO EARLY
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
+
+    // 🎯 BRANCH BY USER STATE IF PRESENT
+    let sequence = fullSequence;
+    if (user.user_state) {
+      sequence = fullSequence.filter(e =>
+        e.email.includes(`/hydration/${user.user_state}/`)
+      );
+    }
 
     const next = findNextEmail(sequence, user.current_email);
     if (!next) continue;
@@ -152,10 +151,7 @@ exports.handler = async function () {
       email_file: next.email
     });
 
-    if (!sent) {
-      console.error("FAILED SEND", user.email, next.email);
-      continue;
-    }
+    if (!sent) continue;
 
     const isTester = user.test_mode === true;
     const testMinutes = isTester ? getTestIntervalMinutes(user) : null;
@@ -163,21 +159,18 @@ exports.handler = async function () {
     let nextAt = null;
     let awaitingInput = false;
 
-    // 🚫 HARD LOCK: Start Here should NEVER repeat
-    if (next.email === "hydration/hd-00-start-here.html") {
-      // after Start Here, continue on cadence (tester fast, real daily)
-      nextAt = isTester ? addMinutesISO(testMinutes) : addDaysISO(1);
+    // ⏱ Welcome → Start Here
+    if (next.email === "hydration/hd-01-welcome.html") {
+      nextAt = addMinutesISO(WELCOME_TO_START_MINUTES);
     }
-    // 🚦 FIRST HYDRATION PATH EMAIL → INTERACTIVE MODE
-    else if (next.email.startsWith("hydration/") && next.email.includes("/bt/")) {
+
+    // 🚦 FIRST BT / NC / OS EMAIL → LOCK SYSTEM
+    else if (next.email.match(/\/(bt|nc|os)\//)) {
       awaitingInput = true;
       nextAt = null;
     }
-    // ⏱ Welcome → Start Here delay
-    else if (next.email === "hydration/hd-01-welcome.html") {
-      nextAt = addMinutesISO(WELCOME_TO_START_MINUTES);
-    }
-    // 🔁 Normal cadence
+
+    // 🔁 NORMAL CADENCE
     else {
       nextAt = isTester ? addMinutesISO(testMinutes) : addDaysISO(1);
     }
