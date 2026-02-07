@@ -44,11 +44,8 @@ function loadSequence() {
 
   const sequence = [];
 
-  // ✅ INTRO (AUTO FLOW)
-  const INTRO_ORDER = [
-    "hd-01-welcome.html",
-    "hd-00-start-here.html"
-  ];
+  // ✅ INTRO (AUTO FLOW) — ALWAYS FIRST, ALWAYS ONLY ONCE IN SEQUENCE
+  const INTRO_ORDER = ["hd-01-welcome.html", "hd-00-start-here.html"];
 
   for (const email of INTRO_ORDER) {
     sequence.push({
@@ -57,8 +54,11 @@ function loadSequence() {
     });
   }
 
-  // 🔁 ALL OTHER PHASES (INCLUDING hydration_paths)
+  // 🔁 ALL OTHER PHASES
   for (const phaseKey of Object.keys(data.phases)) {
+    // 🚫 DO NOT re-add hydration here (intro already handled above)
+    if (phaseKey === "hydration") continue;
+
     const folder = PHASE_FOLDER_MAP[phaseKey];
     if (!folder) continue;
 
@@ -66,6 +66,7 @@ function loadSequence() {
 
     for (const groupKey of Object.keys(phase)) {
       for (const filename of phase[groupKey]) {
+        // hydration_paths go to hydration/<bt|nc|os>/
         if (phaseKey === "hydration_paths") {
           sequence.push({
             email: `hydration/${groupKey}/${filename}`,
@@ -135,7 +136,6 @@ exports.handler = async function () {
   const now = Date.now();
 
   for (const user of users) {
-
     // ⛔ STOP if waiting for BT / NC / OS input
     if (user.awaiting_input === true) continue;
 
@@ -163,8 +163,13 @@ exports.handler = async function () {
     let nextAt = null;
     let awaitingInput = false;
 
+    // 🚫 HARD LOCK: Start Here should NEVER repeat
+    if (next.email === "hydration/hd-00-start-here.html") {
+      // after Start Here, continue on cadence (tester fast, real daily)
+      nextAt = isTester ? addMinutesISO(testMinutes) : addDaysISO(1);
+    }
     // 🚦 FIRST HYDRATION PATH EMAIL → INTERACTIVE MODE
-    if (next.email.startsWith("hydration/") && next.email.includes("/bt/")) {
+    else if (next.email.startsWith("hydration/") && next.email.includes("/bt/")) {
       awaitingInput = true;
       nextAt = null;
     }
@@ -174,11 +179,7 @@ exports.handler = async function () {
     }
     // 🔁 Normal cadence
     else {
-      if (isTester) {
-        nextAt = addMinutesISO(testMinutes);
-      } else {
-        nextAt = addDaysISO(1);
-      }
+      nextAt = isTester ? addMinutesISO(testMinutes) : addDaysISO(1);
     }
 
     await supabase
