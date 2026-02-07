@@ -8,9 +8,9 @@ const path = require("path");
 const PROGRAM = "guided_foundations";
 const WELCOME_TO_START_MINUTES = 5;
 
-// test vs prod timing for INTRO email
-const IS_TEST_MODE = process.env.TEST_MODE === "true";
-const START_TO_INTRO_MINUTES = IS_TEST_MODE ? 60 : 72 * 60; // 1 hour test, ~3 days prod
+// per-user timing (Supabase-controlled)
+const START_TO_INTRO_TEST_MINUTES = 60;        // 1 hour
+const START_TO_INTRO_PROD_MINUTES = 72 * 60;   // ~3 days
 
 // hard safety buffer to prevent resend loops
 const SAFETY_BUFFER_MS = 2 * 60 * 1000;
@@ -149,9 +149,11 @@ exports.handler = async function () {
     // default delay
     let delayMinutes = WELCOME_TO_START_MINUTES;
 
-    // ⏳ special delay: Start Here → Intro
+    // ⏳ Start Here → Intro timing (per-user, from Supabase)
     if (next.email === "hydration/hd-00-start-here.html") {
-      delayMinutes = START_TO_INTRO_MINUTES;
+      delayMinutes = user.test_mode
+        ? START_TO_INTRO_TEST_MINUTES
+        : START_TO_INTRO_PROD_MINUTES;
     }
 
     const { error: updateErr } = await supabase
@@ -167,7 +169,15 @@ exports.handler = async function () {
     if (updateErr) {
       console.error("STATE UPDATE FAILED:", user.email, updateErr);
     } else {
-      console.log("✅ STATE UPDATED:", user.email, next.email);
+      console.log(
+        "✅ STATE UPDATED:",
+        user.email,
+        next.email,
+        "| delay:",
+        delayMinutes,
+        "min | test_mode:",
+        user.test_mode === true
+      );
     }
   }
 
