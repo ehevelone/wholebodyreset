@@ -1,80 +1,43 @@
-import { createClient } from "@supabase/supabase-js";
+// netlify/functions/update-user-state.js
+// ⚠️ DOES NOT CONTROL EMAIL PROGRESSION
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const { createClient } = require("@supabase/supabase-js");
 
-const addMinutesISO = m =>
-  new Date(Date.now() + m * 60000).toISOString();
-
-function htmlPage(title, msg) {
-  return {
-    statusCode: 200,
-    headers: { "content-type": "text/html; charset=utf-8" },
-    body: `<!doctype html>
-<html>
-<body style="font-family:Georgia,serif;background:#efe4c9;color:#2f3b2f;padding:24px">
-<h2>${title}</h2>
-<p>${msg}</p>
-</body></html>`
-  };
-}
-
-export async function handler(event) {
-  const method = event.httpMethod;
-  if (!["GET", "POST"].includes(method)) {
-    return { statusCode: 405, body: "GET or POST only" };
+exports.handler = async function (event) {
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  let payload = {};
-  if (method === "POST") {
-    payload = JSON.parse(event.body || "{}");
-  } else {
-    payload = event.queryStringParameters || {};
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+
+  const body = JSON.parse(event.body || "{}");
+  const { user_id, updates } = body;
+
+  if (!user_id || !updates) {
+    return { statusCode: 400, body: "Missing payload" };
   }
 
-  const email = (payload.email || "").trim();
-  const response = (payload.response || "").toLowerCase();
-
-  if (!email || !["better", "same", "worse"].includes(response)) {
-    return htmlPage("Invalid link", "This response link is not valid.");
-  }
-
-  const { data: user } = await supabase
-    .from("guided_users")
-    .select("*")
-    .eq("email", email)
-    .single();
-
-  if (!user) {
-    return htmlPage("User not found", "We couldn’t find your account.");
-  }
-
-  if (user.awaiting_input !== true) {
-    return htmlPage("Already received", "Your response was already saved.");
-  }
-
-  let user_state = "nc";
-  if (response === "better") user_state = "bt";
-  if (response === "worse") user_state = "os";
+  // 🚫 HARD BLOCK progression fields
+  delete updates.current_email;
+  delete updates.last_sent_at;
+  delete updates.next_email_at;
+  delete updates.awaiting_input;
 
   const { error } = await supabase
     .from("guided_users")
-    .update({
-      user_state,
-      last_user_response: response,
-      awaiting_input: false,
-      next_email_at: addMinutesISO(5)
-    })
-    .eq("id", user.id);
+    .update(updates)
+    .eq("id", user_id);
 
   if (error) {
-    return htmlPage("Error", "We couldn’t save your response. Please try again.");
+    console.error("❌ UPDATE USER STATE ERROR:", error);
+    return { statusCode: 500, body: "Update failed" };
   }
 
-  return htmlPage(
-    "Response received",
-    "Thanks — your check-in was saved. You can close this page."
-  );
-}
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ ok: true })
+  };
+};
