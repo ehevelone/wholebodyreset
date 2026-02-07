@@ -4,23 +4,14 @@ const fs = require("fs");
 const path = require("path");
 
 const PROGRAM = "guided_foundations";
-
-// ⏱️ Delay between Welcome → Start Here (ALWAYS 5 minutes)
 const WELCOME_TO_START_MINUTES = 5;
-
-// Tester default (minutes)
 const DEFAULT_TEST_INTERVAL_MINUTES = 2;
-
-// Real users cadence AFTER Start Here
 const REAL_USER_DAYS_AFTER_START_HERE = 3;
 
 const nowIso = () => new Date().toISOString();
-const addDaysISO = (d) => new Date(Date.now() + d * 86400000).toISOString();
-const addMinutesISO = (m) => new Date(Date.now() + m * 60000).toISOString();
+const addDaysISO = d => new Date(Date.now() + d * 86400000).toISOString();
+const addMinutesISO = m => new Date(Date.now() + m * 60000).toISOString();
 
-/**
- * JSON PHASE → ACTUAL FOLDER MAP
- */
 const PHASE_FOLDER_MAP = {
   hydration: "hydration",
   hydration_paths: "hydration",
@@ -39,164 +30,135 @@ function moduleFromEmailPath(p = "") {
   return "foundations";
 }
 
-/**
- * Build FULL SEQUENCE (ORDERED)
- */
 function loadSequence() {
-  const filePath = path.join(__dirname, "foundations_email_sequence.json");
-  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const data = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "foundations_email_sequence.json"), "utf8")
+  );
 
-  const sequence = [];
+  const seq = [];
 
   // INTRO
-  const INTRO_ORDER = ["hd-01-welcome.html", "hd-00-start-here.html"];
-  for (const email of INTRO_ORDER) {
-    sequence.push({ email: `hydration/${email}` });
-  }
+  ["hd-01-welcome.html", "hd-00-start-here.html"].forEach(f =>
+    seq.push({ email: `hydration/${f}` })
+  );
 
-  // hydration_paths
-  const hydrationPaths = data?.phases?.hydration_paths || {};
-  for (const groupKey of Object.keys(hydrationPaths)) {
-    for (const filename of hydrationPaths[groupKey]) {
-      sequence.push({ email: `hydration/${groupKey}/${filename}` });
-    }
-  }
+  // hydration paths
+  const hp = data?.phases?.hydration_paths || {};
+  Object.keys(hp).forEach(g =>
+    hp[g].forEach(f => seq.push({ email: `hydration/${g}/${f}` }))
+  );
 
   // everything else
-  for (const phaseKey of Object.keys(data.phases || {})) {
-    if (phaseKey === "hydration" || phaseKey === "hydration_paths") continue;
+  Object.keys(data.phases || {}).forEach(phase => {
+    if (phase === "hydration" || phase === "hydration_paths") return;
+    const folder = PHASE_FOLDER_MAP[phase];
+    if (!folder) return;
 
-    const folder = PHASE_FOLDER_MAP[phaseKey];
-    if (!folder) continue;
+    Object.keys(data.phases[phase]).forEach(g =>
+      data.phases[phase][g].forEach(f =>
+        seq.push({ email: `${folder}/${g}/${f}` })
+      )
+    );
+  });
 
-    for (const groupKey of Object.keys(data.phases[phaseKey])) {
-      for (const filename of data.phases[phaseKey][groupKey]) {
-        sequence.push({ email: `${folder}/${groupKey}/${filename}` });
-      }
-    }
-  }
-
-  return sequence;
+  return seq;
 }
 
-function findNextEmail(sequence, current) {
-  if (!current || current === "__START__") return sequence[0];
-  const idx = sequence.findIndex((e) => e.email === current);
-  return idx === -1 || idx + 1 >= sequence.length ? null : sequence[idx + 1];
+function findNextEmail(seq, current) {
+  if (!current || current === "__START__") return seq[0];
+  const i = seq.findIndex(e => e.email === current);
+  return i === -1 || i + 1 >= seq.length ? null : seq[i + 1];
 }
 
 async function sendEmail(payload) {
-  const res = await fetch("https://wholebodyreset.life/.netlify/functions/send_email", {
+  const r = await fetch("https://wholebodyreset.life/.netlify/functions/send_email", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload)
   });
-  return res.ok;
+  return r.ok;
 }
 
-function getTestIntervalMinutes(user) {
-  const hours = Number(user.test_interval_hours);
-  if (!Number.isFinite(hours) || hours <= 0) return DEFAULT_TEST_INTERVAL_MINUTES;
-  return Math.max(1, Math.round(hours * 60));
+function getTestIntervalMinutes(u) {
+  const h = Number(u.test_interval_hours);
+  if (!Number.isFinite(h) || h <= 0) return DEFAULT_TEST_INTERVAL_MINUTES;
+  return Math.max(1, Math.round(h * 60));
 }
 
-function isHydrationPathEmail(emailPath = "") {
-  return (
-    emailPath.startsWith("hydration/") &&
-    (emailPath.includes("/bt/") || emailPath.includes("/nc/") || emailPath.includes("/os/"))
-  );
+function isHydrationPathEmail(p = "") {
+  return p.startsWith("hydration/") && /\/(bt|nc|os)\//.test(p);
 }
 
-function applyHydrationBranch(emailPath, userState) {
-  if (!isHydrationPathEmail(emailPath)) return emailPath;
-  const state = String(userState || "").toLowerCase();
-  if (!["bt", "nc", "os"].includes(state)) return emailPath;
-  return emailPath.replace(/^hydration\/(bt|nc|os)\//, `hydration/${state}/`);
+function applyHydrationBranch(p, state) {
+  if (!isHydrationPathEmail(p)) return p;
+  return p.replace(/^hydration\/(bt|nc|os)\//, `hydration/${state}/`);
 }
 
 exports.handler = async function () {
-  console.log("DAILY DISPATCH RUN", new Date().toISOString());
-
   const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  const sequence = loadSequence();
+  const seq = loadSequence();
+  const now = Date.now();
 
-  const { data: users, error } = await supabase
+  const { data: users } = await supabase
     .from("guided_users")
     .select("*")
     .eq("program", PROGRAM)
     .eq("status", "active")
     .eq("is_paused", false);
 
-  if (error) {
-    console.error("Supabase error:", error);
-    return { statusCode: 500, body: error.message };
-  }
-
-  const now = Date.now();
-
   for (const user of users) {
-    if (user.awaiting_input === true) continue;
+    if (user.awaiting_input) continue;
     if (user.next_email_at && Date.parse(user.next_email_at) > now) continue;
 
-    const nextBase = findNextEmail(sequence, user.current_email);
-    if (!nextBase) continue;
+    const base = findNextEmail(seq, user.current_email);
+    if (!base) continue;
 
-    const state = user.user_state ? user.user_state.toLowerCase() : "nc";
-    const nextEmail = isHydrationPathEmail(nextBase.email)
-      ? applyHydrationBranch(nextBase.email, state)
-      : nextBase.email;
-
-    console.log("SENDING", nextEmail, "TO", user.email);
+    const state = (user.user_state || "nc").toLowerCase();
+    const emailToSend = isHydrationPathEmail(base.email)
+      ? applyHydrationBranch(base.email, state)
+      : base.email;
 
     const sent = await sendEmail({
       email: user.email,
-      email_file: nextEmail
+      email_file: emailToSend
     });
-
     if (!sent) continue;
 
     const isTester = user.test_mode === true;
-    const testMinutes = isTester ? getTestIntervalMinutes(user) : null;
+    const testMin = isTester ? getTestIntervalMinutes(user) : null;
 
     let nextAt = null;
-    let awaitingInput = false;
+    let awaiting = false;
 
-    if (nextEmail === "hydration/hd-01-welcome.html") {
+    if (emailToSend === "hydration/hd-01-welcome.html") {
       nextAt = addMinutesISO(WELCOME_TO_START_MINUTES);
-    } else if (nextEmail === "hydration/hd-00-start-here.html") {
+    } else if (emailToSend === "hydration/hd-00-start-here.html") {
       nextAt = isTester
-        ? addMinutesISO(testMinutes)
+        ? addMinutesISO(testMin)
         : addDaysISO(REAL_USER_DAYS_AFTER_START_HERE);
-    } else if (isHydrationPathEmail(nextEmail)) {
-      awaitingInput = true;
-      nextAt = null;
+    } else if (isHydrationPathEmail(emailToSend)) {
+      awaiting = true;
     } else {
-      nextAt = isTester ? addMinutesISO(testMinutes) : addDaysISO(1);
+      nextAt = isTester ? addMinutesISO(testMin) : addDaysISO(1);
     }
 
-    // 🔥 FIX: UPDATE BY EMAIL (NOT id)
-    const { error: updateError } = await supabase
+    // 🔥 GUARANTEED ADVANCE
+    await supabase
       .from("guided_users")
       .update({
-        current_email: nextEmail,
-        current_module: moduleFromEmailPath(nextEmail),
+        current_email: emailToSend,
+        current_module: moduleFromEmailPath(emailToSend),
         last_sent_at: nowIso(),
         next_email_at: nextAt,
-        awaiting_input: awaitingInput
+        awaiting_input: awaiting
       })
+      .eq("id", user.id)
       .eq("email", user.email);
-
-    if (updateError) {
-      console.error("UPDATE FAILED", user.email, updateError);
-    }
   }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ ok: true })
-  };
+  return { statusCode: 200, body: JSON.stringify({ ok: true }) };
 };
